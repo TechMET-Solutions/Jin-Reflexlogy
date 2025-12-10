@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class CommonWebView extends StatefulWidget {
@@ -35,7 +36,7 @@ class _CommonWebViewState extends State<CommonWebView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Seminar"),),
+      appBar: CommonAppBar(title: "${widget.title}"),
       body: Stack(
         children: [
           WebViewWidget(controller: controller),

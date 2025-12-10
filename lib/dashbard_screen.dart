@@ -3,6 +3,7 @@ import 'package:jin_reflex_new/foot_chart_screen.dart';
 import 'package:jin_reflex_new/marking_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_screen_list.dart';
 import 'package:jin_reflex_new/screens/aboutUs%20copy.dart';
+import 'package:jin_reflex_new/screens/anil_jain_about_screen.dart';
 import 'package:jin_reflex_new/screens/comman_webview_screen.dart';
 import 'package:jin_reflex_new/screens/ebook_screen.dart';
 import 'package:jin_reflex_new/screens/faq_screen.dart';
@@ -12,7 +13,7 @@ import 'package:jin_reflex_new/screens/point_finder_screen.dart';
 import 'package:jin_reflex_new/screens/point_screen.dart';
 import 'package:jin_reflex_new/screens/productDetail.dart';
 import 'package:jin_reflex_new/screens/relaxing_screen.dart';
-import 'package:jin_reflex_new/screens/triment_screen.dart';
+import 'package:jin_reflex_new/screens/treatment/triment_screen.dart';
 
 
 // ======================== MAIN HOME SCREEN ===========================
@@ -314,7 +315,17 @@ class HomeScreen extends StatelessWidget {
                     },
                     child: Card("assets/images/Workshop.png", "Workshop"),
                   ),
-                  Card("assets/images/JRJain.png", "JR Anil Jain"),
+                  InkWell(
+                    onTap: (){    
+                        Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) =>AboutJinReflexologyScreen()
+                        ),
+                      );
+                                    },
+                    child: Card("assets/images/JRJain.png", "JR Anil Jain")),
                   Card("assets/images/SuccessStory.png", "Success Story"),
                 ],
               ),

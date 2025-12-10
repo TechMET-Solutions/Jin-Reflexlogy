@@ -53,23 +53,20 @@ class EbookScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>  EnglishBookScreen(),
+                    builder: (_) =>  EnglishBookScreen(url: "https://jinreflexology.in/api/english_ebook.php",name: "English eBook",),
                   ),
                 );
               },
             ),
-
             const SizedBox(height: 20),
-
-            // HINDI BUTTON CARD
             _buildCardButton(
               title: "Hindi eBook",
               icon: Icons.library_books_rounded,
               onTap: () {
-                Navigator.push(
+                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const HindiBookScreen(),
+                    builder: (_) =>  EnglishBookScreen(url: "https://jinreflexology.in/api/hindi_book.php",name: "Hindi eBook",),
                   ),
                 );
               },

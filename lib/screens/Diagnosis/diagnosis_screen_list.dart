@@ -52,47 +52,47 @@ class _MemberListScreenState extends State<MemberListScreen> {
     });
   }
 
-  // ---------------- API CALL ----------------
-  Future<void> fetchPatients() async {
-    try {
-      final response = await ApiService().postRequest(
-        "https://jinreflexology.in/api/list_patients.php?pid=22",
-        {},
-      );
+    // ---------------- API CALL ----------------
+    Future<void> fetchPatients() async {
+      try {
+        final response = await ApiService().postRequest(
+          "https://jinreflexology.in/api/list_patients.php?pid=22",
+          {},
+        );
 
-      if (response?.statusCode == 200) {
+        if (response?.statusCode == 200) {
 
-        dynamic jsonBody;
+          dynamic jsonBody;
 
-        if (response?.data is String) {
-          jsonBody = jsonDecode(response?.data);
+          if (response?.data is String) {
+            jsonBody = jsonDecode(response?.data);
+          } else {
+            jsonBody = response?.data;
+          }
+
+          final raw = jsonBody['data'];
+
+          List<PatientData> diagnosisLists = [];
+
+          if (raw is List) {
+            diagnosisLists = raw.map((e) => PatientData.fromJson(e)).toList();
+          } else if (raw is Map) {
+            diagnosisLists = raw.values.map((e) => PatientData.fromJson(e)).toList();
+          }
+
+          setState(() {
+            patients = diagnosisLists;
+            filteredPatients = diagnosisLists;   // <-- For search
+            isLoading = false;
+          });
         } else {
-          jsonBody = response?.data;
+          setState(() => isLoading = false);
         }
-
-        final raw = jsonBody['data'];
-
-        List<PatientData> diagnosisLists = [];
-
-        if (raw is List) {
-          diagnosisLists = raw.map((e) => PatientData.fromJson(e)).toList();
-        } else if (raw is Map) {
-          diagnosisLists = raw.values.map((e) => PatientData.fromJson(e)).toList();
-        }
-
-        setState(() {
-          patients = diagnosisLists;
-          filteredPatients = diagnosisLists;   // <-- For search
-          isLoading = false;
-        });
-      } else {
+      } catch (e) {
+        print("ERROR: $e");
         setState(() => isLoading = false);
       }
-    } catch (e) {
-      print("ERROR: $e");
-      setState(() => isLoading = false);
     }
-  }
 
   @override
   Widget build(BuildContext context) {

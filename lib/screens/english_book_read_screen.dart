@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:dio/dio.dart';
 
 class EnglishBookScreen extends StatefulWidget {
-  const EnglishBookScreen({super.key});
+  const EnglishBookScreen({super.key, this.url, this.name});
+  final url;
+  final name;
 
   @override
   State<EnglishBookScreen> createState() => _EnglishBookScreenState();
@@ -20,7 +23,7 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
   final TextEditingController searchController = TextEditingController();
 
   // API URL
-  final String apiUrl = "https://jainacupressure.com/api/english_ebook.php";
+  // final String apiUrl = "${w}";
 
   @override
   void initState() {
@@ -28,29 +31,42 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
     fetchPage(pageIndex);
   }
 
+  // ===================== API USING DIO HERE =====================
   Future<void> fetchPage(int pageNo) async {
     setState(() => loading = true);
 
     try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        body: {
-          "a": "1",
-          "name": pageNo.toString(),
-        },
+      Dio dio = Dio();
+
+      FormData formData = FormData.fromMap({
+        "a": "1",
+        "name": pageNo.toString(),   // page number
+      });
+
+      Response response = await dio.post(
+        widget.url,
+        data: formData, 
+        options: Options(contentType: "multipart/form-data"),
       );
 
-      final json = jsonDecode(response.body);
+      dynamic jsonBody;
 
-      if (json["success"] == 1) {
-        final String base64img = json["data"][0]["image"];
+      // Response may be String or JSON Map
+      if (response.data is String) {
+        jsonBody = jsonDecode(response.data);
+      } else {
+        jsonBody = response.data;
+      }
+
+      if (jsonBody["success"] == 1) {
+        final String base64img = jsonBody["data"][0]["image"];
         final bytes = base64Decode(base64img);
 
         setState(() {
           pageImage = MemoryImage(bytes);
         });
       } else {
-        debugPrint("Failed: ${json["data"]}");
+        debugPrint("Failed: ${jsonBody["data"]}");
       }
     } catch (e) {
       debugPrint("Error: $e");
@@ -58,6 +74,7 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
 
     setState(() => loading = false);
   }
+  // ===============================================================
 
   // Next Page
   void nextPage() {
@@ -100,12 +117,7 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
     return Scaffold(
       backgroundColor: const Color(0xfff5f5f5),
 
-      appBar: AppBar(
-        backgroundColor: Colors.deepOrange,
-        title: const Text("English eBook"),
-        centerTitle: true,
-      ),
-
+      appBar: CommonAppBar(title: "${widget.name}"),
       body: Column(
         children: [
           // TOP CONTROLS

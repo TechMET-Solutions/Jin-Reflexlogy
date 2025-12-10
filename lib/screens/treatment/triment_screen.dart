@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:jin_reflex_new/screens/treatment/treatment_screen_details.dart';
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
 class Treatment extends StatelessWidget {
   Treatment({super.key});
@@ -17,6 +19,7 @@ class Treatment extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+     appBar: CommonAppBar(title: "Treatment "),
       body: SingleChildScrollView(
         child: Container(
           margin: const EdgeInsets.all(12),
@@ -81,19 +84,30 @@ class Treatment extends StatelessWidget {
                         ),
                       ));
                     },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8E8C5),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFF7C85A), width: 2),
-                      ),
-                      child: Center(
-                        child: Text(
-                          items[index],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                    child: InkWell(
+
+                      onTap: (){
+                         Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DiseaseDetailPage(name:items[index] ,),
+      ),
+    );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8E8C5),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFF7C85A), width: 2),
+                        ),
+                        child: Center(
+                          child: Text(
+                            items[index],
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
