@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "assets",
+			"path": "../../jin_reflex_doctor_app/assets"
+		},
+		{
+			"name": "jin_reflex_new",
+			"path": "."
+		}
+	],
+	"settings": {}
+}

@@ -1,0 +1,1540 @@
+{
+  "buttons": [
+    {
+      "id": "customClickButton",
+      "x": 53.9,
+      "y": 48.2,
+      "tag": "Pituitary Gland",
+      "index": 0,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton6",
+      "x": 46.1,
+      "y": 152.1,
+      "tag": "Pituitary Gland",
+      "index": 1,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton3",
+      "x": 164.1,
+      "y": 23.2,
+      "tag": "Nose",
+      "index": 2,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton2",
+      "x": 81.6,
+      "y": 254.3,
+      "tag": "Nose",
+      "index": 3,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton",
+      "x": 205.1,
+      "y": 50.6,
+      "tag": "Nose",
+      "index": 4,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton4",
+      "x": 253.5,
+      "y": 89.0,
+      "tag": "Nose",
+      "index": 5,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton400",
+      "x": 284.9,
+      "y": 164.4,
+      "tag": "Outer Cervical",
+      "index": 400,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton7",
+      "x": 50.4,
+      "y": 113.4,
+      "tag": "Tongue",
+      "index": 6,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton8",
+      "x": 174.4,
+      "y": 134.5,
+      "tag": "Eye",
+      "index": 7,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton9",
+      "x": 21.2,
+      "y": 152.4,
+      "tag": "Throat",
+      "index": 8,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton12",
+      "x": 53.6,
+      "y": 147.4,
+      "tag": "Throat",
+      "index": 9,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton13",
+      "x": 74.9,
+      "y": 151.1,
+      "tag": "Throat",
+      "index": 10,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton14",
+      "x": 192.8,
+      "y": 146.6,
+      "tag": "Lung",
+      "index": 11,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton15",
+      "x": 197.8,
+      "y": 164.7,
+      "tag": "Lung",
+      "index": 12,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton16",
+      "x": 200.7,
+      "y": 181.8,
+      "tag": "Lung",
+      "index": 13,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton17",
+      "x": 214,
+      "y": 203,
+      "tag": "Lung",
+      "index": 14,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton18",
+      "x": 222.1,
+      "y": 221.1,
+      "tag": "Lung",
+      "index": 15,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton19",
+      "x": 225,
+      "y": 233,
+      "tag": "Lung",
+      "index": 16,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton21",
+      "x": 51.3,
+      "y": 186.3,
+      "tag": "Esophagus",
+      "index": 17,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton22",
+      "x": 50.3,
+      "y": 221.3,
+      "tag": "Esophagus",
+      "index": 18,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton23",
+      "x": 52.3,
+      "y": 254.4,
+      "tag": "Esophagus",
+      "index": 19,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton24",
+      "x": 81.2,
+      "y": 189.1,
+      "tag": "Parathyroid Gland",
+      "index": 20,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton25",
+      "x": 80.1,
+      "y": 220.3,
+      "tag": "Parathyroid Gland",
+      "index": 21,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton26",
+      "x": 20.2,
+      "y": 188.9,
+      "tag": "Parathyroid Gland",
+      "index": 22,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton27",
+      "x": 21.2,
+      "y": 220.2,
+      "tag": "Parathyroid Gland",
+      "index": 23,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton28",
+      "x": 21.4,
+      "y": 255.3,
+      "tag": "Thyroid Gland",
+      "index": 24,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton29",
+      "x": 94,
+      "y": 265,
+      "tag": "Thyroid Gland",
+      "index": 25,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton30",
+      "x": 5.8,
+      "y": 99.8,
+      "tag": "C1",
+      "index": 26,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton31",
+      "x": 5.3,
+      "y": 123.6,
+      "tag": "C2",
+      "index": 27,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton32",
+      "x": 3.2,
+      "y": 149.8,
+      "tag": "C3",
+      "index": 28,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton33",
+      "x": -0.4,
+      "y": 178.6,
+      "tag": "C4",
+      "index": 29,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton34",
+      "x": -0.9,
+      "y": 207.3,
+      "tag": "C5",
+      "index": 30,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton35",
+      "x": -2.7,
+      "y": 234.5,
+      "tag": "C6",
+      "index": 31,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton36",
+      "x": -2.0,
+      "y": 259.5,
+      "tag": "C7",
+      "index": 32,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton37",
+      "x": 215.8,
+      "y": 176.5,
+      "tag": "Thymus Gland",
+      "index": 33,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton38",
+      "x": 271.9,
+      "y": 209.7,
+      "tag": "Ear",
+      "index": 34,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton39",
+      "x": 276.1,
+      "y": 232.1,
+      "tag": "Shoulder",
+      "index": 35,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton40",
+      "x": 293.3,
+      "y": 251.8,
+      "tag": "Shoulder",
+      "index": 36,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton41",
+      "x": 299.4,
+      "y": 278.8,
+      "tag": "Shoulder",
+      "index": 37,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton42",
+      "x": 239,
+      "y": 258,
+      "tag": "Heart",
+      "index": 38,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton43",
+      "x": 239,
+      "y": 273,
+      "tag": "Heart",
+      "index": 39,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton44",
+      "x": 243,
+      "y": 290,
+      "tag": "Heart",
+      "index": 40,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton45",
+      "x": 140.9,
+      "y": 288.3,
+      "tag": "Chest",
+      "index": 41,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton46",
+      "x": 163.8,
+      "y": 289.4,
+      "tag": "Chest",
+      "index": 42,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton47",
+      "x": 184.7,
+      "y": 289.2,
+      "tag": "Chest",
+      "index": 43,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton48",
+      "x": 301.4,
+      "y": 302.9,
+      "tag": "Elbow",
+      "index": 44,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton49",
+      "x": 301.4,
+      "y": 325.8,
+      "tag": "Elbow",
+      "index": 45,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton50",
+      "x": 299.3,
+      "y": 351.7,
+      "tag": "Elbow",
+      "index": 46,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton51",
+      "x": 253,
+      "y": 315,
+      "tag": "Spleen",
+      "index": 47,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton52",
+      "x": 255,
+      "y": 332,
+      "tag": "Spleen",
+      "index": 48,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton53",
+      "x": 259,
+      "y": 353,
+      "tag": "Spleen",
+      "index": 49,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton54",
+      "x": 161.7,
+      "y": 320.6,
+      "tag": "Solar Plexus",
+      "index": 50,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton55",
+      "x": 51.3,
+      "y": 187.3,
+      "tag": "Pancreas Gland",
+      "index": 51,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton56",
+      "x": 106.9,
+      "y": 348.3,
+      "tag": "Pancreas Gland",
+      "index": 52,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton57",
+      "x": 77.9,
+      "y": 357.3,
+      "tag": "Pancreas Gland",
+      "index": 53,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton58",
+      "x": 190.8,
+      "y": 340.5,
+      "tag": "Stomach",
+      "index": 54,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton59",
+      "x": 162.7,
+      "y": 343.5,
+      "tag": "Stomach",
+      "index": 55,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton60",
+      "x": 74.6,
+      "y": 48.0,
+      "tag": "Stomach",
+      "index": 56,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton61",
+      "x": -1.4,
+      "y": 282.5,
+      "tag": "T1",
+      "index": 57,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton62",
+      "x": 12.8,
+      "y": 306.1,
+      "tag": "T2",
+      "index": 58,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton63",
+      "x": 27.3,
+      "y": 325.4,
+      "tag": "T3",
+      "index": 59,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton65",
+      "x": 39.0,
+      "y": 348.0,
+      "tag": "T4",
+      "index": 60,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton66",
+      "x": 43.3,
+      "y": 368.8,
+      "tag": "T5",
+      "index": 61,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton67",
+      "x": 47.7,
+      "y": 389.2,
+      "tag": "T6",
+      "index": 384,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton74",
+      "x": 48.7,
+      "y": 410.6,
+      "tag": "T7",
+      "index": 63,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton75",
+      "x": 50.7,
+      "y": 433.3,
+      "tag": "T8",
+      "index": 64,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton76",
+      "x": 56.3,
+      "y": 454.4,
+      "tag": "T9",
+      "index": 65,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton77",
+      "x": 60.5,
+      "y": 477.4,
+      "tag": "T10",
+      "index": 66,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton78",
+      "x": 64.8,
+      "y": 499.4,
+      "tag": "T11",
+      "index": 67,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton80",
+      "x": 70.6,
+      "y": 520.2,
+      "tag": "T12",
+      "index": 68,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton79",
+      "x": 73.9,
+      "y": 382.1,
+      "tag": "Adrenal Gland",
+      "index": 69,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton81",
+      "x": 74.6,
+      "y": 408.4,
+      "tag": "Kidney",
+      "index": 70,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton83",
+      "x": 75.6,
+      "y": 431.5,
+      "tag": "Kidney",
+      "index": 71,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton82",
+      "x": 79.6,
+      "y": 455.5,
+      "tag": "Kidney",
+      "index": 72,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton84",
+      "x": 83.7,
+      "y": 479.4,
+      "tag": "Urinary Tract",
+      "index": 73,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton85",
+      "x": 87.6,
+      "y": 505.4,
+      "tag": "Urinary Tract",
+      "index": 74,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton86",
+      "x": 89.8,
+      "y": 526.4,
+      "tag": "Urinary Tract",
+      "index": 75,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton87",
+      "x": 92.8,
+      "y": 547.5,
+      "tag": "Urinary Tract",
+      "index": 76,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton88",
+      "x": 70.8,
+      "y": 542.3,
+      "tag": "L1",
+      "index": 77,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton89",
+      "x": 74.9,
+      "y": 565.1,
+      "tag": "L2",
+      "index": 78,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton90",
+      "x": 75.9,
+      "y": 587.3,
+      "tag": "L3",
+      "index": 79,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton91",
+      "x": 76.8,
+      "y": 611.4,
+      "tag": "L4",
+      "index": 80,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton92",
+      "x": 79.1,
+      "y": 632.2,
+      "tag": "L5",
+      "index": 81,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton93",
+      "x": 82.0,
+      "y": 679.1,
+      "tag": "Sacrum",
+      "index": 82,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton94",
+      "x": 81.0,
+      "y": 658.5,
+      "tag": "Coccyx",
+      "index": 82,
+      "group": "spinal"
+    },
+    {
+      "id": "customClickButton95",
+      "x": 95.9,
+      "y": 569.4,
+      "tag": "Urinary Bladder",
+      "index": 83,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton96",
+      "x": 97.8,
+      "y": 592.5,
+      "tag": "Urinary Bladder",
+      "index": 84,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton100",
+      "x": 98.0,
+      "y": 613.4,
+      "tag": "Urinary Bladder",
+      "index": 85,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton101",
+      "x": 101.1,
+      "y": 657.1,
+      "tag": "Internal Thigh",
+      "index": 86,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton102",
+      "x": 99.8,
+      "y": 638.1,
+      "tag": "Internal Thigh",
+      "index": 87,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton103",
+      "x": 100.9,
+      "y": 680.1,
+      "tag": "Internal Thigh",
+      "index": 88,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton104",
+      "x": 148.7,
+      "y": 676.1,
+      "tag": "Rectum",
+      "index": 89,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton105",
+      "x": 90.0,
+      "y": 702.1,
+      "tag": "Rectum",
+      "index": 90,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton106",
+      "x": 123.8,
+      "y": 675.9,
+      "tag": "Sciatic Nerve",
+      "index": 91,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton107",
+      "x": 114.9,
+      "y": 700.3,
+      "tag": "Sciatic Nerve",
+      "index": 92,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton108",
+      "x":  140.5,
+      "y": 700.8,
+      "tag": "Sciatic Nerve",
+      "index": 93,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton109",
+      "x":   169.6,
+      "y":701.1,
+      "tag": "Sciatic Nerve",
+      "index": 94,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton110",
+      "x": 202.4,
+      "y":  701.1,
+      "tag": "Sciatic Nerve",
+      "index": 95,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton111",
+      "x":231.4,
+      "y":700.2,
+      "tag": "Sciatic Nerve",
+      "index": 96,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton112",
+      "x": 260.2,
+      "y": 701.2,
+      "tag": "Sciatic Nerve",
+      "index": 97,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton113",
+      "x": 98.9,
+      "y": 726.1,
+      "tag": "Sex Organ",
+      "index": 98,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton114",
+      "x":  125.0,
+      "y": 727.0  ,
+      "tag": "Sex Organ",
+      "index": 99,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton115",
+      "x":150.1,
+      "y": 726.2,
+      "tag": "Sex Organ",
+      "index": 100,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton116",
+      "x": 175.57,
+      "y":725.3,
+      "tag": "Sex Organ",
+      "index": 101,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton117",
+      "x":200.6,
+      "y":726.1,
+      "tag": "Sex Organ",
+      "index": 102,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton118",
+      "x": 225.5,
+      "y":  726.9,
+      "tag": "Sex Organ",
+      "index": 103,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton119",
+      "x": 252.2,
+      "y": 727.4,
+      "tag": "Sex Organ",
+      "index": 104,
+      "group": "endocrine"
+    },
+    {
+      "id": "customClickButton120",
+      "x": 110.9,
+      "y": 751.1,
+      "tag": "Foot Heel",
+      "index": 105,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton121",
+      "x": 139.6,
+      "y": 752.9,
+      "tag": "Foot Heel",
+      "index": 106,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton122",
+      "x": 168.6,
+      "y": 752.0,
+      "tag": "Foot Heel",
+      "index": 107,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton123",
+      "x": 201.3,
+      "y": 751.9,
+      "tag": "Foot Heel",
+      "index": 108,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton124",
+      "x": 234.3,
+      "y": 752.8,
+      "tag": "Foot Heel",
+      "index": 109,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton125",
+      "x": 171.8,
+      "y": 171.8,
+      "tag": "Anus",
+      "index": 110,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton5",
+      "x": 295.4,
+      "y": 380.9,
+      "tag": "Wrist Hand",
+      "index": 111,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton10",
+      "x": 261.2,
+      "y": 679.3,
+      "tag": "Wrist Hand",
+      "index": 112,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton11",
+      "x": 286.2,
+      "y": 436.7,
+      "tag": "Wrist Hand",
+      "index": 113,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton20",
+      "x": 278.3,
+      "y": 492.1,
+      "tag": "Leg",
+      "index": 114,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton64",
+      "x": 285.6,
+      "y": 463.0,
+      "tag": "Leg",
+      "index": 115,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton68",
+      "x": 275.2,
+      "y": 520.1,
+      "tag": "Leg",
+      "index": 116,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton69",
+      "x": 269.2,
+      "y": 547.1,
+      "tag": "Knee",
+      "index": 117,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton70",
+      "x": 266.3,
+      "y": 576.1,
+      "tag": "Knee",
+      "index": 118,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton71",
+      "x": 236.3,
+      "y": 676.3,
+      "tag": "Knee",
+      "index": 119,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton401",
+      "x": 604.7,
+      "y": 604.7,
+      "tag": "Outer Knee",
+      "index": 119,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton72",
+      "x": 263.2,
+      "y": 632.2,
+      "tag": "Knee",
+      "index": 120,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton73",
+      "x": 262.2,
+      "y": 654.3,
+      "tag": "Knee",
+      "index": 121,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton97",
+      "x": 262.2,
+      "y": 678.3,
+      "tag": "Knee",
+      "index": 122,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton98",
+      "x": 97.8,
+      "y": 387.2,
+      "tag": "Large Intestine",
+      "index": 123,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton99",
+      "x": 128.7,
+      "y": 376.6,
+      "tag": "Large Intestine",
+      "index": 124,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton126",
+      "x": 152.7,
+      "y": 376.6,
+      "tag": "Large Intestine",
+      "index": 125,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton127",
+      "x": 175.7,
+      "y": 371.5,
+      "tag": "Large Intestine",
+      "index": 126,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton128",
+      "x": 197.6,
+      "y": 369.5,
+      "tag": "Large Intestine",
+      "index": 127,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton129",
+      "x": 222.8,
+      "y": 369.6,
+      "tag": "Large Intestine",
+      "index": 128,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton130",
+      "x": 247.9,
+      "y": 370.6,
+      "tag": "Large Intestine",
+      "index": 129,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton132",
+      "x": 247.8,
+      "y": 391.6,
+      "tag": "Large Intestine",
+      "index": 130,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton131",
+      "x": 250.8,
+      "y": 418.6,
+      "tag": "Large Intestine",
+      "index": 131,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton133",
+      "x": 250.9,
+      "y": 441.6,
+      "tag": "Large Intestine",
+      "index": 132,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton134",
+      "x": 258.0,
+      "y": 471.2,
+      "tag": "Large Intestine",
+      "index": 133,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton135",
+      "x": 243.7,
+      "y": 486.6,
+      "tag": "Large Intestine",
+      "index": 134,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton136",
+      "x": 241.9,
+      "y": 510.6,
+      "tag": "Large Intestine",
+      "index": 135,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton137",
+      "x": 235.8,
+      "y": 534.6,
+      "tag": "Large Intestine",
+      "index": 136,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton138",
+      "x": 236.8,
+      "y": 556.7,
+      "tag": "Large Intestine",
+      "index": 137,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton139",
+      "x": 229.8,
+      "y": 579.7,
+      "tag": "Large Intestine",
+      "index": 138,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton140",
+      "x": 230.8,
+      "y": 601.7,
+      "tag": "Large Intestine",
+      "index": 139,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton141",
+      "x": 236.1,
+      "y": 633.2,
+      "tag": "Large Intestine",
+      "index": 140,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton142",
+      "x": 237.3,
+      "y": 656.1,
+      "tag": "Large Intestine",
+      "index": 141,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton143",
+      "x":  214.6,
+      "y":  675.2,
+      "tag": "Large Intestine",
+      "index": 142,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton144",
+      "x": 183.8,
+      "y": 284.5,
+      "tag": "Large Intestine",
+      "index": 143,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton145",
+      "x": 191.5,
+      "y":676.1,
+      "tag": "Large Intestine",
+      "index": 144,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton146",
+      "x":  169.6,
+      "y": 675.1,
+      "tag": "Large Intestine",
+      "index": 145,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton148",
+      "x": 101.4,
+      "y": 410.2,
+      "tag": "Small Intestine",
+      "index": 147,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton149",
+      "x": 161.2,
+      "y": 400.6,
+      "tag": "Small Intestine",
+      "index": 148,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton150",
+      "x": 133.7,
+      "y": 409.4,
+      "tag": "Small Intestine",
+      "index": 149,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton151",
+      "x": 190.7,
+      "y": 394.4,
+      "tag": "Small Intestine",
+      "index": 150,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton153",
+      "x": 101.4,
+      "y": 430.9,
+      "tag": "Small Intestine",
+      "index": 152,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton154",
+      "x": 188.8,
+      "y": 417.5,
+      "tag": "Small Intestine",
+      "index": 153,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton155",
+      "x": 220.0,
+      "y": 400.4,
+      "tag": "Small Intestine",
+      "index": 154,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton156",
+      "x": 101.3,
+      "y": 455.0,
+      "tag": "Small Intestine",
+      "index": 155,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton157",
+      "x": 140.5,
+      "y": 440.2,
+      "tag": "Small Intestine",
+      "index": 156,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton158",
+      "x": 183.8,
+      "y": 440.5,
+      "tag": "Small Intestine",
+      "index": 157,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton159",
+      "x": 213.8,
+      "y": 432.6,
+      "tag": "Small Intestine",
+      "index": 158,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton160",
+      "x":104.7,
+      "y": 478.3,
+      "tag": "Small Intestine",
+      "index": 159,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton161",
+      "x": 140.4,
+      "y":470.3,
+      "tag": "Small Intestine",
+      "index": 160,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton162",
+      "x": 182.8,
+      "y": 466.6,
+      "tag": "Small Intestine",
+      "index": 161,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton163",
+      "x": 216.0,
+      "y": 457.6,
+      "tag": "Small Intestine",
+      "index": 162,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton164",
+      "x": 108.5,
+      "y": 506.0,
+      "tag": "Small Intestine",
+      "index": 163,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton165",
+      "x": 140.4,
+      "y": 496.2,
+      "tag": "Small Intestine",
+      "index": 164,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton166",
+      "x": 182.8,
+      "y": 490.7,
+      "tag": "Small Intestine",
+      "index": 165,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton167",
+      "x": 112.5,
+      "y": 529.1,
+      "tag": "Small Intestine",
+      "index": 166,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton168",
+      "x": 144.5,
+      "y": 520.4,
+      "tag": "Small Intestine",
+      "index": 167,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton169",
+      "x": 179.8,
+      "y": 514.8,
+      "tag": "Small Intestine",
+      "index": 168,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton170",
+      "x": 212.9,
+      "y": 486.7,
+      "tag": "Small Intestine",
+      "index": 169,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton171",
+      "x": 118.7,
+      "y": 555.1,
+      "tag": "Small Intestine",
+      "index": 170,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton172",
+      "x":  148.6,
+      "y": 542.3,
+      "tag": "Small Intestine",
+      "index": 171,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton173",
+      "x": 183.8,
+      "y": 534.6,
+      "tag": "Small Intestine",
+      "index": 172,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton174",
+      "x": 211.9,
+      "y": 509.6,
+      "tag": "Small Intestine",
+      "index": 173,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton175",
+      "x": 121.8,
+      "y": 579.3,
+      "tag": "Small Intestine",
+      "index": 174,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton176",
+      "x": 149.8,
+      "y": 567.2,
+      "tag": "Small Intestine",
+      "index": 175,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton177",
+      "x": 181.8,
+      "y": 560.8,
+      "tag": "Small Intestine",
+      "index": 176,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton178",
+      "x": 210.0,
+      "y": 542.0,
+      "tag": "Small Intestine",
+      "index": 177,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton179",
+      "x": 121.9,
+      "y": 602.3,
+      "tag": "Small Intestine",
+      "index": 178,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton180",
+      "x": 149.9,
+      "y":  590.3,
+      "tag": "Small Intestine",
+      "index": 179,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton181",
+      "x": 183.7,
+      "y": 589.5,
+      "tag": "Small Intestine",
+      "index": 180,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton182",
+      "x": 203.8,
+      "y": 559.6,
+      "tag": "Small Intestine",
+      "index": 181,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton183",
+      "x": 122.7,
+      "y": 625.2,
+      "tag": "Small Intestine",
+      "index": 182,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton184",
+      "x": 150.7,
+      "y": 616.4,
+      "tag": "Small Intestine",
+      "index": 183,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton185",
+      "x": 179.7,
+      "y":615.0,
+      "tag": "Small Intestine",
+      "index": 184,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton186",
+      "x": 204.8,
+      "y": 587.8,
+      "tag": "Small Intestine",
+      "index": 185,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton187",
+      "x":  208.7,
+      "y": 622.2,
+      "tag": "Small Intestine",
+      "index": 186,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton188",
+      "x": 178.9,
+      "y": 649.1,
+      "tag": "Small Intestine",
+      "index": 187,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton189",
+      "x": 149.9,
+      "y": 649.2,
+      "tag": "Small Intestine",
+      "index": 188,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton190",
+      "x": 122.8,
+      "y": 650.1,
+      "tag": "Small Intestine",
+      "index": 189,
+      "group": "normal"
+    },
+    {
+      "id": "customClickButton147",
+      "x": 75,
+      "y": 18,
+      "tag": "Head",
+      "index": 380,
+      "group": "normal"
+    }
+  ]
+}
