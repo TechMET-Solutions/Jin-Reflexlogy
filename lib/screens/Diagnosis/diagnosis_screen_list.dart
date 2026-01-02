@@ -211,7 +211,9 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
                                       (_) => AddPatientScreen(
                                         patientName: '',
                                         patientId: '',
-                                        pid: '22',
+                                        pid: AppPreference().getString(
+                                          PreferencesKey.userId,
+                                        ),
                                         diagnosisId: '',
                                       ),
                                 ),
