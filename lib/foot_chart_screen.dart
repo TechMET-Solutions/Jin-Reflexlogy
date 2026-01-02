@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
-
 
 class FootChartScreen extends StatefulWidget {
   const FootChartScreen({super.key});
@@ -13,25 +9,23 @@ class FootChartScreen extends StatefulWidget {
 }
 
 class _FootChartScreenState extends State<FootChartScreen> {
-  late WebViewController _controller;
+  late WebViewController controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController();
-    _loadLocalHtml();
-  }
 
-  Future<void> _loadLocalHtml() async {
-    String fileHtmlContents = await rootBundle.loadString('assets/foot-chart.html');
-    _controller.loadHtmlString(fileHtmlContents);
+    controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0x00000000))
+      ..loadFlutterAsset("assets/foot-chart.html"); // FINAL WORKING PATH
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:CommonAppBar(title: 'Foot Chart'),
-      body: WebViewWidget(controller: _controller),
+      appBar: AppBar(title: const Text("Foot Chart")),
+      body: WebViewWidget(controller: controller),
     );
   }
 }

@@ -2,27 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
-import 'package:jin_reflex_new/login_screen.dart';
+import 'package:jin_reflex_new/screens/splash_screen.dart';
 
-void main() {
+// Global RouteObserver
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  AppPreference().initialAppPreference();
+  await AppPreference().initialAppPreference();
   runApp(ProviderScope(child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Flutter Demo',
+      title: 'JIN Reflexology',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home:  LoginScreen(),
+      navigatorObservers: [routeObserver],
+      home: SplashScreen(),
     );
   }
 }
-

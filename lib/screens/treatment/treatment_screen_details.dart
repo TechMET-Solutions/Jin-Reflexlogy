@@ -106,15 +106,6 @@ String cleanHtml(String htmlString) {
           // API always sends list
           var item = jsonBody["data"][0];
 
-          // // 🔥 Clean HTML fields
-          // item["diseaseDetail"]        = cleanHtml(item["diseaseDetail"]);
-          // item["diseaseCauses"]        = cleanHtml(item["diseaseCauses"]);
-          // item["diseaseSymptoms"]      = cleanHtml(item["diseaseSymptoms"]);
-          // item["diseaseRegimen"]       = cleanHtml(item["diseaseRegimen"]);
-          // item["diseaseMainPoint"]     = cleanHtml(item["diseaseMainPoint"]);
-          // item["diseaseRelatedPoints"] = cleanHtml(item["diseaseRelatedPoints"]);
-          // item["diseaseMicroMagnet"]   = cleanHtml(item["diseaseMicroMagnet"]);
-
           return DiseaseModel.fromJson(item);
         }
       }

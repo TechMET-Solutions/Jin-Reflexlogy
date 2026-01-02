@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
+import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
+import 'package:jin_reflex_new/login_screen.dart';
+import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_screen_list.dart';
 import 'package:jin_reflex_new/screens/treatment/treatment_screen_details.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
@@ -17,9 +21,11 @@ class Treatment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final token = AppPreference().getString(PreferencesKey.token);
+    final type = AppPreference().getString(PreferencesKey.type);
     return Scaffold(
       backgroundColor: Colors.white,
-     appBar: CommonAppBar(title: "Treatment "),
+      appBar: CommonAppBar(title: "Treatment "),
       body: SingleChildScrollView(
         child: Container(
           margin: const EdgeInsets.all(12),
@@ -76,38 +82,65 @@ class Treatment extends StatelessWidget {
                   childAspectRatio: 2.8,
                 ),
                 itemBuilder: (context, index) {
+                  final item = items[index];
+                  final isAcidity = item == "Acidity";
+                  final isLoggedIn = type == "prouser" || token.isNotEmpty;
+
                   return InkWell(
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => TreatmentDetailsScreen(
-                          title: items[index],
-                        ),
-                      ));
-                    },
-                    child: InkWell(
-
-                      onTap: (){
-                         Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DiseaseDetailPage(name:items[index] ,),
-      ),
-    );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8E8C5),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFF7C85A), width: 2),
-                        ),
-                        child: Center(
-                          child: Text(
-                            items[index],
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                      if (isAcidity) {
+                        // Acidity साठी थेट access
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DiseaseDetailPage(name: item),
+                          ),
+                        );
+                      } else {
+                        // बाकी सर्व items साठी login check
+                        if (isLoggedIn) {
+                          // Login असल्यास access
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => DiseaseDetailPage(name: item),
                             ),
+                          );
+                        } else {
+                          // Login नसल्यास login screen दाखवा
+                          showDialog(
+                            context: context,
+                            builder: (context) => JinLoginScreen(
+                              text: "Treatment",
+                              type: "therapist",
+                              onTab: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => MemberListScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8E8C5),
+                        borderRadius: BorderRadius.circular(20),
+                        border:
+                            Border.all(color: const Color(0xFFF7C85A), width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          item,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -124,10 +157,6 @@ class Treatment extends StatelessWidget {
     );
   }
 }
-
-
-
-
 
 
 class TreatmentDetailsScreen extends StatelessWidget {

@@ -1,191 +1,209 @@
+import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:camera/camera.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
+import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
+import 'package:jin_reflex_new/login_screen.dart';
+import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_screen_list.dart';
 
+class PointFinderScreen extends StatefulWidget {
+  @override
+  _PointFinderScreenState createState() => _PointFinderScreenState();
+}
 
-// import 'dart:convert';
-// import 'dart:typed_data';
+class _PointFinderScreenState extends State<PointFinderScreen> {
+  CameraController? cameraController;
+  List<CameraDescription>? cameras;
 
-// import 'package:camera/camera.dart';
-// import 'package:flutter/material.dart';
-// import 'package:http/http.dart' as http;
+  double imageOpacity = 0.7;
+  double zoomLevel = 1.0;
 
-// class PointFinderScreen extends StatefulWidget {
-//   @override
-//   _PointFinderScreenState createState() => _PointFinderScreenState();
-// }
+  bool isLeft = true;
+  bool isFlashOn = false;
 
-// class _PointFinderScreenState extends State<PointFinderScreen> {
-//   CameraController? cameraController;
-//   List<CameraDescription>? cameras;
+  int i = -1;
+  int j = 0;
+  int lastPage = -3;
 
-//   double imageOpacity = 0.7;
-//   double zoomLevel = 1.0;
+  ImageProvider overlayImage = const AssetImage(
+    "assets/images/point_finder_lf.png",
+  );
 
-//   bool isLeft = true;
-//   bool isFlashOn = false;
+  @override
+  void initState() {
+    super.initState();
+    initCamera();
+  }
 
-//   int i = -1;
-//   int j = 0;
-//   int lastPage = -3;
+  Future<void> initCamera() async {
+    cameras = await availableCameras();
+    cameraController = CameraController(
+      cameras![0],
+      ResolutionPreset.high,
+      enableAudio: false,
+    );
 
-//   ImageProvider overlayImage = const AssetImage("assets/images/point_finder_lf.png");
+    await cameraController!.initialize();
+    setState(() {});
+  }
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     initCamera();
-//   }
+  Future<void> toggleFlash() async {
+    if (isFlashOn) {
+      await cameraController!.setFlashMode(FlashMode.off);
+    } else {
+      await cameraController!.setFlashMode(FlashMode.torch);
+    }
+    setState(() {
+      isFlashOn = !isFlashOn;
+    });
+  }
 
-//   Future<void> initCamera() async {
-//     cameras = await availableCameras();
-//     cameraController = CameraController(
-//       cameras![0],
-//       ResolutionPreset.high,
-//       enableAudio: false,
-//     );
+  Future<void> fetchImage(int page) async {
+    final url = "http://jainacupressure.com/api/pointfinder.php";
 
-//     await cameraController!.initialize();
-//     setState(() {});
-//   }
+    final res = await http.post(
+      Uri.parse(url),
+      body: {"a": "1", "name": page.toString()},
+    );
 
-//   Future<void> toggleFlash() async {
-//     if (isFlashOn) {
-//       await cameraController!.setFlashMode(FlashMode.off);
-//     } else {
-//       await cameraController!.setFlashMode(FlashMode.torch);
-//     }
-//     setState(() {
-//       isFlashOn = !isFlashOn;
-//     });
-//   }
+    final json = jsonDecode(res.body);
 
-//   Future<void> fetchImage(int page) async {
-//     final url = "http://jainacupressure.com/api/pointfinder.php";
+    if (json["success"] == 1) {
+      String base64Image = json["data"][0]["image"];
+      lastPage = int.parse(json["data"][0]["lastpage"]);
 
-//     final res = await http.post(Uri.parse(url), body: {
-//       "a": "1",
-//       "name": page.toString(),
-//     });
+      Uint8List bytes = base64Decode(base64Image);
 
-//     final json = jsonDecode(res.body);
+      setState(() {
+        overlayImage = MemoryImage(bytes);
+      });
+    }
+  }
 
-//     if (json["success"] == 1) {
-//       String base64Image = json["data"][0]["image"];
-//       lastPage = int.parse(json["data"][0]["lastpage"]);
+  @override
+  Widget build(BuildContext context) {
+    
+    final token = AppPreference().getString(PreferencesKey.token);
+    final type = AppPreference().getString(PreferencesKey.type);
+    if (cameraController == null || !cameraController!.value.isInitialized) {
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
-//       Uint8List bytes = base64Decode(base64Image);
+    return Scaffold(
+      body:
+          type == "prouser" || token.isEmpty
+              ? JinLoginScreen(
+                text: "PointFinderScreen",
+                type: "therapist",
+                onTab: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MemberListScreen()),
+                  );
+                },
+              )
+              : Stack(
+                children: [
+                  // CAMERA PREVIEW
+                  CameraPreview(cameraController!),
 
-//       setState(() {
-//         overlayImage = MemoryImage(bytes);
-//       });
-//     }
-//   }
+                  // TRANSPARENT OVERLAY IMAGE
+                  Center(
+                    child: GestureDetector(
+                      onHorizontalDragEnd: (details) {
+                        if (details.primaryVelocity! < 0) {
+                          i++;
+                          fetchImage(i);
+                        } else {
+                          if (i > 0) i--;
+                          fetchImage(i);
+                        }
+                      },
+                      child: Opacity(
+                        opacity: imageOpacity,
+                        child: InteractiveViewer(
+                          child: Image(image: overlayImage),
+                        ),
+                      ),
+                    ),
+                  ),
 
-//   @override
-//   Widget build(BuildContext context) {
-//     if (cameraController == null || !cameraController!.value.isInitialized) {
-//       return Scaffold(body: Center(child: CircularProgressIndicator()));
-//     }
+                  // OPACITY SLIDER (TOP)
+                  Positioned(
+                    top: 20,
+                    left: 20,
+                    right: 20,
+                    child: Slider(
+                      value: imageOpacity,
+                      min: 0.1,
+                      max: 1.0,
+                      onChanged: (v) {
+                        setState(() => imageOpacity = v);
+                      },
+                    ),
+                  ),
 
-//     return Scaffold(
-//       body: Stack(
-//         children: [
-//           // CAMERA PREVIEW
-//           CameraPreview(cameraController!),
+                  // ZOOM SLIDER (RIGHT)
+                  Positioned(
+                    right: 20,
+                    top: 100,
+                    bottom: 100,
+                    child: RotatedBox(
+                      quarterTurns: 1,
+                      child: Slider(
+                        value: zoomLevel,
+                        min: 1.0,
+                        max: 5.0,
+                        onChanged: (v) async {
+                          zoomLevel = v;
+                          await cameraController!.setZoomLevel(v);
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                  ),
 
-//           // TRANSPARENT OVERLAY IMAGE
-//           Center(
-//             child: GestureDetector(
-//               onHorizontalDragEnd: (details) {
-//                 if (details.primaryVelocity! < 0) {
-                 
-//                   i++;
-//                   fetchImage(i);
-//                 } else {
-                
-//                   if (i > 0) i--;
-//                   fetchImage(i);
-//                 }
-//               },
-//               child: Opacity(
-//                 opacity: imageOpacity,
-//                 child: InteractiveViewer(
-//                   child: Image(
-//                     image: overlayImage,
-//                   ),
-//                 ),
-//               ),
-//             ),
-//           ),
+                  // FLIP BUTTON
+                  Positioned(
+                    bottom: 20,
+                    left: 20,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.flip_camera_android,
+                        size: 40,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          isLeft = !isLeft;
+                          overlayImage = AssetImage(
+                            isLeft
+                                ? "assets/images/point_finder_lf.png"
+                                : "assets/images/point_finder_rf.png",
+                          );
+                        });
+                      },
+                    ),
+                  ),
 
-//           // OPACITY SLIDER (TOP)
-//           Positioned(
-//             top: 20,
-//             left: 20,
-//             right: 20,
-//             child: Slider(
-//               value: imageOpacity,
-//               min: 0.1,
-//               max: 1.0,
-//               onChanged: (v) {
-//                 setState(() => imageOpacity = v);
-//               },
-//             ),
-//           ),
-
-//           // ZOOM SLIDER (RIGHT)
-//           Positioned(
-//             right: 20,
-//             top: 100,
-//             bottom: 100,
-//             child: RotatedBox(
-//               quarterTurns: 1,
-//               child: Slider(
-//                 value: zoomLevel,
-//                 min: 1.0,
-//                 max: 5.0,
-//                 onChanged: (v) async {
-//                   zoomLevel = v;
-//                   await cameraController!.setZoomLevel(v);
-//                   setState(() {});
-//                 },
-//               ),
-//             ),
-//           ),
-
-//           // FLIP BUTTON
-//           Positioned(
-//             bottom: 20,
-//             left: 20,
-//             child: IconButton(
-//               icon: Icon(Icons.flip_camera_android, size: 40, color: Colors.white),
-//               onPressed: () {
-//                 setState(() {
-//                   isLeft = !isLeft;
-//                   overlayImage = AssetImage(
-//                     isLeft
-//                         ? "assets/images/point_finder_lf.png"
-//                         : "assets/images/point_finder_rf.png",
-//                   );
-//                 });
-//               },
-//             ),
-//           ),
-
-//           // FLASH BUTTON
-//           Positioned(
-//             bottom: 20,
-//             right: 20,
-//             child: IconButton(
-//               icon: Icon(
-//                 isFlashOn ? Icons.flash_off : Icons.flash_on,
-//                 size: 40,
-//                 color: Colors.white,
-//               ),
-//               onPressed: toggleFlash,
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
+                  // FLASH BUTTON
+                  Positioned(
+                    bottom: 20,
+                    right: 20,
+                    child: IconButton(
+                      icon: Icon(
+                        isFlashOn ? Icons.flash_off : Icons.flash_on,
+                        size: 40,
+                        color: Colors.white,
+                      ),
+                      onPressed: toggleFlash,
+                    ),
+                  ),
+                ],
+              ),
+    );
+  }
+}

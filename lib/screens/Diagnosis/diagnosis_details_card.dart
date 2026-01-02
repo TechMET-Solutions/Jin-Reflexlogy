@@ -3,8 +3,12 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
+import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
+import 'package:jin_reflex_new/api_service/urls.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_history_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_record_screen.dart';
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
 class DiagnosisDetailsCard extends StatefulWidget {
   final String patientName;
@@ -12,6 +16,7 @@ class DiagnosisDetailsCard extends StatefulWidget {
   final String diagnosisId;
   final String date;
   final String time;
+  final String title;
 
   DiagnosisDetailsCard({
     required this.patientName,
@@ -19,6 +24,7 @@ class DiagnosisDetailsCard extends StatefulWidget {
     required this.diagnosisId,
     required this.date,
     required this.time,
+    required this.title,
   });
 
   @override
@@ -42,109 +48,139 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
   Future<void> fetchDiagnosisImages() async {
     try {
       final formData = FormData.fromMap({
-        "pid": "22", // shared pref नुसार बदल
+        "pid": AppPreference().getString(PreferencesKey.userId),
         "diagnosisId": widget.diagnosisId,
       });
 
       final response = await Dio().post(
-        "https://jinreflexology.in/api/diagnosis_images.php",
+        diagnosis_images,
         data: formData,
         options: Options(responseType: ResponseType.plain),
       );
 
-      print("RAW RESPONSE: ${response.data}");
-
-      // ------------------- HTML → JSON FIX -------------------
       String raw = response.data.toString().trim();
 
       int start = raw.indexOf("{");
       int end = raw.lastIndexOf("}");
 
       if (start == -1 || end == -1) {
-        throw Exception("No JSON found inside HTML response");
+        throw Exception("No JSON found");
       }
 
       String jsonString = raw.substring(start, end + 1);
-      print("CLEAN JSON: $jsonString");
-
       final jsonBody = jsonDecode(jsonString);
-      // ---------------------------------------------------------
 
       if (jsonBody["success"] == 1) {
         final data = jsonBody["data"];
 
         setState(() {
-          lf = base64Decode(data["lf"]);
-          rf = base64Decode(data["rf"]);
-          lh = base64Decode(data["lh"]);
-          rh = base64Decode(data["rh"]);
+          lf = data["lf"] != null ? base64Decode(data["lf"]) : null;
+          rf = data["rf"] != null ? base64Decode(data["rf"]) : null;
+          lh = data["lh"] != null ? base64Decode(data["lh"]) : null;
+          rh = data["rh"] != null ? base64Decode(data["rh"]) : null;
           loading = false;
         });
       } else {
-        setState(() => loading = false);
+        loading = false;
       }
     } catch (e) {
       print("ERROR: $e");
-      setState(() => loading = false);
+      loading = false;
     }
+
+    setState(() {});
+  }
+
+  Widget imageBox(Uint8List? image, String label) {
+    if (image == null) return SizedBox();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Center(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.memory(image, width: 200, fit: BoxFit.contain),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFFDF3DD),
-
+      backgroundColor: const Color(0xFFFDF3DD),
+      appBar: CommonAppBar(title: "title"),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Patient Name
+            /// Patient Name
             Container(
-              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(25),
               ),
               child: Text(
                 "Patient Name: ${widget.patientName}",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
 
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
             Row(
               children: [
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Color(0xffF9CF63),
+                      color: const Color(0xffF9CF63),
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: Text(
                       "Patient Id: ${widget.patientId}",
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ),
-
-                SizedBox(width: 12),
-
+                const SizedBox(width: 12),
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.green,
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: Text(
                       "Diagnosis ID: ${widget.diagnosisId}",
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
@@ -154,58 +190,60 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
               ],
             ),
 
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
             Row(
               children: [
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: Colors.lightBlue,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       "Diagnosis Date:\n${widget.date}",
-                      style: TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: Colors.lightBlue,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       "Diagnosis Time:\n${widget.time}",
-                      style: TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
               ],
             ),
 
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-            // ------------------ IMAGES -------------------
-            loading
-                ? Center(child: CircularProgressIndicator())
-                : Expanded(
-                  child: GridView.count(
-                    crossAxisCount: 2,
-                    children: [
-                      lf != null ? Image.memory(lf!) : Container(),
-                      rf != null ? Image.memory(rf!) : Container(),
-                      lh != null ? Image.memory(lh!) : Container(),
-                      rh != null ? Image.memory(rh!) : Container(),
-                    ],
-                  ),
-                ),
+            /// -------- IMAGES (VERTICAL) ----------
+            Expanded(
+              child:
+                  loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            imageBox(lf, "Left Foot"),
+                            imageBox(rf, "Right Foot"),
+                            imageBox(lh, "Left Hand"),
+                            imageBox(rh, "Right Hand"),
+                          ],
+                        ),
+                      ),
+            ),
 
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -213,7 +251,10 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    padding: EdgeInsets.symmetric(horizontal: 25, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 25,
+                      vertical: 12,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
@@ -231,32 +272,34 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
                       ),
                     );
                   },
-                  child: Text("UPDATE"),
+                  child: const Text("UPDATE"),
                 ),
-
-ElevatedButton(
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.red,
-    padding: EdgeInsets.symmetric(horizontal: 25, vertical: 12),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(25),
-    ),
-  ),
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DiagnosisHistoryScreen(
-          patientId: widget.patientId,
-          diagnosisId: widget.diagnosisId,
-          patientName: widget.patientName,
-        ),
-      ),
-    );
-  },
-  child: Text("TREATMENT"),
-)
-
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 25,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) => DiagnosisHistoryScreen(
+                              patientId: widget.patientId,
+                              diagnosisId: widget.diagnosisId,
+                              patientName: widget.patientName,
+                            ),
+                      ),
+                    );
+                  },
+                  child: const Text("TREATMENT"),
+                ),
               ],
             ),
           ],
@@ -265,6 +308,3 @@ ElevatedButton(
     );
   }
 }
-
-
-// 
