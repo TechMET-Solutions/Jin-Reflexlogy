@@ -55,6 +55,8 @@ dependencies:
   geolocator: ^14.0.2
   flutter_image_compress: ^2.4.0
   camera: ^0.11.3
+  country_state_city: ^0.1.6
+  dropdown_search: ^5.0.6
 
 dev_dependencies:
   flutter_test:
@@ -85,7 +87,40 @@ flutter:
     - assets/foot-chart.html
     - assets/button.json
     - assets/right_foot.json
+    - assets/hand-chart.html
+    - assets/foot-chart.html
+    - assets/hand-chart.html
+    - assets/hand-chart-right.html
+    - assets/foot-chart-right.html
+    - assets/button.json
+    - assets/right_foot.json
+    - assets/right_hand_btn.json
+    - assets/left_hand_btn.json
+    - assets/jinImages/
+    - assets/my-app.css
+    - assets/my-app.js
+    - assets/jquery.min.js
+    - assets/ddimgtooltip1.js
+    - assets/ddimgtooltip1.css
 
+
+    # assets:
+    # - assets/images/
+    # - assets/images/jin_reflexo.png
+    # - assets/foot-chart.html
+    # - assets/hand-chart.html
+    # - assets/hand-chart-right.html
+    # - assets/foot-chart-right.html
+    # - assets/button.json
+    # - assets/right_foot.json
+    # - assets/right_hand_btn.json
+    # - assets/left_hand_btn.json
+    # - assets/jinImages/
+    # - assets/my-app.css
+    # - assets/my-app.js
+    # - assets/jquery.min.js
+    # - assets/ddimgtooltip1.js
+    # - assets/ddimgtooltip1.css
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
