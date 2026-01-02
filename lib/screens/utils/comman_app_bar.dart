@@ -4,27 +4,36 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
   final bool showBack;
+  final VoidCallback? onBack; // 🔥 NEW
+
   const CommonAppBar({
     super.key,
     required this.title,
     this.actions,
     this.showBack = true,
+    this.onBack, // 🔥 NEW
   });
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
       backgroundColor: const Color.fromARGB(255, 19, 4, 66),
-      automaticallyImplyLeading: showBack,
-      leading:
-          showBack
-              ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-                onPressed: () {
-                  Navigator.of(context).maybePop();
-                },
-              )
-              : null,
+      automaticallyImplyLeading: false,
+      leading: showBack
+          ? IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                if (onBack != null) {
+                  onBack!(); // ✅ custom logic
+                } else {
+                  Navigator.of(context).maybePop(); // ✅ default
+                }
+              },
+            )
+          : null,
       title: Text(
         title,
         style: const TextStyle(

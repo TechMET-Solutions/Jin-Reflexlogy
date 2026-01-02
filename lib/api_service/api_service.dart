@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:jin_reflex_new/api_service/global/utils.dart';
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/api_service/urls.dart';
+import 'package:jin_reflex_new/model/tretment_model.dart';
 
 
 
@@ -154,5 +157,32 @@ Future<Response?> postRequest(String endpoint, dynamic data) async {
           break;
       }
     }
+  }
+}
+
+
+
+class TreatmentService {
+  /// HTML madhun JSON extract karto
+  static Map<String, dynamic>? _extractJson(String html) {
+    try {
+      final start = html.indexOf('{');
+      final end = html.lastIndexOf('}');
+      if (start == -1 || end == -1) return null;
+
+      final jsonString = html.substring(start, end + 1);
+      return jsonDecode(jsonString);
+    } catch (e) {
+      debugPrint("❌ HTML → JSON error: $e");
+      return null;
+    }
+  }
+
+  /// HTML response → Dart Model
+  static TreatmentResponse? parseTreatmentFromHtml(String htmlResponse) {
+    final jsonMap = _extractJson(htmlResponse);
+    if (jsonMap == null) return null;
+
+    return TreatmentResponse.fromJson(jsonMap);
   }
 }

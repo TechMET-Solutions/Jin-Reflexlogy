@@ -1,0 +1,52 @@
+{
+  "RightHand": [
+    {
+      "id": "btn_rhA",
+      "x": 91.83,
+      "y": 38.25,
+      "index": 850,
+      "tag": "Prostate Gland",
+      "group": "endocrine"
+    },
+    {
+      "id": "btn_rhB",
+      "x": 213.36,
+      "y": 40.39,
+      "index": 851,
+      "tag": "Prostate Gland",
+      "group": "endocrine"
+    },
+    {
+      "id": "btn_rhC",
+      "x": 90.46,
+      "y": 68.65,
+      "index": 852,
+      "tag": "Testes",
+      "group": "endocrine"
+    },
+    {
+      "id": "btn_rhD",
+      "x": 214.64,
+      "y": 69.78,
+      "index": 853,
+      "tag": "Testes",
+      "group": "endocrine"
+    },
+    {
+      "id": "btn_rhE",
+      "x": 88.44,
+      "y": 101.01,
+      "index": 854,
+      "tag": "Penis",
+      "group": "endocrine"
+    },
+    {
+      "id": "btn_rhF",
+      "x": 212.99,
+      "y": 103.43,
+      "index": 855,
+      "tag": "Penis",
+      "group": "endocrine"
+    }
+  ]
+}

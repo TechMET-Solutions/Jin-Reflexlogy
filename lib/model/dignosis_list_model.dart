@@ -13,7 +13,7 @@ class PatientData {
 
   factory PatientData.fromJson(Map<String, dynamic> json) {
     return PatientData(
-      id: json['id'].toString(),     // 👍 FIX
+      id: json['id'].toString(), // 👍 FIX
       name: json['name'] ?? "",
       gender: json['gender'] ?? "",
       mobile: json['mobile'].toString(),

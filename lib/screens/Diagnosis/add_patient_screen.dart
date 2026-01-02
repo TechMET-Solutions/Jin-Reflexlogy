@@ -2,15 +2,33 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:jin_reflex_new/api_service/api_service.dart';
-
+import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:dio/dio.dart';
+import 'package:jin_reflex_new/api_service/api_state.dart' hide ApiService;
+import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
+import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
+import 'package:jin_reflex_new/api_service/urls.dart';
+import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_record_screen.dart';
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
 class AddPatientScreen extends StatefulWidget {
+  final String patientName;
+  final String patientId;
+  final String pid;
+  final String diagnosisId;
+
+  AddPatientScreen({
+    required this.patientName,
+    required this.patientId,
+    required this.pid,
+    required this.diagnosisId,
+  });
   @override
- State<AddPatientScreen> createState() => _AddPatientScreenState();
+  State<AddPatientScreen> createState() => _AddPatientScreenState();
 }
 
 class _AddPatientScreenState extends State<AddPatientScreen> {
-  // ---------------- Controllers ----------------
   final firstName = TextEditingController();
   final middleName = TextEditingController();
   final lastName = TextEditingController();
@@ -23,20 +41,35 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   final code = TextEditingController();
   final mobile = TextEditingController();
   final postalCode = TextEditingController();
-  final bloodGroup = TextEditingController();
 
-  String gender = "";
-  String maritalStatus = "";
+  String? selectedBloodGroup;
+  String? gender;
+  String? maritalStatus;
+  bool isLoading = false;
 
   final formKey = GlobalKey<FormState>();
 
-  // ---------------- TextField Builder ----------------
-  Widget buildTextField(String label, TextEditingController controller,
-      {TextInputType keyboard = TextInputType.text}) {
+  // Blood groups list
+  final List<String> bloodGroups = [
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'O+',
+    'O-',
+    'AB+',
+    'AB-',
+  ];
+
+  Widget buildTextField(
+    String label,
+    TextEditingController controller, {
+    TextInputType keyboard = TextInputType.text,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label),
+        Text(label, style: TextStyle(fontWeight: FontWeight.w500)),
         SizedBox(height: 5),
         Container(
           padding: EdgeInsets.symmetric(horizontal: 12),
@@ -48,10 +81,14 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
           child: TextFormField(
             controller: controller,
             keyboardType: keyboard,
-            validator: (value) =>
-                value == null || value.isEmpty ? "$label is required" : null,
+            validator:
+                (value) =>
+                    value == null || value.isEmpty
+                        ? "$label is required"
+                        : null,
             decoration: InputDecoration(
               border: InputBorder.none,
+              hintText: "Enter $label",
             ),
           ),
         ),
@@ -60,252 +97,398 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     );
   }
 
-Future<void> addPatient() async {
-  if (!formKey.currentState!.validate()) return;
-
-  if (gender.isEmpty) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text("Please select gender")));
-    return;
-  }
-
-  if (maritalStatus.isEmpty) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text("Please select marital status")));
-    return;
-  }
-
-  try {
-final formData = FormData.fromMap({
-  "address": address.text,
-  "age": age.text,
-  "bg": bloodGroup.text,
-  "city": city.text,
-  "country": country.text,
-  "email": email.text,
-  "gender": gender,
-  "m_no": mobile.text,
-  "mStatus": maritalStatus,
-  "name": "${firstName.text} ${middleName.text} ${lastName.text}",
-  "pid":"22",   // ⭐ MUST
-  "pincode": postalCode.text,
-  "state": stateC.text,
-});
-
-
-    final response = await ApiService().postRequest(
-      "https://jinreflexology.in/api/add_patient.php",
-      formData,
+  Widget buildRadioOption(
+    String title,
+    String value,
+    String groupValue,
+    Function(String?) onChanged,
+  ) {
+    return Row(
+      children: [
+        Radio<String>(
+          value: value,
+          groupValue: groupValue,
+          onChanged: onChanged,
+          activeColor: Color(0xffF9CF63),
+        ),
+        SizedBox(width: 4),
+        Text(title),
+      ],
     );
-
-    print("RAW RESPONSE: ${response?.data}");
-
-    //---------------- JSON FIX ----------------//
-    dynamic jsonBody;
-
-    if (response?.data is String) {
-      try {
-        jsonBody = jsonDecode(response!.data);
-      } catch (e) {
-        throw Exception("Invalid JSON from server");
-      }
-    } else {
-      jsonBody = response?.data;
-    }
-    //-------------------------------------------//
-
-    print("PARSED JSON: $jsonBody");
-
-    if (jsonBody != null && jsonBody["success"] == 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Patient Added Successfully")),
-      );
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(jsonBody["message"] ?? "Failed to add patient")),
-      );
-    }
-  } catch (e) {
-    print("Add Patient Error: $e");
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text("Something went wrong: $e")));
   }
-}
 
+  Widget buildDropdownField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Blood Group", style: TextStyle(fontWeight: FontWeight.w500)),
+        SizedBox(height: 5),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Color(0xffF9CF63), width: 1.5),
+          ),
+          child: DropdownButtonFormField<String>(
+            value: selectedBloodGroup,
+            decoration: InputDecoration(border: InputBorder.none),
+            hint: Text("Select Blood Group"),
+            items:
+                bloodGroups.map((String group) {
+                  return DropdownMenuItem<String>(
+                    value: group,
+                    child: Text(group),
+                  );
+                }).toList(),
+            onChanged: (value) {
+              setState(() {
+                selectedBloodGroup = value;
+              });
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return "Blood group is required";
+              }
+              return null;
+            },
+          ),
+        ),
+        SizedBox(height: 12),
+      ],
+    );
+  }
 
-  // ---------------- UI ----------------
+  Future<Map<String, String>?> addPatient() async {
+    debugPrint("=== STARTING addPatient METHOD ===");
+
+    // Hide keyboard
+    FocusScope.of(context).unfocus();
+
+    // Validate form
+    if (!formKey.currentState!.validate()) {
+      debugPrint("ERROR: Form validation failed");
+      return null;
+    }
+    debugPrint("SUCCESS: Form validation passed");
+
+    // Validate gender
+    if (gender == null || gender!.isEmpty) {
+      debugPrint("ERROR: Gender not selected");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Please select gender")));
+      return null;
+    }
+    debugPrint("SUCCESS: Gender selected - $gender");
+
+    // Validate marital status
+    if (maritalStatus == null || maritalStatus!.isEmpty) {
+      debugPrint("ERROR: Marital status not selected");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Please select marital status")));
+      return null;
+    }
+    debugPrint("SUCCESS: Marital status selected - $maritalStatus");
+
+    setState(() {
+      isLoading = true;
+    });
+    debugPrint("INFO: Loading state set to true");
+
+    try {
+      final fullName =
+          "${firstName.text} ${middleName.text} ${lastName.text}".trim();
+      debugPrint("INFO: Full name constructed - $fullName");
+
+      final formData = FormData.fromMap({
+        "pid": AppPreference().getString(PreferencesKey.userId),
+        "name": fullName,
+        "email": email.text,
+        "m_no": mobile.text,
+        "address": address.text,
+        "city": city.text,
+        "state": stateC.text,
+        "country": country.text,
+        "pincode": postalCode.text,
+        "bg": selectedBloodGroup,
+        "age": age.text,
+        "gender": gender,
+        "mStatus": maritalStatus,
+      });
+
+      // Log all individual form fields
+      debugPrint("=== FORM DATA FIELDS ===");
+      for (var field in formData.fields) {
+        debugPrint("${field.key} : ${field.value}");
+      }
+      debugPrint("=== END FORM DATA FIELDS ===");
+
+      debugPrint("INFO: Form data prepared - ${formData.fields}");
+
+      debugPrint("INFO: Making API request to $add_patient");
+      final response = await ApiService().postRequest(add_patient, formData);
+      debugPrint(
+        "INFO: API response received - Status: ${response?.statusCode}",
+      );
+      debugPrint("DEBUG: Raw response data - ${response?.data}");
+
+      dynamic jsonBody;
+      if (response?.data is String) {
+        debugPrint("INFO: Response data is String, attempting to decode JSON");
+        try {
+          jsonBody = jsonDecode(response!.data);
+          debugPrint("SUCCESS: JSON decoded successfully");
+        } catch (jsonError) {
+          debugPrint("ERROR: Failed to decode JSON - $jsonError");
+          debugPrint("ERROR: Response appears to be HTML or invalid JSON");
+          debugPrint("ERROR: Full response data: ${response?.data}");
+          // If it's HTML, set jsonBody to null or handle accordingly
+          jsonBody = {
+            "success": 0,
+            "message": "Invalid response format from server",
+          };
+        }
+      } else {
+        debugPrint("INFO: Response data is already JSON");
+        jsonBody = response?.data;
+      }
+      debugPrint("INFO: Final parsed body - $jsonBody");
+
+      setState(() {
+        isLoading = false;
+      });
+      debugPrint("INFO: Loading state set to false");
+
+      if (jsonBody != null && jsonBody["success"] == 1) {
+        debugPrint("SUCCESS: API response success = 1");
+
+        /// 🔥 API RESPONSE SE DATA NIKALO
+        final String patientId = jsonBody["data"]?["id"]?.toString() ?? "";
+        final String patientName =
+            jsonBody["data"]?["name"]?.toString() ?? fullName;
+
+        debugPrint("INFO: Patient ID - $patientId");
+        debugPrint("INFO: Patient Name - $patientName");
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Patient Added Successfully"),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        return {"id": patientId, "name": patientName};
+      } else {
+        debugPrint("ERROR: API response success != 1 or null response");
+        debugPrint(
+          "ERROR: Response message - ${jsonBody?["message"] ?? "No message"}",
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(jsonBody?["message"] ?? "Failed to add patient"),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return null;
+      }
+    } catch (e) {
+      debugPrint("ERROR: Exception occurred in addPatient - $e");
+      debugPrint("ERROR: Stack trace - ${StackTrace.current}");
+
+      setState(() {
+        isLoading = false;
+      });
+      debugPrint("INFO: Loading state set to false due to error");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Something went wrong"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFFDF3DD),
+      appBar: CommonAppBar(title: "Add a Patient"),
 
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: Container(
-          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 20),
-          decoration: BoxDecoration(
-            color: Color(0xffF9CF63),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            "Add a Patient",
-            style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Form(
+              key: formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  buildTextField("First Name", firstName),
+                  buildTextField("Middle Name", middleName),
+                  buildTextField("Last Name", lastName),
+                  buildTextField(
+                    "Email",
+                    email,
+                    keyboard: TextInputType.emailAddress,
+                  ),
+                  buildTextField("Age", age, keyboard: TextInputType.number),
+
+                  // Gender Selection
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Gender",
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      SizedBox(height: 8),
+                      Row(
+                        children: [
+                          buildRadioOption("Male", "Male", gender ?? "", (
+                            value,
+                          ) {
+                            setState(() {
+                              gender = value;
+                            });
+                          }),
+                          SizedBox(width: 20),
+                          buildRadioOption("Female", "Female", gender ?? "", (
+                            value,
+                          ) {
+                            setState(() {
+                              gender = value;
+                            });
+                          }),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                    ],
+                  ),
+
+                  // Marital Status Selection
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Marital Status",
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      SizedBox(height: 8),
+                      Row(
+                        children: [
+                          buildRadioOption(
+                            "Married",
+                            "Married",
+                            maritalStatus ?? "",
+                            (value) {
+                              setState(() {
+                                maritalStatus = value;
+                              });
+                            },
+                          ),
+                          SizedBox(width: 20),
+                          buildRadioOption(
+                            "Single",
+                            "Single",
+                            maritalStatus ?? "",
+                            (value) {
+                              setState(() {
+                                maritalStatus = value;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                    ],
+                  ),
+
+                  buildTextField("Country", country),
+                  buildTextField("State", stateC),
+                  buildTextField("City", city),
+                  buildTextField("Address", address),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Code",
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                            SizedBox(height: 5),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Color(0xffF9CF63),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: TextFormField(
+                                controller: code,
+                                keyboardType: TextInputType.phone,
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: "+91",
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        flex: 3,
+                        child: buildTextField(
+                          "Mobile No",
+                          mobile,
+                          keyboard: TextInputType.phone,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 12),
+                  buildTextField(
+                    "Postal Code",
+                    postalCode,
+                    keyboard: TextInputType.number,
+                  ),
+
+                  buildDropdownField(), // Blood group dropdown
+
+                  SizedBox(height: 70),
+                ],
+              ),
             ),
           ),
-        ),
-        automaticallyImplyLeading: false,
+
+          // Loading Overlay
+          if (isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xffF9CF63)),
+                ),
+              ),
+            ),
+        ],
       ),
 
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 20),
-        child: Form(
-          key: formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              buildTextField("First Name", firstName),
-              buildTextField("Middle Name", middleName),
-              buildTextField("Last Name", lastName),
-              buildTextField("Email", email, keyboard: TextInputType.emailAddress),
-              buildTextField("Age", age, keyboard: TextInputType.number),
-
-              // ---------------- Gender + Marital ----------------
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Gender"),
-                  Text("Marital Status"),
-                ],
-              ),
-              SizedBox(height: 10),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // GENDER
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => setState(() => gender = "Male"),
-                        child: CircleAvatar(
-                          radius: 10,
-                          backgroundColor:
-                              gender == "Male" ? Colors.orange : Colors.transparent,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.orange, width: 2),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      Text("Male"),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => setState(() => gender = "Female"),
-                        child: CircleAvatar(
-                          radius: 10,
-                          backgroundColor:
-                              gender == "Female" ? Colors.orange : Colors.transparent,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.orange, width: 2),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      Text("Female"),
-                    ],
-                  ),
-
-                  // MARITAL STATUS
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => setState(() => maritalStatus = "Married"),
-                        child: CircleAvatar(
-                          radius: 10,
-                          backgroundColor: maritalStatus == "Married"
-                              ? Colors.orange
-                              : Colors.transparent,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.orange, width: 2),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      Text("Married"),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => setState(() => maritalStatus = "Single"),
-                        child: CircleAvatar(
-                          radius: 10,
-                          backgroundColor: maritalStatus == "Single"
-                              ? Colors.orange
-                              : Colors.transparent,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.orange, width: 2),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      Text("Single"),
-                    ],
-                  ),
-                ],
-              ),
-
-              SizedBox(height: 15),
-
-              buildTextField("Country", country),
-              buildTextField("State", stateC),
-              buildTextField("City", city),
-              buildTextField("Address", address),
-
-              Row(
-                children: [
-                  Expanded(child: buildTextField("Code", code)),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: buildTextField(
-                        "Mobile No", mobile, keyboard: TextInputType.phone),
-                  ),
-                ],
-              ),
-
-              buildTextField("Postal Code", postalCode,
-                  keyboard: TextInputType.number),
-              buildTextField("Blood Group", bloodGroup),
-
-              SizedBox(height: 70),
-            ],
-          ),
-        ),
-      ),
-
-      // ---------------- Bottom Buttons ----------------
       bottomNavigationBar: Container(
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        color: Color(0xFFFDF3DD),
         child: Row(
           children: [
             Expanded(
@@ -315,9 +498,13 @@ final formData = FormData.fromMap({
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
+                  padding: EdgeInsets.symmetric(vertical: 15),
                 ),
-                onPressed: () => Navigator.pop(context),
-                child: Text("Cancel", style: TextStyle(color: Colors.white)),
+                onPressed: isLoading ? null : () => Navigator.pop(context),
+                child: Text(
+                  "Cancel",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
               ),
             ),
             SizedBox(width: 10),
@@ -328,13 +515,51 @@ final formData = FormData.fromMap({
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
+                  padding: EdgeInsets.symmetric(vertical: 15),
                 ),
-                onPressed: addPatient,
-                child: Text(
-                  "Confirm",
-                  style:
-                      TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                ),
+                onPressed:
+                    isLoading
+                        ? null
+                        : () async {
+                          final result = await addPatient();
+
+                          if (result != null &&
+                              result["id"] != null &&
+                              result["id"]!.isNotEmpty) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => DiagnosisScreen(
+                                      patient_id: result["id"],
+                                      name: result["name"],
+                                      diagnosis_id: widget.diagnosisId,
+                                    ),
+                              ),
+                            );
+                          }
+                        },
+
+                child:
+                    isLoading
+                        ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.black,
+                            ),
+                          ),
+                        )
+                        : Text(
+                          "Confirm",
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
               ),
             ),
           ],

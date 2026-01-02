@@ -1,257 +1,336 @@
 import 'dart:convert';
-import 'dart:developer';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:jin_reflex_new/api_service/api_service.dart';
-import 'package:jin_reflex_new/api_service/urls.dart';
-
+import 'package:jin_reflex_new/api_service/api_state.dart' hide ApiService;
+import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
+import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
+import 'package:jin_reflex_new/login_screen.dart';
+import 'package:jin_reflex_new/main.dart';
 import 'package:jin_reflex_new/model/dignosis_list_model.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/add_patient_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_record_screen.dart';
-
-import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/tritment_screen.dart';
 
 class MemberListScreen extends StatefulWidget {
   @override
-  _MemberListScreenState createState() => _MemberListScreenState();
+  State<MemberListScreen> createState() => _MemberListScreenState();
 }
 
-class _MemberListScreenState extends State<MemberListScreen> {
+class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
   List<PatientData> patients = [];
   List<PatientData> filteredPatients = [];
+
   bool isLoading = true;
+  bool isFetchingMore = false;
+  bool hasMore = true;
 
-  TextEditingController searchController = TextEditingController();
+  int page = 1;
+  final int limit = 30;
 
+  final ScrollController scrollController = ScrollController();
+  final TextEditingController searchController = TextEditingController();
+
+  // ---------------- INIT ----------------
   @override
   void initState() {
     super.initState();
-    fetchPatients();
-  }
+    fetchPatients(isInitial: true);
 
-  // ---------------- SEARCH FUNCTION ----------------
-  void filterSearch(String query) {
-    if (query.isEmpty) {
-      setState(() {
-        filteredPatients = patients;
-      });
-      return;
-    }
-
-    final search = query.toLowerCase();
-
-    setState(() {
-      filteredPatients = patients.where((p) {
-        return p.name.toLowerCase().contains(search) ||
-               p.mobile.contains(query);
-      }).toList();
+    scrollController.addListener(() {
+      if (scrollController.position.pixels >=
+              scrollController.position.maxScrollExtent - 100 &&
+          !isFetchingMore &&
+          hasMore) {
+        fetchPatients();
+      }
     });
   }
 
-    // ---------------- API CALL ----------------
-    Future<void> fetchPatients() async {
-      try {
-        final response = await ApiService().postRequest(
-          "https://jinreflexology.in/api/list_patients.php?pid=22",
-          {},
-        );
-
-        if (response?.statusCode == 200) {
-
-          dynamic jsonBody;
-
-          if (response?.data is String) {
-            jsonBody = jsonDecode(response?.data);
-          } else {
-            jsonBody = response?.data;
-          }
-
-          final raw = jsonBody['data'];
-
-          List<PatientData> diagnosisLists = [];
-
-          if (raw is List) {
-            diagnosisLists = raw.map((e) => PatientData.fromJson(e)).toList();
-          } else if (raw is Map) {
-            diagnosisLists = raw.values.map((e) => PatientData.fromJson(e)).toList();
-          }
-
-          setState(() {
-            patients = diagnosisLists;
-            filteredPatients = diagnosisLists;   // <-- For search
-            isLoading = false;
-          });
-        } else {
-          setState(() => isLoading = false);
-        }
-      } catch (e) {
-        print("ERROR: $e");
-        setState(() => isLoading = false);
-      }
-    }
+  // ---------------- ROUTE OBSERVER ----------------
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
+  }
 
   @override
+  void didPopNext() {
+    // 🔥 screen visible again → fresh load
+    fetchPatients(isInitial: true);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    scrollController.dispose();
+    searchController.dispose();
+    super.dispose();
+  }
+
+  // ---------------- SEARCH ----------------
+  void filterSearch(String query) {
+    if (query.isEmpty) {
+      setState(() => filteredPatients = patients);
+      return;
+    }
+
+    final q = query.toLowerCase();
+
+    setState(() {
+      filteredPatients =
+          patients.where((p) {
+            return p.name.toLowerCase().contains(q) || p.mobile.contains(query);
+          }).toList();
+    });
+  }
+
+  // ---------------- API WITH PAGINATION ----------------
+  Future<void> fetchPatients({bool isInitial = false}) async {
+    if (isFetchingMore) return;
+
+    setState(() {
+      if (isInitial) {
+        page = 1;
+        hasMore = true;
+        patients.clear();
+        filteredPatients.clear();
+        isLoading = true;
+      }
+      isFetchingMore = true;
+    });
+
+    try {
+      final response = await ApiService().postRequest(
+        "https://jinreflexology.in/api1/new/list_patients.php"
+        "?pid=${AppPreference().getString(PreferencesKey.userId).toString()}&page=$page&limit=$limit",
+        {},
+      );
+
+      if (response?.statusCode == 200) {
+        dynamic jsonBody =
+            response?.data is String
+                ? jsonDecode(response!.data)
+                : response?.data;
+
+        final List raw = jsonBody["data"] ?? [];
+
+        final List<PatientData> newList =
+            raw.map((e) => PatientData.fromJson(e)).toList();
+
+        setState(() {
+          patients.addAll(newList);
+          filteredPatients = patients;
+          isLoading = false;
+          isFetchingMore = false;
+          hasMore = newList.length == limit;
+          page++;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+          isFetchingMore = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Fetch error: $e");
+      setState(() {
+        isLoading = false;
+        isFetchingMore = false;
+      });
+    }
+  }
+
+  // ---------------- UI ----------------
+  @override
   Widget build(BuildContext context) {
+    final token = AppPreference().getString(PreferencesKey.userId);
+    final type = AppPreference().getString(PreferencesKey.type);
+    print("DEBUG TYPE => '$type'");
+    print("DEBUG TOKEN => '$token'");
+    print("DEBUG isEmpty => ${token.isEmpty}");
     return Scaffold(
       backgroundColor: const Color(0xFFFDF3DD),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
+      body:
+          type == "prouser" || token.isEmpty
+              ? JinLoginScreen(
+                text: "MemberListScreen",
+                type: "therapist",
+                onTab: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MemberListScreen()),
+                  );
+                },
+              )
+              : SafeArea(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
 
-            // ---------------- SEARCH + ADD BUTTON ----------------
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
+                    // SEARCH + ADD
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
                       child: Row(
                         children: [
-                          const SizedBox(width: 12),
-                          const Icon(Icons.search, color: Colors.orange, size: 26),
-                          const SizedBox(width: 8),
-
                           Expanded(
-                            child: TextField(
-                              controller: searchController,
-                              onChanged: filterSearch,
-                              decoration: const InputDecoration(
-                                hintText: "Search name or mobile...",
-                                border: InputBorder.none,
+                            child: Container(
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Row(
+                                children: [
+                                  const SizedBox(width: 12),
+                                  const Icon(
+                                    Icons.search,
+                                    color: Colors.orange,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: searchController,
+                                      onChanged: filterSearch,
+                                      decoration: const InputDecoration(
+                                        hintText: "Search name or mobile...",
+                                        border: InputBorder.none,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => AddPatientScreen(
+                                        patientName: '',
+                                        patientId: '',
+                                        pid: AppPreference().getString(
+                                          PreferencesKey.userId,
+                                        ),
+                                        diagnosisId: '',
+                                      ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              height: 48,
+                              width: 48,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: Colors.orange,
+                                  width: 2,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                color: Colors.orange,
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
 
-                  const SizedBox(width: 10),
+                    const SizedBox(height: 20),
 
-                  InkWell(
+                    // LIST
+                    Expanded(
+                      child:
+                          isLoading
+                              ? const Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.orange,
+                                ),
+                              )
+                              : filteredPatients.isEmpty
+                              ? const Center(child: Text("No Patients Found"))
+                              : ListView.builder(
+                                controller: scrollController,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
+                                itemCount:
+                                    filteredPatients.length + (hasMore ? 1 : 0),
+                                itemBuilder: (context, index) {
+                                  if (index == filteredPatients.length) {
+                                    return const Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    );
+                                  }
 
-                    onTap: (){
-                      
-                          Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => AddPatientScreen()),
-                                );
-                    },
-                    child: Container(
-                      height: 48,
-                      width: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.orange, width: 2),
-                      ),
-                      child: const Icon(Icons.add, color: Colors.orange, size: 28),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                                  final patient = filteredPatients[index];
 
-            const SizedBox(height: 20),
-
-            // ---------------- PATIENT LIST ----------------
-            Expanded(
-              child: isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: Colors.orange),
-                    )
-                  : filteredPatients.isEmpty
-                      ? const Center(
-                          child: Text(
-                            "No Patients Found",
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          itemCount: filteredPatients.length,
-                          itemBuilder: (context, index) {
-                            final patient = filteredPatients[index];
-
-                            return InkWell(
-                              onTap: () {
-                                
-                                 Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => DiagnosisListScreen(patientName: patient.name,pid: "22",diagnosisId:patient.id ,patientId: patient.id,)),
-                                );
-                                
-                              },
-                              child: listItem(
-                                id: patient.id,
-                                name: patient.name,
-                                phone: patient.mobile,
+                                  return InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (_) => DiagnosisListScreen(
+                                                patientName: patient.name,
+                                                pid:
+                                                    AppPreference()
+                                                        .getString(
+                                                          PreferencesKey.userId,
+                                                        )
+                                                        .toString(),
+                                                diagnosisId: patient.id,
+                                                patientId: patient.id,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 6,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Row(
+                                              children: [
+                                                Text(
+                                                  patient.id,
+                                                  style: const TextStyle(
+                                                    color: Colors.orange,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Text(
+                                                    patient.name,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Text(patient.mobile),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                          },
-                        ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ---------------- Single Item UI ----------------
-  Widget listItem({
-    required String id,
-    required String name,
-    required String phone,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                Text(
-                  id,
-                  style: const TextStyle(
-                    color: Colors.orange,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(width: 10),
-
-                Expanded(
-                  child: Text(
-                    name,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontSize: 15,
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-
-          Text(
-            phone,
-            style: const TextStyle(color: Colors.black87, fontSize: 15),
-          ),
-        ],
-      ),
+              ),
     );
   }
 }
-

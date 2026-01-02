@@ -19,8 +19,12 @@ class InfoScreen extends StatelessWidget {
     'A completely natural and non-violent remedy.',
     'Self-treatment is possible.',
     'Early diagnosis and cure of disease affecting the body.',
+    'Free from all types of harmful side effects.',
     'Rejuvenates the body by creating vitality and vigour.',
+    'Facilitates the spread of essential elements and makes the muscles supple.',
     'Helps in boosting immunity against diseases.',
+    'Controls the juices secreted by endocrine glands.',
+    'Instant remedy for ailments cropping up suddenly.',
     'Equally beneficial for children, youth, women and men.',
   ];
 
@@ -49,13 +53,62 @@ class InfoScreen extends StatelessWidget {
       'text':
           'Apply pressure therapy keeping in view the mental and physical condition of the patient.',
     },
+    {'no': '08', 'text': 'Treat the patient only after easing his tension.'},
+    {'no': '09', 'text': "Don't provide treatment to others if yourself sick."},
+    {'no': '10', 'text': "Don't deride the patient"},
+    {
+      'no': '11',
+      'text': 'Pressure can be applied for 3 to 7 seconds on reflex points.',
+    },
+    {
+      'no': '12',
+      'text':
+          "Treat the ailment with concentration. Don't let attention be diverted.",
+    },
+    {'no': '13', 'text': "Give treatment with a relaxed and cheerful mind."},
+    {
+      'no': '14',
+      'text':
+          "Apply pressure on main pressure points and also to the related pressure points.",
+    },
+    {
+      'no': '15',
+      'text':
+          "First treat the ailments which are troublesome followed by other.",
+    },
+    {
+      'no': '16',
+      'text': "Symptoms may worsen briefly, but it’s a normal part of healing.",
+    },
+    {'no': '17', 'text': "Take precautions in diet"},
+  ];
+
+  final List<Map<String, String>> dont = const [
+    {'no': '01', 'text': 'To Pregnent women.'},
+    {'no': '02', 'text': 'On the swollen portion of the body.'},
+    {'no': '03', 'text': "To a heavily drunk person."},
+    {
+      'no': '04',
+      'text': 'On the portion that has been operated or have sustained injury.',
+    },
+    {'no': '05', 'text': 'To a famished (very hungry) person.'},
+    {
+      'no': '06',
+      'text': 'On the portion of the body having suffered fracture.',
+    },
+    {
+      'no': '07',
+      'text':
+          'On points in case there is too much pain,swelling or body is rddish.',
+    },
+    {'no': '08', 'text': 'During mestruation.'},
   ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor:Color(0xFFF2F2F2),
+      backgroundColor: Color(0xFFF2F2F2),
       appBar: CommonAppBar(title: "Info"),
       body: SafeArea(
         child: ListView(
@@ -230,9 +283,38 @@ class InfoScreen extends StatelessWidget {
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(15),
-               // color: Colors.yellow,
+                // color: Colors.yellow,
                 border: Border.all(color: HexColor("#F7C85A"), width: 5),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    _sectionHeader(
+                      'Rules-Essentials of JIN Reflexology',
+                      "assets/images/box.png",
+                    ),
+                    const SizedBox(height: 12),
+                    ...features.asMap().entries.map((e) {
+                      final idx = e.key + 1;
+                      final text = e.value;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _numberedTile(index: idx, text: text),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+            ),
 
+            const SizedBox(height: 18),
+
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                // color: Colors.yellow,
+                border: Border.all(color: HexColor("#F7C85A"), width: 5),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -256,45 +338,55 @@ class InfoScreen extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 18),
-
-            _sectionHeader(
-              'Features of JIN Reflexology Accupressure',
-              "assets/images/box.png",
-            ),
-
-            const SizedBox(height: 12),
-
-            ...rules.map((r) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _numberedTile(
-                  index: int.parse(r['no']!),
-                  text: r['text']!,
-                ),
-              );
-            }).toList(),
-
             const SizedBox(height: 20),
 
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF0FA3C1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(15),
+                // color: Colors.yellow,
+                border: Border.all(color: HexColor("#F7C85A"), width: 5),
               ),
-              child: const Center(
-                child: Text(
-                  'Learn More About JIN Reflexology',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    _sectionHeader(
+                      "Don't provide JIN treatment in the following condtions",
+                      "assets/images/box.png",
+                    ),
+                    const SizedBox(height: 12),
+                    ...features.asMap().entries.map((e) {
+                      final idx = e.key + 1;
+                      final text = e.value;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _numberedTile(index: idx, text: text),
+                      );
+                    }).toList(),
+                  ],
                 ),
               ),
             ),
 
+            const SizedBox(height: 20),
+
+            // Container(
+            //   padding: const EdgeInsets.symmetric(vertical: 16),
+            //   decoration: BoxDecoration(
+            //     color: const Color(0xFF0FA3C1),
+            //     borderRadius: BorderRadius.circular(10),
+            //   ),
+            //   child: const Center(
+            //     child: Text(
+            //       'Learn More About JIN Reflexology',
+            //       style: TextStyle(
+            //         color: Colors.white,
+            //         fontWeight: FontWeight.bold,
+            //         fontSize: 16,
+            //       ),
+            //     ),
+            //   ),
+            // ),
             const SizedBox(height: 26),
           ],
         ),
@@ -317,12 +409,15 @@ class InfoScreen extends StatelessWidget {
           children: [
             Image.asset("${img}"),
             SizedBox(width: 5),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+            Flexible(
+              child: Text(
+                title,
+                softWrap: true,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
             ),
           ],
