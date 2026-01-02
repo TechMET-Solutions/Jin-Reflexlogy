@@ -7,7 +7,7 @@ var ddimgtooltip={
 
 	tiparray:function(){
 		var tooltips=[]
-		var baseUrl="http://jainacupressure.com/wp-content/uploads/2016/04/";
+		var baseUrl="https://jinreflexology.in/api/new/awp-content/uploads/2016/04/";
 
 tooltips[1]=[baseUrl+"1-Brain-Head.jpg", "Brain-Head", {background:"white", font:"bold 18px Arial"}]
 tooltips[2]=[baseUrl+"2-Pituitary-Gland-1.jpg", "Pituitary Gland", {background:"white", font:"bold 18px Arial"}]
