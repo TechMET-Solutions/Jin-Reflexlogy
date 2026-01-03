@@ -3,11 +3,11 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:jin_reflex_new/api_service/global/utils.dart';
-import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
-import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
+import 'package:jin_reflex_new/utils/global/utils.dart';
+import 'package:jin_reflex_new/api_service/preference/PreferencesKey.dart';
+import 'package:jin_reflex_new/api_service/preference/app_preference.dart';
 import 'package:jin_reflex_new/api_service/urls.dart';
-import 'package:jin_reflex_new/model/tretment_model.dart';
+import 'package:jin_reflex_new/api_service/model/tretment_model.dart';
 
 
 

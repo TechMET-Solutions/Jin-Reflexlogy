@@ -3,8 +3,8 @@
 
 import 'package:flutter/material.dart';
 
-import 'prefs/PreferencesKey.dart';
-import 'prefs/app_preference.dart';
+import 'preference/PreferencesKey.dart';
+import 'preference/app_preference.dart';
 
 
 

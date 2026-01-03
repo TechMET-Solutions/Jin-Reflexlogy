@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:jin_reflex_new/api_service/global/utils.dart';
+import 'package:jin_reflex_new/utils/global/utils.dart';
 import 'package:jin_reflex_new/api_service/urls.dart';
 class ApiService {
   final Dio _dio = Dio(

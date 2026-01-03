@@ -1,36 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:country_flags/country_flags.dart';
-import 'package:jin_reflex_new/bannar.dart';
-import 'package:jin_reflex_new/dashbord_forlder/feedback_form.dart';
-import 'package:jin_reflex_new/dashbord_forlder/free_power_yoga.dart';
-import 'package:jin_reflex_new/dashbord_forlder/healthy_tips.dart';
-import 'package:jin_reflex_new/dashbord_forlder/training_coureses.dart';
-import 'package:jin_reflex_new/foot_chart_screen.dart';
-import 'package:jin_reflex_new/hand_chart_screen.dart';
-import 'package:jin_reflex_new/marking_screen.dart';
-import 'package:jin_reflex_new/prefs/app_preference.dart';
-import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_screen_list.dart';
-import 'package:jin_reflex_new/screens/aboutUs%20copy.dart';
-import 'package:jin_reflex_new/screens/anil_jain_about_screen.dart';
-import 'package:jin_reflex_new/screens/comman_webview_screen.dart';
-import 'package:jin_reflex_new/screens/health_campaign_screen.dart';
-import 'package:jin_reflex_new/screens/contactUs/feedBack.dart';
-import 'package:jin_reflex_new/screens/ebook_screen.dart';
-import 'package:jin_reflex_new/screens/faq_screen.dart';
-import 'package:jin_reflex_new/screens/history_screen.dart';
-import 'package:jin_reflex_new/screens/info_screen.dart';
-import 'package:jin_reflex_new/screens/life_style/life_style_screen.dart';
-import 'package:jin_reflex_new/screens/life_style/treatmentPlan.dart';
-import 'package:jin_reflex_new/screens/shop/shop_screen.dart';
-import 'package:jin_reflex_new/screens/visitUsScreen.dart';
-import 'package:jin_reflex_new/screens/point_finder_screen.dart';
-import 'package:jin_reflex_new/screens/point_screen.dart';
-import 'package:jin_reflex_new/screens/relaxing_screen.dart';
-import 'package:jin_reflex_new/screens/sussess_story_screen.dart';
-import 'package:jin_reflex_new/screens/treatment/triment_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:jin_reflex_new/dashbord_forlder/banner/bannar.dart';
+import 'package:jin_reflex_new/dashbord_forlder/for_jin_Reflexology_patients/feedback_form/feedback_form.dart';
+import 'package:jin_reflex_new/dashbord_forlder/for_premium/power_yoga_screen/free_power_yoga.dart';
+import 'package:jin_reflex_new/dashbord_forlder/for_premium/healthy_tips/healthy_tips.dart';
+import 'package:jin_reflex_new/dashbord_forlder/for_premium/training/training_coureses.dart';
+import 'package:jin_reflex_new/dashbord_forlder/jin_REFLEXOLOGY/foot_chart_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/jin_REFLEXOLOGY/hand_chart_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/jin_REFLEXOLOGY/marking_screen.dart';
+import 'package:jin_reflex_new/api_service/preference/prefs/app_preference.dart';
+import 'package:jin_reflex_new/dashbord_forlder/for_jin_Reflexology_patients/Diagnosis/member_list_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/contactUs/aboutUs%20copy.dart';
+import 'package:jin_reflex_new/dashbord_forlder/for_premium/jr_anil_jain/anil_jain_about_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/screens/comman_webview_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/health_Awereness_2026/health_campaign_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/contactUs/feedBack.dart';
+import 'package:jin_reflex_new/dashbord_forlder/for_premium/e_books/ebook_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/jin_REFLEXOLOGY/faq_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/jin_REFLEXOLOGY/history_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/jin_REFLEXOLOGY/info_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/for_jin_Reflexology_patients/life_style/life_style_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/for_premium/treatment_plan/treatmentPlan.dart';
+import 'package:jin_reflex_new/dashbord_forlder/for_premium/shop/delivery_popup.dart';
+import 'package:jin_reflex_new/dashbord_forlder/contactUs/location_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/for_jin_Reflexology_patients/finder/point_finder_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/jin_REFLEXOLOGY/point_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/jin_REFLEXOLOGY/relaxing_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/for_premium/success_story/sussess_story_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/for_premium/treatment_video/treatment_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -43,21 +39,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  String _countryName = 'Loading...';
-  String _countryCode = '';
-  bool _isLoadingLocation = true;
-
-  Future<void> _saveDeliveryType(String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("delivery_type", value);
-
-    debugPrint("✅ delivery_type saved = $value");
-  }
 
   @override
   void initState() {
     super.initState();
-    _requestLocationPermission();
     Future.delayed(const Duration(seconds: 2), _autoSlide);
   }
 
@@ -78,105 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
-  }
-
-  Future<void> _requestLocationPermission() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // Test if location services are enabled.
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      // Location services are not enabled don't continue
-      // accessing the position and request users of the
-      // App to enable the location services.
-      setState(() {
-        _countryName = 'Location disabled';
-        _isLoadingLocation = false;
-      });
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        // Permissions are denied, next time you could try
-        // requesting permissions again (this is also where
-        // Android's shouldShowRequestPermissionRationale
-        // returned true. According to Android guidelines
-        // your App should show an explanatory UI now.
-        setState(() {
-          _countryName = 'Permission denied';
-          _isLoadingLocation = false;
-        });
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      // Permissions are denied forever, handle appropriately.
-      setState(() {
-        _countryName = 'Permission denied';
-        _isLoadingLocation = false;
-      });
-      return;
-    }
-
-    // When we reach here, permissions are granted and we can
-    // continue accessing the position of the device.
-    _getCurrentLocation();
-  }
-
-  Future<void> _getCurrentLocation() async {
-    try {
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-
-      if (placemarks.isNotEmpty) {
-        final place = placemarks.first;
-
-        final country = place.country ?? 'Unknown';
-        final code = place.isoCountryCode ?? '';
-
-        final deliveryType =
-            country.toLowerCase().contains("india") ? "india" : "outside";
-
-        await _saveDeliveryType(deliveryType);
-
-        setState(() {
-          _countryName = country;
-          _countryCode = code;
-          _isLoadingLocation = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _countryName = 'Error getting location';
-        _isLoadingLocation = false;
-      });
-    }
-  }
-
-  Future<String> _getSavedDeliveryType() async {
-    final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getString("delivery_type");
-    return (value == null || value.isEmpty) ? "outside" : value;
-  }
-
-  Future<void> _refreshLocation() async {
-    setState(() {
-      _isLoadingLocation = true;
-      _countryName = 'Loading...';
-      _countryCode = '';
-    });
-    await _requestLocationPermission();
   }
 
   /// ================= DATA =================
@@ -215,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
     CampaignItem(
       title: 'Hand Chart',
       img: 'assets/jinImages/04.png',
-      onTap: () async {
+      onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => HandChartScreen()),
@@ -293,11 +179,6 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(builder: (context) => LifestyleScreen()),
         );
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => LifestyleScreen()),
-        );
       },
     ),
 
@@ -317,14 +198,8 @@ class _HomeScreenState extends State<HomeScreen> {
     CampaignItem(
       title: 'Shop',
       img: 'assets/jinImages/13.png',
-      onTap: () async {
-        final deliveryType = await _getSavedDeliveryType();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ShopScreen(deliveryType: deliveryType),
-          ),
-        );
+      onTap: () {
+        showDeliveryPopup(context);
       },
     ),
     CampaignItem(
@@ -447,9 +322,19 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   List<CampaignItem> campaignItems4() => [
+    // CampaignItem(
+    //   title: 'Health Campaigns',
+    //   img: 'assets/jinImages/25.png',
+    //   onTap: () {
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(builder: (context) => const HealthCampaignScreen()),
+    //     );
+    //   },
+    // ),
     CampaignItem(
-      title: 'Health Campaigns',
-      img: 'assets/jinImages/25.png',
+      title: 'JIN Day 2025',
+      img: 'assets/jinImages/26.png',
       onTap: () {
         Navigator.push(
           context,
@@ -458,28 +343,22 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ),
     CampaignItem(
-      title: 'JIN Day 2025',
-      img: 'assets/jinImages/26.png',
-      onTap: () {},
-    ),
-    CampaignItem(
       title: 'JIN Day 2024',
       img: 'assets/jinImages/26.png',
-      onTap: () {},
+      onTap: () {
+         Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HealthCampaignScreen()),
+        );
+      },
     ),
     CampaignItem(
       title: 'JIN Day 2023',
       img: 'assets/jinImages/27.png',
       onTap: () {
-        Navigator.push(
+         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (_) => CommonWebView(
-                  url: "https://jinreflexology.in/jin23/",
-                  title: "JIN Day 2023",
-                ),
-          ),
+          MaterialPageRoute(builder: (context) => const HealthCampaignScreen()),
         );
       },
     ),
@@ -487,15 +366,9 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'JIN Day 2022',
       img: 'assets/jinImages/28.png',
       onTap: () {
-        Navigator.push(
+         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (_) => CommonWebView(
-                  url: "https://jinreflexology.in/jinday22/",
-                  title: "JIN Day 2022",
-                ),
-          ),
+          MaterialPageRoute(builder: (context) => const HealthCampaignScreen()),
         );
       },
     ),
@@ -503,15 +376,9 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'JIN Day 2021',
       img: 'assets/jinImages/29.png',
       onTap: () {
-        Navigator.push(
+         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (_) => CommonWebView(
-                  url: "https://jinreflexology.in/jin2021/",
-                  title: "JIN Day 2021",
-                ),
-          ),
+          MaterialPageRoute(builder: (context) => const HealthCampaignScreen()),
         );
       },
     ),
@@ -519,27 +386,51 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'JIN Day 2020',
       img: 'assets/jinImages/30.png',
       onTap: () {
-        Navigator.push(
+         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (_) => CommonWebView(
-                  url: "https://jinreflexology.in/jin-day-2020/",
-                  title: "JIN Day 2020",
-                ),
-          ),
+          MaterialPageRoute(builder: (context) => const HealthCampaignScreen()),
         );
       },
     ),
-    CampaignItem(title: '2019', img: 'assets/jinImages/31.png', onTap: () {}),
-    CampaignItem(title: '2018', img: 'assets/jinImages/31.png', onTap: () {}),
-    CampaignItem(title: '2017', img: 'assets/jinImages/31.png', onTap: () {}),
-    CampaignItem(title: '2016', img: 'assets/jinImages/31.png', onTap: () {}),
-    CampaignItem(title: '2015', img: 'assets/jinImages/31.png', onTap: () {}),
+    CampaignItem(title: '2019', img: 'assets/jinImages/31.png', onTap: () {
+       Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HealthCampaignScreen()),
+        );
+    }),
+    CampaignItem(title: '2018', img: 'assets/jinImages/31.png', onTap: () {
+       Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HealthCampaignScreen()),
+        );
+    }),
+    CampaignItem(title: '2017', img: 'assets/jinImages/31.png', onTap: () {
+       Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HealthCampaignScreen()),
+        );
+    }),
+    CampaignItem(title: '2016', img: 'assets/jinImages/31.png', onTap: () {
+       Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HealthCampaignScreen()),
+        );
+    }),
+    CampaignItem(title: '2015', img: 'assets/jinImages/31.png', onTap: () {
+       Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HealthCampaignScreen()),
+        );
+    }),
     CampaignItem(
       title: '1989 to 2014',
       img: 'assets/jinImages/31.png',
-      onTap: () {},
+      onTap: () {
+         Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HealthCampaignScreen()),
+        );
+      },
     ),
   ];
 
@@ -571,7 +462,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => VisitUsScreen()),
+          MaterialPageRoute(builder: (_) => LocationScreen()),
         );
       },
     ),
@@ -590,7 +481,17 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
     ),
-    CampaignItem(title: 'Review', img: 'assets/jinImages/41.png', onTap: () {}),
+    CampaignItem(
+      title: 'Review',
+      img: 'assets/jinImages/41.png',
+      onTap: () {
+        Navigator.pop(context);
+        launchUrl(
+          Uri.parse("https://maps.app.goo.gl/scfouzyb2nEzdBkr8?g_st=aw"),
+          mode: LaunchMode.externalApplication,
+        );
+      },
+    ),
     CampaignItem(
       title: 'Facebook',
       img: 'assets/jinImages/42.png',
@@ -619,7 +520,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => FeedbackFormScreen()),
+          MaterialPageRoute(builder: (_) => FeedBack()),
         ); //2
       },
     ),
@@ -638,62 +539,6 @@ class _HomeScreenState extends State<HomeScreen> {
           'JIN Reflexology',
           style: TextStyle(color: Colors.white, fontSize: 15),
         ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            child: InkWell(
-              onTap: _refreshLocation,
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_countryCode.isNotEmpty && !_isLoadingLocation)
-                      SizedBox(
-                        width: 16,
-                        height: 10,
-                        child: CountryFlag.fromCountryCode(_countryCode),
-                      ),
-
-                    if (_countryCode.isNotEmpty && !_isLoadingLocation)
-                      const SizedBox(width: 6),
-
-                    const SizedBox(width: 6),
-
-                    Text(
-                      _countryName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-
-                    if (_isLoadingLocation) ...[
-                      const SizedBox(width: 6),
-                      SizedBox(
-                        width: 12,
-                        height: 12,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       drawer: Drawer(
         child: Column(
@@ -973,7 +818,7 @@ void _showLogoutDialog(BuildContext context) {
         actions: [
           TextButton(
             onPressed: () {
-              AppPreference().clearSharedPreferences();
+              Navigator.pop(context); // Close dialog
             },
             child: const Text('Cancel'),
           ),
