@@ -10,6 +10,7 @@ import 'package:jin_reflex_new/model/dignosis_list_model.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/add_patient_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_record_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/tritment_screen.dart';
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
 class MemberListScreen extends StatefulWidget {
   @override
@@ -149,9 +150,10 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
     print("DEBUG TOKEN => '$token'");
     print("DEBUG isEmpty => ${token.isEmpty}");
     return Scaffold(
+      appBar: CommonAppBar(title: "Patient List"),
       backgroundColor: const Color(0xFFFDF3DD),
       body:
-          type == "prouser" || token.isEmpty
+          type == "patient" || token.isEmpty
               ? JinLoginScreen(
                 text: "MemberListScreen",
                 type: "therapist",

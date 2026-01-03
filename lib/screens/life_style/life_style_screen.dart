@@ -34,8 +34,7 @@ class _LifestyleScreenState extends State<LifestyleScreen> {
 
   Future<void> loadWebview() async {
     String url =
-        "https://jinreflexology.in/api1/new/patient_lifestyle.php?id=1012";
-
+        "https://jinreflexology.in/api1/new/patient_lifestyle.php?id=${AppPreference().getString(PreferencesKey.userId)}";
     controller =
         WebViewController()
           ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -72,8 +71,8 @@ class _LifestyleScreenState extends State<LifestyleScreen> {
       body:
           type == "therapist" || token.isEmpty
               ? JinLoginScreen(
-                text: "MemberListScreen",
-                type: "prouser",
+                text: "LifestyleScreen",
+                type: "patient",
                 onTab: () {
                   Navigator.push(
                     context,

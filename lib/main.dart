@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
-import 'package:jin_reflex_new/screens/body_lifestyle_screen.dart';
 import 'package:jin_reflex_new/screens/splash_screen.dart';
 
 // Global RouteObserver
@@ -25,7 +24,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       navigatorObservers: [routeObserver],
-      home: BodyPainSelector(),
+      home: SplashScreen(),
     );
   }
 }

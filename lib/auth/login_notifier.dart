@@ -59,10 +59,10 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
       );
 
       final response = await dio.post(
-        "https://jinreflexology.in/api/login.php",
+        "https://jinreflexology.in/api1/login.php",
         data: FormData.fromMap({'id': id, 'password': passworld, 'type': type}),
       );
-
+print(type);
       if (response.statusCode == 200 && response.data != null) {
         final jsonData = jsonDecode(response.data.toString());
 

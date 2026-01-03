@@ -1,11 +1,9 @@
 import 'dart:convert';
+import 'package:country_state_city/country_state_city.dart' as csc;
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:jin_reflex_new/api_service/api_service.dart';
-import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:dio/dio.dart';
-import 'package:jin_reflex_new/api_service/api_state.dart' hide ApiService;
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/api_service/urls.dart';
@@ -34,9 +32,6 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   final lastName = TextEditingController();
   final email = TextEditingController();
   final age = TextEditingController();
-  final country = TextEditingController();
-  final stateC = TextEditingController();
-  final city = TextEditingController();
   final address = TextEditingController();
   final code = TextEditingController();
   final mobile = TextEditingController();
@@ -47,7 +42,22 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   String? maritalStatus;
   bool isLoading = false;
 
+  // Location dropdown variables
+  List<csc.Country> countries = [];
+  List<csc.State> states = [];
+  List<csc.City> cities = [];
+  csc.Country? selectedCountry;
+  csc.State? selectedState;
+  csc.City? selectedCity;
+  String countryCode = "+91";
+
   final formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCountries();
+  }
 
   // Blood groups list
   final List<String> bloodGroups = [
@@ -159,6 +169,189 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     );
   }
 
+  Widget buildCountryDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Country", style: TextStyle(fontWeight: FontWeight.w500)),
+        SizedBox(height: 5),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Color(0xffF9CF63), width: 1.5),
+          ),
+          child: DropdownSearch<csc.Country>(
+            items: countries,
+            selectedItem: selectedCountry,
+            popupProps: PopupProps.menu(showSearchBox: true),
+            itemAsString: (csc.Country country) => country.name,
+            dropdownDecoratorProps: DropDownDecoratorProps(
+              dropdownSearchDecoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                hintText: "Select Country",
+              ),
+            ),
+            onChanged: (csc.Country? value) {
+              setState(() {
+                selectedCountry = value;
+                selectedState = null;
+                selectedCity = null;
+                countryCode = "+" + (value?.phoneCode ?? "91");
+                code.text = countryCode;
+              });
+              if (value != null) {
+                _loadStates();
+              }
+            },
+            validator: (value) {
+              if (value == null) {
+                return "Country is required";
+              }
+              return null;
+            },
+          ),
+        ),
+        SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget buildStateDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("State", style: TextStyle(fontWeight: FontWeight.w500)),
+        SizedBox(height: 5),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Color(0xffF9CF63), width: 1.5),
+          ),
+          child: DropdownSearch<csc.State>(
+            items: states,
+            selectedItem: selectedState,
+            popupProps: PopupProps.menu(showSearchBox: true),
+            itemAsString: (csc.State state) => state.name,
+            dropdownDecoratorProps: DropDownDecoratorProps(
+              dropdownSearchDecoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                hintText: "Select State",
+              ),
+            ),
+            onChanged: (csc.State? value) {
+              setState(() {
+                selectedState = value;
+                selectedCity = null;
+              });
+              if (value != null) {
+                _loadCities();
+              }
+            },
+            validator: (value) {
+              if (value == null) {
+                return "State is required";
+              }
+              return null;
+            },
+          ),
+        ),
+        SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget buildCityDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("City", style: TextStyle(fontWeight: FontWeight.w500)),
+        SizedBox(height: 5),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Color(0xffF9CF63), width: 1.5),
+          ),
+          child: DropdownSearch<csc.City>(
+            items: cities,
+            selectedItem: selectedCity,
+            popupProps: PopupProps.menu(showSearchBox: true),
+            itemAsString: (csc.City city) => city.name,
+            dropdownDecoratorProps: DropDownDecoratorProps(
+              dropdownSearchDecoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                hintText: "Select City",
+              ),
+            ),
+            onChanged: (csc.City? value) {
+              setState(() {
+                selectedCity = value;
+              });
+            },
+            validator: (value) {
+              if (value == null) {
+                return "City is required";
+              }
+              return null;
+            },
+          ),
+        ),
+        SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Future<void> _loadCountries() async {
+    try {
+      countries = await csc.getAllCountries();
+      setState(() {});
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error loading countries")));
+    }
+  }
+
+  Future<void> _loadStates() async {
+    if (selectedCountry == null) return;
+
+    try {
+      states = await csc.getStatesOfCountry(selectedCountry!.isoCode);
+      setState(() {
+        selectedState = null;
+        cities = [];
+        selectedCity = null;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error loading states")));
+    }
+  }
+
+  Future<void> _loadCities() async {
+    if (selectedCountry == null || selectedState == null) return;
+
+    try {
+      cities = await csc.getStateCities(
+        selectedCountry!.isoCode,
+        selectedState!.isoCode,
+      );
+      setState(() {
+        selectedCity = null;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error loading cities")));
+    }
+  }
+
   Future<Map<String, String>?> addPatient() async {
     debugPrint("=== STARTING addPatient METHOD ===");
 
@@ -208,9 +401,10 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
         "email": email.text,
         "m_no": mobile.text,
         "address": address.text,
-        "city": city.text,
-        "state": stateC.text,
-        "country": country.text,
+        "city": selectedCity?.name ?? '',
+        "state": selectedState?.name ?? '',
+        "country": selectedCountry?.name ?? '',
+        "country_code": countryCode,
         "pincode": postalCode.text,
         "bg": selectedBloodGroup,
         "age": age.text,
@@ -407,9 +601,9 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
                     ],
                   ),
 
-                  buildTextField("Country", country),
-                  buildTextField("State", stateC),
-                  buildTextField("City", city),
+                  buildCountryDropdown(),
+                  buildStateDropdown(),
+                  buildCityDropdown(),
                   buildTextField("Address", address),
 
                   Row(

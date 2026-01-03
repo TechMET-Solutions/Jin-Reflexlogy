@@ -84,7 +84,7 @@ class Treatment extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final item = items[index];
                   final isAcidity = item == "Acidity";
-                  final isLoggedIn = type == "prouser" || token.isNotEmpty;
+                  final isLoggedIn = type == "patient" || token.isNotEmpty;
 
                   return InkWell(
                     onTap: () {

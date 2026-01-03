@@ -29,7 +29,7 @@ class EbookScreen extends StatelessWidget {
         },
       ),
       body:
-          type == "prouser" || token.isEmpty
+          type == "patient" || token.isEmpty
               ? JinLoginScreen(
                 text: "EbookScreen",
                 type: "therapist",

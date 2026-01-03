@@ -645,10 +645,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: _refreshLocation,
               borderRadius: BorderRadius.circular(20),
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -658,11 +655,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (_countryCode.isNotEmpty && !_isLoadingLocation)
-                      CountryFlag.fromCountryCode(_countryCode),
+                      SizedBox(
+                        width: 16,
+                        height: 10,
+                        child: CountryFlag.fromCountryCode(_countryCode),
+                      ),
+
                     if (_countryCode.isNotEmpty && !_isLoadingLocation)
                       const SizedBox(width: 6),
-                    // Icon(Icons.location_on, color: Colors.white, size: 16),
+
                     const SizedBox(width: 6),
+
                     Text(
                       _countryName,
                       style: const TextStyle(
@@ -671,6 +674,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+
                     if (_isLoadingLocation) ...[
                       const SizedBox(width: 6),
                       SizedBox(
@@ -679,7 +683,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white.withOpacity(0.8),
+                            Colors.white,
                           ),
                         ),
                       ),
