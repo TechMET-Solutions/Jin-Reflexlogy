@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-
 
 class HandChartScreen extends StatefulWidget {
   const HandChartScreen({super.key});
@@ -26,7 +26,7 @@ class _HandChartScreenState extends State<HandChartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Hand Chart")),
+      appBar: CommonAppBar(title: "Hand Chart"),
       body: WebViewWidget(controller: controller),
     );
   }

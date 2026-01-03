@@ -38,6 +38,9 @@ dependencies:
 
   country_state_city: ^0.1.6
   dropdown_search: ^5.0.6
+  webview_flutter_android: ^4.10.11
+  page_flip: ^0.2.5+1
+  book_flip: ^1.0.0
 
 dev_dependencies:
   flutter_test:

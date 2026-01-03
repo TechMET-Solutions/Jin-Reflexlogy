@@ -394,42 +394,22 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
     for (var point in points) {
       int serverValue;
       if (point.state == 2) {
-        serverValue = 1; // green
+        serverValue = 1;
       } else if (point.state == 1) {
-        serverValue = 0; // red
+        serverValue = 0;
       } else {
-        serverValue = -1; // white/unselected
+        serverValue = -1;
       }
 
       items.add("${point.index}:$serverValue");
     }
-
     return items.join(";");
   }
-  // --------------------------------------------------
-  // SAVE & EXIT BUTTON
-  // --------------------------------------------------
-  // --------------------------------------------------
-  // ENCODE FOR SERVER (if_data FORMAT)
-  // --------------------------------------------------
 
-  // --------------------------------------------------
-  // SAVE & EXIT BUTTON
-  // --------------------------------------------------
-  // --------------------------------------------------
-  // SAVE & EXIT BUTTON - UPDATED VERSION
-  // --------------------------------------------------
   Future<void> _saveAndExit() async {
-    // 1. Encode tags for if_result format
     final encodedTags = _encodeTagsForServer();
-
-    // 2. Encode for if_data format
+    await saveAllPointsFast();
     final encodedIfData = _encodeIfData();
-
-    // 3. Fast local save
-    // await saveAllPointsFast();
-
-    // 4. Capture screenshot
     final base64 = await captureScreenshot();
     if (base64 != null) {
       await AppPreference().setString(
@@ -442,19 +422,13 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
     } else {
       debugPrint("LF screenshot returned null");
     }
-
-    // 5. Mark as completed
     await AppPreference().setBool(
       "LF_SAVED_${widget.diagnosisId}_${widget.patientId}",
       true,
     );
-
-    // 6. PRINT THE ENCODED DATA (सर्व डेटा प्रिंट करा)
     debugPrint("=== LF COMPLETE DATA ===");
     debugPrint("if_result format: $encodedTags");
     debugPrint("if_data format: $encodedIfData");
-
-    // Also print individual points with states for debugging
     for (var point in points) {
       int serverValue;
       if (point.state == 2) {
@@ -492,9 +466,6 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
     _saveTagsToServer(encodedTags);
   }
 
-  // --------------------------------------------------
-  // UI
-  // --------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -519,7 +490,6 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
                       final double scaleX = c.maxWidth / baseWidth;
                       final double scaleY = c.maxHeight / baseHeight;
                       final double scale = (scaleX + scaleY) / 2;
-
                       return RepaintBoundary(
                         key: screenshotKey,
                         child: Stack(

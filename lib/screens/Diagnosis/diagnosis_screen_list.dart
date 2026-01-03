@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:jin_reflex_new/api_service/api_service.dart';
 import 'package:jin_reflex_new/api_service/api_state.dart' hide ApiService;
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
@@ -19,7 +20,6 @@ class MemberListScreen extends StatefulWidget {
 
 class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
   List<PatientData> patients = [];
-  List<PatientData> filteredPatients = [];
 
   bool isLoading = true;
   bool isFetchingMore = false;
@@ -30,6 +30,9 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
 
   final ScrollController scrollController = ScrollController();
   final TextEditingController searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+
+  String _currentSearchText = '';
 
   // ---------------- INIT ----------------
   @override
@@ -41,9 +44,15 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
       if (scrollController.position.pixels >=
               scrollController.position.maxScrollExtent - 100 &&
           !isFetchingMore &&
-          hasMore) {
+          hasMore &&
+          _currentSearchText.isEmpty) {
         fetchPatients();
       }
+    });
+
+    // Add listener for search field
+    searchController.addListener(() {
+      _onSearchChanged();
     });
   }
 
@@ -65,93 +74,122 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
     routeObserver.unsubscribe(this);
     scrollController.dispose();
     searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
-  // ---------------- SEARCH ----------------
-  void filterSearch(String query) {
-    if (query.isEmpty) {
-      setState(() => filteredPatients = patients);
-      return;
-    }
+  // ---------------- SEARCH HANDLER ----------------
+  void _onSearchChanged() {
+    final newText = searchController.text;
 
-    final q = query.toLowerCase();
-
-    setState(() {
-      filteredPatients =
-          patients.where((p) {
-            return p.name.toLowerCase().contains(q) || p.mobile.contains(query);
-          }).toList();
+    // Debounce to avoid too many API calls
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted && newText == searchController.text) {
+        _currentSearchText = newText;
+        fetchPatients(isInitial: true, search: newText);
+      }
     });
   }
 
-  // ---------------- API WITH PAGINATION ----------------
-  Future<void> fetchPatients({bool isInitial = false}) async {
-    if (isFetchingMore) return;
+  Future<void> fetchPatients({
+  bool isInitial = false,
+  String search = '',
+}) async {
+  if (isFetchingMore) return;
 
-    setState(() {
-      if (isInitial) {
-        page = 1;
-        hasMore = true;
-        patients.clear();
-        filteredPatients.clear();
-        isLoading = true;
-      }
-      isFetchingMore = true;
-    });
+  setState(() {
+    if (isInitial) {
+      page = 1;
+      hasMore = true;
+      patients.clear();
+      isLoading = true;
+    }
+    isFetchingMore = true;
+  });
 
-    try {
-      final response = await ApiService().postRequest(
-        "https://jinreflexology.in/api1/new/list_patients.php"
-        "?pid=${AppPreference().getString(PreferencesKey.userId).toString()}&page=$page&limit=$limit",
-        {},
-      );
-
-      if (response?.statusCode == 200) {
-        dynamic jsonBody =
-            response?.data is String
-                ? jsonDecode(response!.data)
-                : response?.data;
-
+  try {
+ 
+    
+    var url = Uri.parse('https://jinreflexology.in/api1/new/list_patients.php');
+    
+    Map<String, String> headers = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    };
+    
+    Map<String, String> body = {
+      'pd': AppPreference().getString(PreferencesKey.userId),
+      'page': page.toString(),
+      'limit': limit.toString(),
+    };
+    
+    if (search.isNotEmpty) {
+      body['search'] = search;
+    }
+    
+    print("🔍 Making POST request to: $url");
+    print("Body: $body");
+    
+    var response = await http.post(
+      url,
+      headers: headers,
+      body: body,
+    );
+    
+    print("Response status: ${response.statusCode}");
+    print("Response body: ${response.body}");
+    
+    if (response.statusCode == 200) {
+      var jsonBody = jsonDecode(response.body);
+      
+      if (jsonBody['success'] == 1) {
         final List raw = jsonBody["data"] ?? [];
-
-        final List<PatientData> newList =
-            raw.map((e) => PatientData.fromJson(e)).toList();
+        final newList = raw.map((e) => PatientData.fromJson(e)).toList();
 
         setState(() {
-          patients.addAll(newList);
-          filteredPatients = patients;
+          if (isInitial) {
+            patients = newList;
+          } else {
+            patients.addAll(newList);
+          }
+
           isLoading = false;
           isFetchingMore = false;
           hasMore = newList.length == limit;
           page++;
         });
       } else {
+        print("❌ API returned success: 0");
         setState(() {
           isLoading = false;
           isFetchingMore = false;
         });
       }
-    } catch (e) {
-      debugPrint("Fetch error: $e");
+    } else {
+      print("❌ HTTP Error: ${response.statusCode}");
       setState(() {
         isLoading = false;
         isFetchingMore = false;
       });
     }
+  } catch (e, stackTrace) {
+    print("❌ Exception: $e");
+    print("Stack trace: $stackTrace");
+    setState(() {
+      isLoading = false;
+      isFetchingMore = false;
+    });
   }
+}
 
   // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     final token = AppPreference().getString(PreferencesKey.userId);
     final type = AppPreference().getString(PreferencesKey.type);
-    print("DEBUG TYPE => '$type'");
-    print("DEBUG TOKEN => '$token'");
-    print("DEBUG isEmpty => ${token.isEmpty}");
+
     return Scaffold(
       appBar: CommonAppBar(title: "Patient List"),
-      backgroundColor: const Color(0xFFFDF3DD),
+      backgroundColor: Color(0xFFFDF3DD),
       body:
           type == "patient" || token.isEmpty
               ? JinLoginScreen(
@@ -167,11 +205,11 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
               : SafeArea(
                 child: Column(
                   children: [
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
 
                     // SEARCH + ADD
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      padding: EdgeInsets.symmetric(horizontal: 14),
                       child: Row(
                         children: [
                           Expanded(
@@ -180,30 +218,67 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(30),
+                                border: Border.all(
+                                  color: Colors.orange,
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: Row(
                                 children: [
-                                  const SizedBox(width: 12),
-                                  const Icon(
-                                    Icons.search,
-                                    color: Colors.orange,
-                                  ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: 12),
+                                  Icon(Icons.search, color: Colors.orange),
+                                  SizedBox(width: 8),
                                   Expanded(
                                     child: TextField(
                                       controller: searchController,
-                                      onChanged: filterSearch,
-                                      decoration: const InputDecoration(
-                                        hintText: "Search name or mobile...",
+                                      focusNode: _searchFocusNode,
+                                      decoration: InputDecoration(
+                                        hintText:
+                                            "Search patient by name, mobile or ID",
+                                        hintStyle: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 14,
+                                        ),
                                         border: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                        errorBorder: InputBorder.none,
+                                        disabledBorder: InputBorder.none,
+                                        contentPadding: EdgeInsets.symmetric(
+                                          vertical: 12,
+                                        ),
+                                      ),
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        color: Colors.black87,
                                       ),
                                     ),
                                   ),
+                                  if (searchController.text.isNotEmpty)
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.clear,
+                                        color: Colors.grey,
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        searchController.clear();
+                                        _currentSearchText = '';
+                                        fetchPatients(isInitial: true);
+                                      },
+                                    ),
                                 ],
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10),
                           InkWell(
                             onTap: () {
                               Navigator.push(
@@ -231,10 +306,18 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
                                   color: Colors.orange,
                                   width: 2,
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.add,
                                 color: Colors.orange,
+                                size: 24,
                               ),
                             ),
                           ),
@@ -242,92 +325,244 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    SizedBox(height: 16),
 
-                    // LIST
+                    // LIST HEADER
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Total Patients: ${patients.length}",
+                            style: TextStyle(
+                              color: Colors.orange,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          if (_currentSearchText.isNotEmpty)
+                            Text(
+                              "Search: '$_currentSearchText'",
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(height: 10),
+
+                    // PATIENT LIST
                     Expanded(
                       child:
                           isLoading
-                              ? const Center(
+                              ? Center(
                                 child: CircularProgressIndicator(
                                   color: Colors.orange,
                                 ),
                               )
-                              : filteredPatients.isEmpty
-                              ? const Center(child: Text("No Patients Found"))
-                              : ListView.builder(
-                                controller: scrollController,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                ),
-                                itemCount:
-                                    filteredPatients.length + (hasMore ? 1 : 0),
-                                itemBuilder: (context, index) {
-                                  if (index == filteredPatients.length) {
-                                    return const Padding(
-                                      padding: EdgeInsets.all(16),
-                                      child: Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    );
-                                  }
-
-                                  final patient = filteredPatients[index];
-
-                                  return InkWell(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (_) => DiagnosisListScreen(
-                                                patientName: patient.name,
-                                                pid:
-                                                    AppPreference()
-                                                        .getString(
-                                                          PreferencesKey.userId,
-                                                        )
-                                                        .toString(),
-                                                diagnosisId: patient.id,
-                                                patientId: patient.id,
-                                              ),
-                                        ),
-                                      );
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 6,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Row(
-                                              children: [
-                                                Text(
-                                                  patient.id,
-                                                  style: const TextStyle(
-                                                    color: Colors.orange,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Text(
-                                                    patient.name,
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          Text(patient.mobile),
-                                        ],
+                              : patients.isEmpty
+                              ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.people_outline,
+                                      color: Colors.grey[400],
+                                      size: 64,
+                                    ),
+                                    SizedBox(height: 16),
+                                    Text(
+                                      _currentSearchText.isEmpty
+                                          ? "No Patients Found"
+                                          : "No patients match '$_currentSearchText'",
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 16,
                                       ),
                                     ),
-                                  );
+                                    SizedBox(height: 8),
+                                    if (_currentSearchText.isNotEmpty)
+                                      TextButton(
+                                        onPressed: () {
+                                          searchController.clear();
+                                          fetchPatients(isInitial: true);
+                                        },
+                                        child: Text(
+                                          "Clear Search",
+                                          style: TextStyle(
+                                            color: Colors.orange,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              )
+                              : RefreshIndicator(
+                                color: Colors.orange,
+                                onRefresh: () async {
+                                  await fetchPatients(isInitial: true);
                                 },
+                                child: ListView.builder(
+                                  controller: scrollController,
+                                  padding: EdgeInsets.only(
+                                    left: 14,
+                                    right: 14,
+                                    bottom: 20,
+                                  ),
+                                  itemCount:
+                                      patients.length +
+                                      (hasMore && _currentSearchText.isEmpty
+                                          ? 1
+                                          : 0),
+                                  itemBuilder: (context, index) {
+                                    if (index == patients.length) {
+                                      return Padding(
+                                        padding: EdgeInsets.all(16),
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                            color: Colors.orange,
+                                          ),
+                                        ),
+                                      );
+                                    }
+
+                                    final patient = patients[index];
+
+                                    return Card(
+                                      margin: EdgeInsets.symmetric(
+                                        vertical: 6,
+                                        horizontal: 0,
+                                      ),
+                                      elevation: 2,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(12),
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (_) => DiagnosisListScreen(
+                                                    patientName: patient.name,
+                                                    pid:
+                                                        AppPreference()
+                                                            .getString(
+                                                              PreferencesKey
+                                                                  .userId,
+                                                            )
+                                                            .toString(),
+                                                    diagnosisId: patient.id,
+                                                    patientId: patient.id,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                        child: Padding(
+                                          padding: EdgeInsets.all(16),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 40,
+                                                height: 40,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.orange
+                                                      .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    patient.name.isNotEmpty
+                                                        ? patient.name[0]
+                                                            .toUpperCase()
+                                                        : '?',
+                                                    style: TextStyle(
+                                                      color: Colors.orange,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 18,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              SizedBox(width: 16),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      patient.name,
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.black87,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                    SizedBox(height: 4),
+                                                    Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.phone,
+                                                          color:
+                                                              Colors.grey[600],
+                                                          size: 14,
+                                                        ),
+                                                        SizedBox(width: 4),
+                                                        Text(
+                                                          patient.mobile,
+                                                          style: TextStyle(
+                                                            color:
+                                                                Colors
+                                                                    .grey[600],
+                                                            fontSize: 13,
+                                                          ),
+                                                        ),
+                                                        SizedBox(width: 12),
+                                                        Icon(
+                                                          Icons.person,
+                                                          color:
+                                                              Colors.grey[600],
+                                                          size: 14,
+                                                        ),
+                                                        SizedBox(width: 4),
+                                                        Text(
+                                                          patient.id,
+                                                          style: TextStyle(
+                                                            color:
+                                                                Colors.orange,
+                                                            fontSize: 13,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Icon(
+                                                Icons.arrow_forward_ios,
+                                                color: Colors.grey[400],
+                                                size: 16,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                     ),
                   ],

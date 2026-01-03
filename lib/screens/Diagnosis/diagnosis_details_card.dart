@@ -272,9 +272,10 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
                       ),
                     );
                   },
-                  child: const Text("UPDATE"),
+                  child: const Text("UPDATE",style: TextStyle(color:Colors.white),),
                 ),
                 ElevatedButton(
+                  
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     padding: const EdgeInsets.symmetric(
@@ -298,7 +299,7 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
                       ),
                     );
                   },
-                  child: const Text("TREATMENT"),
+                  child:  Text("TREATMENT" ,style:TextStyle(color:Colors.white),),
                 ),
               ],
             ),

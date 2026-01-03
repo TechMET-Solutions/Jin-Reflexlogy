@@ -1,6 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:jin_reflex_new/screens/treatment/flip_book.dart';
+
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:jin_reflex_new/screens/treatment/flip_book.dart';
 
 class TreatmentPlanScreen extends StatefulWidget {
   const TreatmentPlanScreen({super.key});
@@ -17,24 +23,19 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
   final TextEditingController detailsCtrl = TextEditingController();
 
   bool isSubmitting = false;
-
-  /// ---------------------------
-  /// POST TREATMENT ENQUIRY API
-  /// ---------------------------
   Future<void> submitTreatmentEnquiry() async {
     if (firstNameCtrl.text.isEmpty ||
         lastNameCtrl.text.isEmpty ||
         emailCtrl.text.isEmpty ||
         phoneCtrl.text.isEmpty ||
         detailsCtrl.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all fields")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
       return;
     }
 
     setState(() => isSubmitting = true);
-
     final response = await http.post(
       Uri.parse("https://admin.jinreflexology.in/api/treatment-enquiry"),
       headers: {
@@ -62,14 +63,14 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
         phoneCtrl.clear();
         detailsCtrl.clear();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res['message'])),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(res['message'])));
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to submit enquiry")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Failed to submit enquiry")));
     }
   }
 
@@ -84,7 +85,7 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -113,36 +114,46 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xff101926),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 onPressed: isSubmitting ? null : submitTreatmentEnquiry,
-                child: isSubmitting
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "SUBMIT ENQUIRY",
-                        style: TextStyle(fontSize: 16),
-                      ),
+                child:
+                    isSubmitting
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                          "SUBMIT ENQUIRY",
+                          style: TextStyle(fontSize: 16),
+                        ),
               ),
             ),
 
             const SizedBox(height: 25),
 
             /// ---------------------------
-            /// IMAGES SECTION (UNCHANGED)
+            /// IMAGES SECTION WITH PADDING
             /// ---------------------------
-            Row(
-              children: [
-                Expanded(child: _imageCard("assets/images/treatement1.png")),
-                const SizedBox(width: 15),
-                Expanded(child: _imageCard("assets/images/treatement2.png")),
-              ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 0),
+              child: Row(
+                children: [
+                  Expanded(child: _imageCard("assets/images/treatement1.png")),
+                  const SizedBox(width: 15),
+                  Expanded(child: _imageCard("assets/images/treatement2.png")),
+                ],
+              ),
             ),
             const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(child: _imageCard("assets/images/treatement3.png")),
-                const SizedBox(width: 15),
-                Expanded(child: _imageCard("assets/images/treatement4.png")),
-              ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 0),
+              child: Row(
+                children: [
+                  Expanded(child: _imageCard("assets/images/treatement3.png")),
+                  const SizedBox(width: 15),
+                  Expanded(child: _imageCard("assets/images/treatement4.png")),
+                ],
+              ),
             ),
 
             const SizedBox(height: 25),
@@ -173,14 +184,35 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
 
             const SizedBox(height: 25),
 
-            Row(
-              children: [
-                Expanded(child: _imageCard("assets/images/treatement5.png")),
-                const SizedBox(width: 15),
-                Expanded(child: _imageCard("assets/images/treatement6.png")),
-              ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 0),
+              child: Row(
+                children: [
+                  Expanded(child: _imageCard("assets/images/treatement5.png")),
+                  const SizedBox(width: 15),
+                  Expanded(child: _imageCard("assets/images/treatement6.png")),
+                ],
+              ),
             ),
+            const SizedBox(height: 20),
+            Image.asset("assets/images/"),
 
+            /// Flip Book with Padding
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 0),
+              child: SizedBox(
+                height: 600,
+                width: double.infinity,
+                child: BookSpreadFlip(
+                  imagePaths: [
+                    'assets/images/treatement2.png',
+                    'assets/images/treatement3.png',
+                    'assets/images/treatement2.png',
+                    'assets/images/treatement3.png',
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 60),
           ],
         ),
@@ -188,28 +220,32 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
     );
   }
 
-  /// ---------------- INPUT FIELD ----------------
-  Widget _textField(String label, TextEditingController controller,
-      {int maxLines = 1}) {
+  Widget _textField(
+    String label,
+    TextEditingController controller, {
+    int maxLines = 1,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style:
-                  const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
           TextField(
             controller: controller,
             maxLines: maxLines,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               isDense: true,
-              focusedBorder: UnderlineInputBorder(
+              focusedBorder: const UnderlineInputBorder(
                 borderSide: BorderSide(color: Colors.black),
               ),
-              enabledBorder: UnderlineInputBorder(
+              enabledBorder: const UnderlineInputBorder(
                 borderSide: BorderSide(color: Colors.black45),
               ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
             ),
           ),
         ],
@@ -224,16 +260,12 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4),
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
       ),
       child: Column(
         children: [
           const Expanded(
-            child: Center(
-              child: Icon(Icons.image_not_supported, size: 40),
-            ),
+            child: Center(child: Icon(Icons.image_not_supported, size: 40)),
           ),
           Container(
             height: 40,
@@ -252,9 +284,7 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         color: Colors.white,
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 3),
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 3)],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
@@ -271,9 +301,10 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
-        child: Text(title,
-            style:
-                const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+        child: Text(
+          title,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
@@ -286,8 +317,10 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
         border: Border.all(color: Colors.orange, width: 2),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
       ),
-      child: Text(title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
     );
   }
 
@@ -296,10 +329,123 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.orange, width: 2),
-        borderRadius:
-            const BorderRadius.vertical(bottom: Radius.circular(14)),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
       ),
-      child: Text(text),
+      child: Text(text, style: const TextStyle(fontSize: 15, height: 1.4)),
     );
   }
+}
+
+Widget _textField(
+  String label,
+  TextEditingController controller, {
+  int maxLines = 1,
+}) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        ),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          decoration: const InputDecoration(
+            isDense: true,
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.black),
+            ),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.black45),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
+Widget _feedbackImageBox() {
+  return Container(
+    height: 160,
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+    ),
+    child: Column(
+      children: [
+        const Expanded(
+          child: Center(child: Icon(Icons.image_not_supported, size: 40)),
+        ),
+        Container(
+          height: 40,
+          alignment: Alignment.center,
+          color: const Color(0xfff7eed6),
+          child: const Text("JIN Reflexology Feedback"),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _imageCard(String img) {
+  return Container(
+    height: 260,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(10),
+      color: Colors.white,
+      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 3)],
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Image.asset(img, fit: BoxFit.cover),
+    ),
+  );
+}
+
+Widget _yellowTitle(String title) {
+  return Container(
+    padding: const EdgeInsets.symmetric(vertical: 12),
+    decoration: BoxDecoration(
+      color: const Color(0xffffd56b),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Center(
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+      ),
+    ),
+  );
+}
+
+Widget _yellowHeader(String title) {
+  return Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: const Color(0xffffefd5),
+      border: Border.all(color: Colors.orange, width: 2),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+    ),
+    child: Text(
+      title,
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    ),
+  );
+}
+
+Widget _yellowTextContainer(String text) {
+  return Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      border: Border.all(color: Colors.orange, width: 2),
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+    ),
+    child: Text(text),
+  );
 }

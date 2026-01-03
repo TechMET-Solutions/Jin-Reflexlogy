@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
@@ -56,7 +57,7 @@ class _FootChartScreenState extends State<FootChartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Foot Chart")),
+      appBar: CommonAppBar(title: "Foot Chart"),
       body: Stack(
         children: [
           WebViewWidget(controller: controller),

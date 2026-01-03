@@ -3,6 +3,7 @@ import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/login_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_screen_list.dart';
+import 'package:jin_reflex_new/screens/treatment/flip_book.dart';
 import 'package:jin_reflex_new/screens/treatment/treatment_screen_details.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
