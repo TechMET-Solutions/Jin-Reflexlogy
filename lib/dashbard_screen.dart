@@ -188,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const FeedbackScreen(userId: "2")),
+          MaterialPageRoute(builder: (_) => ReviewOfSystemScreen()),
         );
       },
     ),

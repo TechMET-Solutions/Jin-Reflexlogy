@@ -1,130 +1,159 @@
-import 'dart:convert';
+// main.dart
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
-class FeedbackScreen extends StatefulWidget {
-  final String userId;
 
-  const FeedbackScreen({super.key, required this.userId});
+
+class ReviewOfSystemScreen extends StatefulWidget {
+  const ReviewOfSystemScreen({super.key});
 
   @override
-  State<FeedbackScreen> createState() => _FeedbackScreenState();
+  State<ReviewOfSystemScreen> createState() => _ReviewOfSystemScreenState();
 }
 
-class _FeedbackScreenState extends State<FeedbackScreen> {
-  final TextEditingController feedbackController = TextEditingController();
-  bool isLoading = false;
+class _ReviewOfSystemScreenState extends State<ReviewOfSystemScreen> {
+  /// key = symptom name
+  /// value = 'FD' | 'LD' | null
+  final Map<String, String?> _answers = {};
 
-  // ================= API CALL =================
-  Future<void> submitFeedback() async {
-    if (feedbackController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Enter feedback")));
-      return;
-    }
-
-    if (widget.userId.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("User not logged in")));
-      return;
-    }
-
-    setState(() => isLoading = true);
-
-    try {
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('https://admin.jinreflexology.in/api/feedback'),
-      );
-
-      request.fields['userid'] = widget.userId;
-      request.fields['feedback'] = feedbackController.text.trim();
-
-      var response = await request.send();
-      var responseBody = await response.stream.bytesToString();
-      final res = json.decode(responseBody);
-
-      if (res['success'] == true) {
-        feedbackController.clear();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(res['message'])));
-      } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Something went wrong")));
-      }
-    } catch (e) {
-      debugPrint("Error: $e");
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Network error")));
-    }
-
-    setState(() => isLoading = false);
+  void _onSelect(String key, String value) {
+    setState(() {
+      _answers[key] = value; // FD & LD are mutually exclusive
+    });
   }
 
-  // ================= UI =================
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.red,
+        ),
+      ),
+    );
+  }
+
+  Widget _symptomRow(String label) {
+    final value = _answers[label];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          Checkbox(
+            value: value == 'FD',
+            onChanged: (_) => _onSelect(label, 'FD'),
+          ),
+          const Text('FD'),
+          const SizedBox(width: 6),
+          Checkbox(
+            value: value == 'LD',
+            onChanged: (_) => _onSelect(label, 'LD'),
+          ),
+          const Text('LD'),
+        ],
+      ),
+    );
+  }
+
+  void _submit() {
+    debugPrint('Selected Symptoms:');
+    _answers.forEach((key, value) {
+      if (value != null) {
+        debugPrint('$key : $value');
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Form submitted successfully')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Feedback"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 1,
-        iconTheme: const IconThemeData(color: Colors.black),
-        titleTextStyle: const TextStyle(
-          color: Colors.black,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      appBar: AppBar(title: const Text('Review of Systems')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Your Feedback",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: feedbackController,
-              maxLines: 5,
-              decoration: InputDecoration(
-                hintText: "Write your feedback...",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
+            _sectionTitle('HEAD'),
+            _symptomRow('Frequent Headaches'),
+            _symptomRow('Severe Headaches'),
+            _symptomRow('Dizziness'),
+            _symptomRow('Loss of consciousness'),
+            _symptomRow('Congestion'),
+
+            _sectionTitle('EYES'),
+            _symptomRow('Glasses'),
+            _symptomRow('Contacts'),
+            _symptomRow('Pain'),
+            _symptomRow('Dry Eyes'),
+            _symptomRow('Tearing'),
+
+            _sectionTitle('EARS'),
+            _symptomRow('Ear Pain'),
+            _symptomRow('Ringing'),
+            _symptomRow('Hearing Problems'),
+
+            _sectionTitle('NOSE'),
+            _symptomRow('Sinus Problems'),
+            _symptomRow('Nose Bleeds'),
+            _symptomRow('Sneezing'),
+
+            _sectionTitle('MOUTH'),
+            _symptomRow('Dry Mouth'),
+            _symptomRow('Ulcers / Cold sores'),
+            _symptomRow('Dental problems'),
+
+            _sectionTitle('RESPIRATORY'),
+            _symptomRow('Chest Pain or Tightness'),
+            _symptomRow('Shortness of Breath'),
+            _symptomRow('Coughing'),
+            _symptomRow('Wheezing'),
+
+            _sectionTitle('CARDIOVASCULAR'),
+            _symptomRow('Chest Tightness'),
+            _symptomRow('Palpitations'),
+            _symptomRow('Swollen Feet or Ankles'),
+
+            _sectionTitle('GASTROINTESTINAL'),
+            _symptomRow('Poor Appetite'),
+            _symptomRow('Nausea'),
+            _symptomRow('Vomiting'),
+            _symptomRow('Abdominal Pain'),
+            _symptomRow('Constipation'),
+
+            _sectionTitle('MUSCULOSKELETAL'),
+            _symptomRow('Back Pain'),
+            _symptomRow('Joint Pain'),
+            _symptomRow('Muscle Pain'),
+
+            _sectionTitle('SKIN'),
+            _symptomRow('Rash'),
+            _symptomRow('Itch'),
+            _symptomRow('Dryness'),
+
+            _sectionTitle('NEUROLOGICAL'),
+            _symptomRow('Headaches'),
+            _symptomRow('Weakness'),
+            _symptomRow('Numbness'),
+
+            _sectionTitle('GENITOURINARY'),
+            _symptomRow('Pain with Urination'),
+            _symptomRow('Frequent Urination'),
+            _symptomRow('Blood in Urine'),
+
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: isLoading ? null : submitFeedback,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 32, 27, 122),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                child:
-                    isLoading
-                        ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                        : const Text(
-                          "Submit",
-                          style: TextStyle(fontSize: 16, color: Colors.white),
-                        ),
+                onPressed: _submit,
+                child: const Text('SUBMIT'),
               ),
             ),
           ],
@@ -133,3 +162,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     );
   }
 }
+
+
+
+
