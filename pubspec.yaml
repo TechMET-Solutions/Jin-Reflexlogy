@@ -41,6 +41,8 @@ dependencies:
   webview_flutter_android: ^4.10.11
   page_flip: ^0.2.5+1
   book_flip: ^1.0.0
+  phonepe_payment_sdk: ^3.0.2
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:

@@ -20,7 +20,7 @@ class _HandChartScreenState extends State<HandChartScreen> {
         WebViewController()
           ..setJavaScriptMode(JavaScriptMode.unrestricted)
           ..setBackgroundColor(const Color(0x00000000))
-          ..loadFlutterAsset("assets/hand-chart.html"); // FINAL WORKING PATH
+          ..loadFlutterAsset("assets/hand-chart.html"); 
   }
 
   @override
