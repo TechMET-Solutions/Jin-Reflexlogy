@@ -1,11 +1,21 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
+import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/shop/buy_now_form.dart';
 import 'package:jin_reflex_new/screens/shop/ui_model.dart';
+import 'package:jin_reflex_new/screens/shop/cartscreen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
+  final String deliveryType; // 🔥 REQUIRED
 
-  const ProductDetailScreen({super.key, required this.product});
+  const ProductDetailScreen({
+    super.key,
+    required this.product,
+    required this.deliveryType,
+  });
 
   @override
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
@@ -14,7 +24,12 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+
   int activeImage = 0;
+  bool isAddingToCart = false;
+
+  int userId = 0;
+  final int quantity = 1;
 
   Product get p => widget.product;
 
@@ -22,6 +37,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    loadUserId();
+  }
+
+  Future<void> loadUserId() async {
+    final prefs = AppPreference();
+    final id = prefs.getString(PreferencesKey.userId);
+    setState(() => userId = int.tryParse(id ?? "0") ?? 0);
   }
 
   @override
@@ -30,8 +52,67 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     super.dispose();
   }
 
-  // ---------- IMAGE HELPERS ----------
+  // ================= ADD TO CART API =================
+  Future<void> addToCart() async {
+    const String url = "https://admin.jinreflexology.in/api/cart/add";
 
+    final prefs = AppPreference();
+    final token = prefs.getString(PreferencesKey.token);
+
+    final String country =
+        widget.deliveryType == "india" ? "in" : "us";
+
+    if (token.isEmpty || userId == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please login first")),
+      );
+      return;
+    }
+
+    setState(() => isAddingToCart = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+        },
+        body: {
+          "user_id": userId.toString(),
+          "product_id": p.id.toString(),
+          "quantity": quantity.toString(),
+          "country": country,
+        },
+      );
+
+      debugPrint("STATUS: ${response.statusCode}");
+      debugPrint("BODY: ${response.body}");
+
+      final decoded = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(decoded["message"] ?? "Added to cart")),
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) =>  CartScreen(deliveryType: widget.deliveryType,)),
+        );
+      } else {
+        throw decoded["message"] ?? "Add to cart failed";
+      }
+    } catch (e) {
+      debugPrint("❌ ADD TO CART ERROR: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+
+    setState(() => isAddingToCart = false);
+  }
+
+  // ================= IMAGE HELPERS =================
   String imageAt(dynamic imgSource, int index) {
     if (imgSource is List<String>) {
       if (imgSource.isEmpty) return '';
@@ -48,8 +129,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     return 0;
   }
 
-  // ---------- UI ----------
-
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     final imgCount = imageCount(p.image);
@@ -62,7 +142,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ---------- IMAGE SECTION ----------
+                // IMAGE SECTION
                 Expanded(
                   flex: 3,
                   child: Column(
@@ -74,13 +154,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                           border: Border.all(color: const Color(0xFFF7C85A)),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child:
-                            imgCount > 0
-                                ? Image.network(
-                                  imageAt(p.image, activeImage),
-                                  fit: BoxFit.contain,
-                                )
-                                : const Center(child: Icon(Icons.image)),
+                        child: imgCount > 0
+                            ? Image.network(
+                                imageAt(p.image, activeImage),
+                                fit: BoxFit.contain,
+                              )
+                            : const Icon(Icons.image),
                       ),
                       SizedBox(
                         height: 80,
@@ -96,10 +175,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                 padding: const EdgeInsets.all(5),
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color:
-                                        activeImage == i
-                                            ? Colors.orange
-                                            : Colors.grey,
+                                    color: activeImage == i
+                                        ? Colors.orange
+                                        : Colors.grey,
                                   ),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
@@ -116,7 +194,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   ),
                 ),
 
-                // ---------- PRODUCT INFO ----------
+                // PRODUCT INFO
                 Expanded(
                   flex: 2,
                   child: Padding(
@@ -133,13 +211,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          "₹ ${p.price.toStringAsFixed(0)}",
+                          "₹ ${p.unitPrice.toStringAsFixed(0)}",
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 10),
+
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,
@@ -148,15 +227,31 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder:
-                                    (context) => BuyNowFormScreen(product: p),
+                                builder: (_) =>
+                                    BuyNowFormScreen(product: p),
                               ),
                             );
                           },
                           child: const Text(
-                            "Buy now",
+                            "Buy Now",
                             style: TextStyle(color: Colors.white),
                           ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        OutlinedButton(
+                          onPressed:
+                              isAddingToCart ? null : addToCart,
+                          child: isAddingToCart
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text("Add to Cart"),
                         ),
                       ],
                     ),
@@ -171,25 +266,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               description: p.description,
               additionalInfo: p.additionalInfo,
             ),
-
-            const SizedBox(height: 30),
           ],
         ),
       ),
-    );
-  }
-
-  // ---------- TABS ----------
-
-  Widget infoBox(String text) {
-    return Container(
-      margin: const EdgeInsets.all(10),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.amber.shade300),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(text),
     );
   }
 
@@ -201,30 +280,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   }) {
     return Column(
       children: [
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: Colors.amber.shade200,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: TabBar(
-            controller: controller,
-            labelColor: Colors.black,
-            tabs: const [
-              Tab(text: "Details"),
-              Tab(text: "Description"),
-              Tab(text: "Additional Info"),
-            ],
-          ),
+        TabBar(
+          controller: controller,
+          labelColor: Colors.black,
+          tabs: const [
+            Tab(text: "Details"),
+            Tab(text: "Description"),
+            Tab(text: "Additional Info"),
+          ],
         ),
         SizedBox(
           height: 140,
           child: TabBarView(
             controller: controller,
             children: [
-              infoBox(details),
-              infoBox(description),
-              infoBox(additionalInfo),
+              Text(details),
+              Text(description),
+              Text(additionalInfo),
             ],
           ),
         ),

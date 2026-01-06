@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:jin_reflex_new/screens/shop/payment_options_screen.dart';
 import 'package:jin_reflex_new/screens/shop/ui_model.dart';
 
+
 class BuyNowFormScreen extends StatefulWidget {
   final Product product;
 

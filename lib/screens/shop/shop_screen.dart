@@ -1,9 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
+import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
+import 'package:jin_reflex_new/login_screen.dart';
+import 'package:jin_reflex_new/screens/life_style/life_style_screen.dart';
 import 'package:jin_reflex_new/screens/shop/shop_details_screen.dart';
 import 'package:jin_reflex_new/screens/shop/ui_model.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
+import 'package:jin_reflex_new/screens/shop/cartscreen.dart';
 
 class ShopScreen extends StatefulWidget {
   final String deliveryType; // india / outside
@@ -30,11 +35,6 @@ class _ShopScreenState extends State<ShopScreen> {
     try {
       products = await fetchProducts();
       hasError = false;
-
-      // DEBUG
-      for (var p in products) {
-        debugPrint("🖼️ PRODUCT IMAGE => ${p.image}");
-      }
     } catch (e) {
       hasError = true;
       debugPrint("❌ LoadProducts Error: $e");
@@ -48,6 +48,9 @@ class _ShopScreenState extends State<ShopScreen> {
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
+    final token = AppPreference().getString(PreferencesKey.token);
+    final type = AppPreference().getString(PreferencesKey.type);
+
     if (isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -58,9 +61,32 @@ class _ShopScreenState extends State<ShopScreen> {
             widget.deliveryType == "india"
                 ? "Shop (India Delivery)"
                 : "Shop (Outside India)",
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => CartScreen(deliveryType: widget.deliveryType,)),
+              );
+            },
+          ),
+        ],
       ),
       body:
-          hasError
+          type == "therapist" || token.isEmpty
+              ? JinLoginScreen(
+                text: "ShopScreen",
+                type: "user",
+                diliveryType: widget.deliveryType,
+                onTab: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => LifestyleScreen()),
+                  );
+                },
+              )
+              : hasError
               ? const Center(child: Text("Something went wrong"))
               : products.isEmpty
               ? const Center(child: Text("No products available"))
@@ -78,13 +104,17 @@ class _ShopScreenState extends State<ShopScreen> {
 
                   return GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ProductDetailScreen(product: product),
-                        ),
-                      );
-                    },
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ProductDetailScreen(
+        product: product,
+        deliveryType: widget.deliveryType, // ✅ PASS SAME VALUE
+      ),
+    ),
+  );
+},
+
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
@@ -120,7 +150,7 @@ class _ShopScreenState extends State<ShopScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "₹ ${product.price.toStringAsFixed(0)}",
+                            "₹ ${product.unitPrice.toStringAsFixed(0)}",
                             style: const TextStyle(fontSize: 13),
                           ),
                         ],
@@ -132,7 +162,7 @@ class _ShopScreenState extends State<ShopScreen> {
     );
   }
 
-  // ================= API (BY COUNTRY) =================
+  // ================= API (NEW STRUCTURE) =================
   Future<List<Product>> fetchProducts() async {
     final String country = widget.deliveryType == "india" ? "in" : "us";
 
@@ -152,23 +182,56 @@ class _ShopScreenState extends State<ShopScreen> {
         throw Exception("HTTP Error ${response.statusCode}");
       }
 
-      final Map<String, dynamic> data = json.decode(response.body);
-      final List list = data["data"] ?? [];
+      final Map<String, dynamic> jsonData = json.decode(response.body);
 
-      debugPrint("📦 TOTAL PRODUCTS => ${list.length}");
+      final List list = jsonData["data"] ?? [];
 
       return list.map<Product>((e) {
         final List images = e["images"] ?? [];
+        final List pricing = e["pricing"] ?? [];
+
+        // 🔥 get pricing for selected country
+        final pricingForCountry =
+            pricing.isNotEmpty
+                ? pricing.firstWhere(
+                  (p) => p["country"] == country,
+                  orElse: () => null,
+                )
+                : null;
+
+        final double unitPrice =
+            pricingForCountry != null
+                ? double.tryParse(
+                      pricingForCountry["unit_price"]?.toString() ?? "0",
+                    ) ??
+                    0
+                : 0;
+
+        final double shippingPrice =
+            pricingForCountry != null
+                ? double.tryParse(
+                      pricingForCountry["shipping_price"]?.toString() ?? "0",
+                    ) ??
+                    0
+                : 0;
+
+        final double totalPrice =
+            pricingForCountry != null
+                ? double.tryParse(
+                      pricingForCountry["total_price"]?.toString() ?? "0",
+                    ) ??
+                    0
+                : unitPrice + shippingPrice;
 
         return Product(
-          id: e["id"].toString(), // ✅ FIX HERE
+          id: e["id"].toString(),
           title: e["title"] ?? "",
           image: images.isNotEmpty ? images.first.toString() : "",
-          price: double.tryParse(e["total_price"]?.toString() ?? "0") ?? 0,
-          details: e["description"] ?? "",
+          unitPrice: unitPrice,
+          shippingPrice: shippingPrice,
           description: e["description"] ?? "",
-          additionalInfo:
-              "Shipping ₹ ${e["shipping_charges"]?.toString() ?? "0"}",
+          details: e["description"] ?? "",
+          additionalInfo: "Shipping ₹ $shippingPrice",
         );
       }).toList();
     } catch (e) {

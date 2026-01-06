@@ -114,6 +114,7 @@ class Treatment extends StatelessWidget {
                             builder: (context) => JinLoginScreen(
                               text: "Treatment",
                               type: "therapist",
+                              
                               onTab: () {
                                 Navigator.pop(context);
                                 Navigator.push(

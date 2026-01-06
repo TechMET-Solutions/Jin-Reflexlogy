@@ -8,12 +8,14 @@ class JinLoginScreen extends ConsumerStatefulWidget {
     super.key,
     required this.onTab,
     required this.text,
+    this.diliveryType,
     this.type,
   });
 
   final VoidCallback onTab;
   final text;
   final type;
+  final diliveryType;
 
   @override
   ConsumerState<JinLoginScreen> createState() => _JinLoginScreenState();
@@ -262,6 +264,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                                           widget.type,
                                           _idController.text,
                                           _passwordController.text,
+                                          DeliveryType: widget.diliveryType,
                                         );
                                   },
                           borderRadius: BorderRadius.circular(12),
@@ -337,7 +340,6 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                         ],
                       ),
 
-                     
                       const SizedBox(height: 20),
 
                       /// 🔹 Sign Up Link

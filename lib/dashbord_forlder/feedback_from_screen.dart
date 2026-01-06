@@ -6,15 +6,15 @@ import 'package:flutter/material.dart';
    MAIN SCREEN (BODY MAP + REVIEW OF SYSTEMS)
 ============================================================ */
 
-class FeedBackForm extends StatefulWidget {
-  const FeedBackForm({super.key});
+class FeedBackFormNew extends StatefulWidget {
+  const FeedBackFormNew({super.key});
 
   @override
-  State<FeedBackForm> createState() =>
-      _FeedBackFormState();
+  State<FeedBackFormNew> createState() =>
+      _FeedBackFormNewState();
 }
 
-class _FeedBackFormState extends State<FeedBackForm> {
+class _FeedBackFormNewState extends State<FeedBackFormNew> {
   String? selectedCellId;
 
   /// Review of system answers
@@ -121,7 +121,7 @@ class _FeedBackFormState extends State<FeedBackForm> {
                     child: Stack(
                       children: [
                         Image.asset(
-                          'assets/images/body_map.png',
+                          'assets/images/fedback.jpeg',
                           width: screenWidth,
                           height: imageHeight,
                           fit: BoxFit.contain,

@@ -11,6 +11,9 @@ import 'package:jin_reflex_new/screens/ebook_screen.dart';
 import 'package:jin_reflex_new/screens/life_style/life_style_screen.dart';
 import 'package:jin_reflex_new/screens/point_finder_screen.dart';
 import 'package:jin_reflex_new/screens/treatment/triment_screen.dart';
+import 'package:jin_reflex_new/shop/shop_screen.dart';
+
+import '../screens/shop/shop_screen.dart';
 
 final loginProvider = StateNotifierProvider<LoginNotifier, AsyncValue<void>>((
   ref,
@@ -28,7 +31,9 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
     String type,
     id,
     passworld,
+    {DeliveryType}
   ) async {
+    print("object");
     state = const AsyncValue.loading();
 
     try {
@@ -59,11 +64,11 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
       );
 
       final response = await dio.post(
-        "https://jinreflexology.in/api1/login.php",
+        "https://jinreflexology.in/api1/new/login.php",
         data: FormData.fromMap({'id': id, 'password': passworld, 'type': type}),
       );
 print(type);
-      if (response.statusCode == 200 && response.data != null) {
+       if (response.statusCode == 200 && response.data != null) {
         final jsonData = jsonDecode(response.data.toString());
 
         if (jsonData['success'] == 1) {
@@ -103,6 +108,13 @@ print(type);
             Navigator.pushReplacement(  
               context,
               MaterialPageRoute(builder: (_) => Treatment()),
+            );
+            
+          }
+          else if (text == "ShopScreen") {
+            Navigator.pushReplacement(  
+              context,
+              MaterialPageRoute(builder: (_) => ShopScreen(deliveryType:DeliveryType)),
             );
           }
         } else {

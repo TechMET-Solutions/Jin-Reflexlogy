@@ -4,6 +4,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:jin_reflex_new/bannar.dart';
 import 'package:jin_reflex_new/dashbord_forlder/feedback_form.dart';
+import 'package:jin_reflex_new/dashbord_forlder/feedback_from_screen.dart';
 import 'package:jin_reflex_new/dashbord_forlder/free_power_yoga.dart';
 import 'package:jin_reflex_new/dashbord_forlder/healthy_tips.dart';
 import 'package:jin_reflex_new/dashbord_forlder/training_coureses.dart';
@@ -307,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const FeedbackScreen(userId: "2")),
+          MaterialPageRoute(builder: (_) => FeedBackFormNew()),
         );
       },
     ),
@@ -402,10 +403,13 @@ class _HomeScreenState extends State<HomeScreen> {
     CampaignItem(
       title: 'Training',
       img: 'assets/jinImages/20.png',
-      onTap: () {
+      onTap: () async {
+        final deliveryType = await _getSavedDeliveryType();
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => CourseScreen()),
+          MaterialPageRoute(
+            builder: (_) => CourseScreen(deliveryType: deliveryType),
+          ),
         );
       },
     ),
@@ -754,7 +758,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            // Add your drawer items here
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text('Home'),
@@ -762,10 +765,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(context);
               },
             ),
-
-            // Add more drawer items as needed
-
-            // Logout button at the bottom
+            ListTile(
+              leading: const Icon(Icons.privacy_tip_rounded),
+              title:  Text('Privacy Policy'),
+              onTap: () {
+               Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => CommonWebView(
+                          url: "https://jinreflexology.in/privacypolicy.php",
+                          title: "Privacy Policy",
+                        ),
+                  ),
+                );
+              },
+            ),
             Container(
               alignment: Alignment.bottomCenter,
               margin: const EdgeInsets.only(bottom: 20),
@@ -779,8 +794,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 onTap: () {
-                  Navigator.pop(context); // Close drawer first
-                  _showLogoutDialog(context); // Show logout confirmation
+                  Navigator.pop(context);
+                  _showLogoutDialog(context); 
                 },
               ),
             ),
@@ -973,7 +988,8 @@ void _showLogoutDialog(BuildContext context) {
         actions: [
           TextButton(
             onPressed: () {
-              AppPreference().clearSharedPreferences();
+              
+           Navigator.pop(context);
             },
             child: const Text('Cancel'),
           ),

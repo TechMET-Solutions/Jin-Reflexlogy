@@ -1,81 +1,103 @@
 import 'package:flutter/material.dart';
-import 'package:hexcolor/hexcolor.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
-class PointsScreen extends StatelessWidget {
+class PointsScreen extends StatefulWidget {
   const PointsScreen({Key? key}) : super(key: key);
 
-  static const List<_PointItem> items = [
-    _PointItem(
-      title: '1 - Headaches & Insomnia',
-      image: 'assets/images/effective_one.jpg',
-      color: Color(0xFFF7A325),
-      description: 'Press with fingers or thumb on both temples of the head.',
-      videoUrl: 'https://youtu.be/avNEBlX0pWA',
-    ),
-    _PointItem(
-      title: '2 - For Sinus',
-      image: 'assets/images/effective_two.jpg',
-      color: Color(0xFF7BB241),
-      description: 'Apply gentle pressure on both nostrils seven times.',
-      videoUrl: 'https://youtu.be/3qqrMmQM8LY',
-    ),
-    _PointItem(
-      title: '3 - Cough, Tonsils, Hoarseness',
-      image: 'assets/images/effective_three.jpg',
-      color: Color(0xFFF0A83D),
-      description:
-          'Light press situated at the throat with fingers or thumb for seven times.',
-      videoUrl: 'https://youtu.be/J20EVbBqEtE',
-    ),
-    _PointItem(
-      title: '4 - Increasing Memory',
-      image: 'assets/images/effective_four.jpg',
-      color: Color(0xFF9B59B6),
-      description: 'Press point at ears with fingers and thumb 7 times.',
-      videoUrl: 'https://youtu.be/Pj0-fiYJgtg',
-    ),
-    _PointItem(
-      title: '5 - For Sciatica',
-      image: 'assets/images/effective_five.jpg',
-      color: Color(0xFF4FB3E6),
-      description:
-          'Press 7 times with thumb or fingers on the points shown in red color.',
-      videoUrl: '', // if no link yet
-    ),
-    _PointItem(
-      title: '6 - For Gas',
-      image: 'assets/images/effective_six.jpg',
-      color: Color(0xFFF39C12),
-      description:
-          'Press 7 times with thumb or finger on the points shown in the figure.',
-      videoUrl: 'https://youtu.be/AyTWhYmOzeI',
-    ),
-    _PointItem(
-      title: '7 - For Vomiting',
-      image: 'assets/images/effective_seven.jpg',
-      color: Color(0xFF6BBF59),
-      description:
-          'Press the tips of fingers of both hands and take a deep breath.',
-      videoUrl: 'https://youtu.be/qPxwedQIocE',
-    ),
-    _PointItem(
-      title: '8 - For Sleep',
-      image: 'assets/images/effective_eight.jpg',
-      color: Color(0xFFE67E22),
-      description:
-          'Press the point located at lower part of the throat and release.',
-      videoUrl: 'https://youtu.be/WugXb-evdpQ',
-    ),
-    _PointItem(
-      title: '9 - To Break Sleep & Bring Vigour',
-      image: 'assets/images/effective_nine.jpg',
-      color: Color(0xFF9B59B6),
-      description:
-          'Press the tips of fingers and thumb of both hands for 7 times.',
-      videoUrl: 'https://youtu.be/ZLupKkkIBkA',
-    ),
-  ];
+  @override
+  State<PointsScreen> createState() => _PointsScreenState();
+}
+
+class _PointsScreenState extends State<PointsScreen> {
+  late List<_VideoItem> videos;
+  YoutubePlayerController? _activeController;
+  int? playingIndex;
+
+  @override
+  void initState() {
+    super.initState();
+
+    videos = [
+      _VideoItem(
+        title: '1 - Headaches & Insomnia',
+        description:
+            'Press with fingers or thumb on both temples of the head.',
+        url: 'https://youtu.be/avNEBlX0pWA',
+      ),
+      _VideoItem(
+        title: '2 - For Sinus',
+        description:
+            'Apply gentle pressure on both nostrils seven times.',
+        url: 'https://youtu.be/3qqrMmQM8LY',
+      ),
+      _VideoItem(
+        title: '3 - Cough, Tonsils, Hoarseness',
+        description:
+            'Light press situated at the throat with fingers or thumb.',
+        url: 'https://youtu.be/J20EVbBqEtE',
+      ),
+      _VideoItem(
+        title: '4 - Increasing Memory',
+        description:
+            'Press point at ears with fingers and thumb 7 times.',
+        url: 'https://youtu.be/Pj0-fiYJgtg',
+      ),
+      _VideoItem(
+        title: '5 - For Sciatica',
+        description:
+            'Press 7 times with thumb or fingers on the points shown.',
+        url: '',
+      ),
+      _VideoItem(
+        title: '6 - For Gas',
+        description:
+            'Press 7 times with thumb or finger on the points shown.',
+        url: 'https://youtu.be/AyTWhYmOzeI',
+      ),
+      _VideoItem(
+        title: '7 - For Vomiting',
+        description:
+            'Press the tips of fingers of both hands and take deep breath.',
+        url: 'https://youtu.be/qPxwedQIocE',
+      ),
+      _VideoItem(
+        title: '8 - For Sleep',
+        description:
+            'Press the point located at lower part of the throat.',
+        url: 'https://youtu.be/WugXb-evdpQ',
+      ),
+      _VideoItem(
+        title: '9 - To Break Sleep & Bring Vigour',
+        description:
+            'Press the tips of fingers and thumb of both hands.',
+        url: 'https://youtu.be/ZLupKkkIBkA',
+      ),
+    ];
+  }
+
+  void _playVideo(int index) {
+    _activeController?.dispose();
+
+    final videoId = YoutubePlayer.convertUrlToId(videos[index].url)!;
+
+    _activeController = YoutubePlayerController(
+      initialVideoId: videoId,
+      flags: const YoutubePlayerFlags(
+        autoPlay: true,
+        mute: false,
+      ),
+    );
+
+    setState(() {
+      playingIndex = index;
+    });
+  }
+
+  @override
+  void dispose() {
+    _activeController?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,230 +106,107 @@ class PointsScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF130442),
         title: const Text(
-          'Direct Points',
+          'Direct Points Videos',
           style: TextStyle(color: Colors.white),
         ),
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 10),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade300,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Center(
-              child: Text(
-                "9 Effective Points",
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-              itemCount: items.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 18,
-                crossAxisSpacing: 16,
-                childAspectRatio: 0.50,
-              ),
-              itemBuilder: (context, index) {
-                return _PointCard(item: items[index]);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: videos.length,
+        itemBuilder: (context, index) {
+          final item = videos[index];
 
-class _PointCard extends StatelessWidget {
-  final _PointItem item;
-
-  const _PointCard({Key? key, required this.item}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: HexColor("#F0E6D6"),
-      borderRadius: BorderRadius.circular(14),
-      elevation: 4,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => _showDetail(context, item),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  item.image,
-                  height: 120,
-                  fit: BoxFit.cover,
-                  errorBuilder:
-                      (_, __, ___) => const Icon(Icons.image_not_supported),
-                ),
-              ),
-              const SizedBox(height: 12),
               Text(
                 item.title,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
+
+              if (item.url.isEmpty)
+                Container(
+                  height: 200,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Text(
+                    'Video coming soon',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                )
+              else if (playingIndex == index)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: YoutubePlayer(
+                    controller: _activeController!,
+                    showVideoProgressIndicator: true,
+                  ),
+                )
+              else
+                GestureDetector(
+                  onTap: () => _playVideo(index),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image.network(
+                          'https://img.youtube.com/vi/'
+                          '${YoutubePlayer.convertUrlToId(item.url)}/0.jpg',
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.45),
+                          shape: BoxShape.circle,
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: const Icon(
+                          Icons.play_arrow,
+                          size: 50,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 10),
+
               Text(
                 item.description,
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 15),
               ),
-              const Spacer(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.touch_app, size: 18),
-                  SizedBox(width: 6),
-                  Text("Tap for details"),
-                ],
-              ),
+
+              const SizedBox(height: 30),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
-  }
-
-  /// ===============================
-  /// POPUP WITH YOUTUBE THUMBNAIL
-  /// ===============================
-  void _showDetail(BuildContext context, _PointItem item) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (_) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.6,
-          maxChildSize: 0.95,
-          builder: (context, scrollController) {
-            return SingleChildScrollView(
-              controller: scrollController,
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Container(
-                      height: 4,
-                      width: 40,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Text(item.description, style: const TextStyle(fontSize: 16)),
-
-                  const SizedBox(height: 18),
-
-                  /// 🎥 YOUTUBE THUMBNAIL PREVIEW
-                  if (item.videoUrl.isNotEmpty)
-                    GestureDetector(
-                      onTap: () => _openVideo(item.videoUrl),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              _youtubeThumbnail(item.videoUrl),
-                              height: 200,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.45),
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(14),
-                            child: const Icon(
-                              Icons.play_arrow,
-                              size: 48,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  const SizedBox(height: 24),
-
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("Done"),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  /// ===============================
-  /// HELPERS
-  /// ===============================
-  String _youtubeThumbnail(String url) {
-    final videoId = Uri.parse(url).pathSegments.last;
-    return 'https://img.youtube.com/vi/$videoId/0.jpg';
-  }
-
-  Future<void> _openVideo(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
   }
 }
 
-class _PointItem {
+class _VideoItem {
   final String title;
-  final String image;
-  final Color color;
   final String description;
-  final String videoUrl;
+  final String url;
 
-  const _PointItem({
+  _VideoItem({
     required this.title,
-    required this.image,
-    required this.color,
     required this.description,
-    required this.videoUrl,
+    required this.url,
   });
 }

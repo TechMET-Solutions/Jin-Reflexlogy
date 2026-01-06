@@ -1,12 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:jin_reflex_new/screens/treatment/flip_book.dart';
-
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:jin_reflex_new/screens/treatment/flip_book.dart';
+import 'package:page_flip/page_flip.dart';
 
 class TreatmentPlanScreen extends StatefulWidget {
   const TreatmentPlanScreen({super.key});
@@ -194,8 +189,19 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
                 ],
               ),
             ),
+            SizedBox(height: 15),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 0),
+              child: Row(
+                children: [
+                 // const SizedBox(height: 30),
+                 
+                  Expanded(child: Image.asset('assets/images/treatement7.png')),
+                  //const SizedBox(height: 15),
+                ],
+              ),
+            ),
             const SizedBox(height: 20),
-            Image.asset("assets/images/"),
 
             /// Flip Book with Padding
             Padding(
@@ -203,12 +209,12 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
               child: SizedBox(
                 height: 600,
                 width: double.infinity,
-                child: BookSpreadFlip(
-                  imagePaths: [
-                    'assets/images/treatement2.png',
-                    'assets/images/treatement3.png',
-                    'assets/images/treatement2.png',
-                    'assets/images/treatement3.png',
+                child: PageFlipWidget(
+                  children: [
+                    Image.asset('assets/images/treatement2.png'),
+                    Image.asset('assets/images/treatement3.png'),
+                    Image.asset('assets/images/treatement2.png'),
+                    Image.asset('assets/images/treatement3.png'),
                   ],
                 ),
               ),
@@ -334,118 +340,4 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
       child: Text(text, style: const TextStyle(fontSize: 15, height: 1.4)),
     );
   }
-}
-
-Widget _textField(
-  String label,
-  TextEditingController controller, {
-  int maxLines = 1,
-}) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-        ),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          decoration: const InputDecoration(
-            isDense: true,
-            focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Colors.black),
-            ),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Colors.black45),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-
-Widget _feedbackImageBox() {
-  return Container(
-    height: 160,
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
-    ),
-    child: Column(
-      children: [
-        const Expanded(
-          child: Center(child: Icon(Icons.image_not_supported, size: 40)),
-        ),
-        Container(
-          height: 40,
-          alignment: Alignment.center,
-          color: const Color(0xfff7eed6),
-          child: const Text("JIN Reflexology Feedback"),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _imageCard(String img) {
-  return Container(
-    height: 260,
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(10),
-      color: Colors.white,
-      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 3)],
-    ),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: Image.asset(img, fit: BoxFit.cover),
-    ),
-  );
-}
-
-Widget _yellowTitle(String title) {
-  return Container(
-    padding: const EdgeInsets.symmetric(vertical: 12),
-    decoration: BoxDecoration(
-      color: const Color(0xffffd56b),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Center(
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-      ),
-    ),
-  );
-}
-
-Widget _yellowHeader(String title) {
-  return Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: const Color(0xffffefd5),
-      border: Border.all(color: Colors.orange, width: 2),
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-    ),
-    child: Text(
-      title,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-    ),
-  );
-}
-
-Widget _yellowTextContainer(String text) {
-  return Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      border: Border.all(color: Colors.orange, width: 2),
-      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
-    ),
-    child: Text(text),
-  );
 }
