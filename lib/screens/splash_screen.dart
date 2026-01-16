@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:math';
 import 'package:jin_reflex_new/screens/main_home_dashoabrd_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -14,6 +15,11 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _logoRotation;
+  late Animation<double> _firstTextOpacity;
+  late Animation<double> _secondTextOpacity;
+  late Animation<double> _thirdTextOpacity;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
@@ -21,23 +27,81 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 4),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(_controller);
+    // Fade animation for entire screen
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0, 0.3, curve: Curves.easeIn),
+      ),
+    );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+    // Scale animation for main container
+    _scaleAnimation = Tween<double>(begin: 0.7, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0, 0.5, curve: Curves.elasticOut),
+      ),
+    );
+
+    // Logo rotation animation
+    _logoRotation = Tween<double>(begin: 0, end: 2 * pi).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.1, 0.3, curve: Curves.easeInOut),
+      ),
+    );
+
+    // Text animations with delays
+    _firstTextOpacity = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.3, 0.5, curve: Curves.easeIn),
+      ),
+    );
+
+    _secondTextOpacity = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.5, 0.7, curve: Curves.easeIn),
+      ),
+    );
+
+    _thirdTextOpacity = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.7, 0.9, curve: Curves.easeIn),
+      ),
+    );
+
+    // Slide animation for bottom text
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.8, 1.0, curve: Curves.easeOutBack),
+      ),
+    );
 
     _controller.forward();
 
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 5), () {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => MainHomeScreenDashBoard()),
+        PageRouteBuilder(
+          pageBuilder:
+              (context, animation, secondaryAnimation) =>
+                  MainHomeScreenDashBoard(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 800),
+        ),
       );
     });
   }
@@ -62,93 +126,143 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                /// TOP TEXT
-                const Text(
-                  "Your Healthy Life Is\nOur Priority",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.yellow,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    height: 1.3,
+                // TOP TEXT with fade
+                FadeTransition(
+                  opacity: _firstTextOpacity,
+                  child: const Text(
+                    "Your Healthy Life Is\nOur Priority",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.yellow,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      height: 1.3,
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 25),
 
-                /// FOOT IMAGE (ALREADY ADDED BY YOU)
-                Image.asset("assets/images/jin_reflexo.png", width: w * 0.45),
+                // LOGO with rotation and pulse
+                AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, child) {
+                    return Transform.rotate(
+                      angle: _logoRotation.value,
+                      child: Transform.scale(
+                        scale: 1 + 0.1 * sin(_controller.value * 2 * pi * 3),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Image.asset(
+                    "assets/images/jin_reflexo.png",
+                    width: w * 0.45,
+                  ),
+                ),
 
                 const SizedBox(height: 25),
 
-                /// YELLOW STRIP
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFEB3B),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: RichText(
-                    textAlign: TextAlign.center,
-                    text: const TextSpan(
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF4B2E83),
-                      ),
-                      children: [
-                        TextSpan(
-                          text: "J",
-                          style: TextStyle(color: Colors.red),
-                        ),
-                        TextSpan(text: "ustified - "),
-                        TextSpan(
-                          text: "I",
-                          style: TextStyle(color: Colors.red),
-                        ),
-                        TextSpan(text: "ntegrated - "),
-                        TextSpan(
-                          text: "N",
-                          style: TextStyle(color: Colors.red),
-                        ),
-                        TextSpan(text: "atural "),
-                        TextSpan(
-                          text: "Reflexology",
-                          style: TextStyle(color: Colors.red),
+                // YELLOW STRIP with fade
+                FadeTransition(
+                  opacity: _secondTextOpacity,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEB3B),
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.yellow.withOpacity(0.5),
+                          blurRadius: 10,
+                          spreadRadius: 2,
                         ),
                       ],
+                    ),
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: const TextSpan(
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF4B2E83),
+                        ),
+                        children: [
+                          TextSpan(
+                            text: "J",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                          TextSpan(text: "ustified - "),
+                          TextSpan(
+                            text: "I",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                          TextSpan(text: "ntegrated - "),
+                          TextSpan(
+                            text: "N",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                          TextSpan(text: "atural "),
+                          TextSpan(
+                            text: "Reflexology",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
 
                 const SizedBox(height: 30),
 
-                /// GREEN TEXT
-                const Text(
-                  "Perfect Diagnosis &\nFast Results",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.lightGreenAccent,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    height: 1.3,
+                // GREEN TEXT with fade
+                FadeTransition(
+                  opacity: _thirdTextOpacity,
+                  child: const Text(
+                    "Perfect Diagnosis &\nFast Results",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.lightGreenAccent,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      height: 1.3,
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 35),
 
-                /// BOTTOM TEXT
-                const Text(
-                  "Jain Chumbak  -  JIN Health Care\nSince 1989",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    height: 1.4,
+                // BOTTOM TEXT with slide animation
+                SlideTransition(
+                  position: _slideAnimation,
+                  child: const Text(
+                    "Jain Chumbak  -  JIN Health Care\nSince 1989",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+
+                // Loading indicator
+                const SizedBox(height: 40),
+                FadeTransition(
+                  opacity: _thirdTextOpacity,
+                  child: SizedBox(
+                    width: 50,
+                    height: 50,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.yellow.withOpacity(0.8),
+                      ),
+                      strokeWidth: 3,
+                    ),
                   ),
                 ),
               ],
