@@ -12,8 +12,13 @@ import 'package:jin_reflex_new/dashbord_forlder/feedback_form.dart';
 import 'package:jin_reflex_new/dashbord_forlder/feedback_from_screen.dart';
 import 'package:jin_reflex_new/dashbord_forlder/free_power_yoga.dart';
 import 'package:jin_reflex_new/dashbord_forlder/healthy_tips.dart';
+import 'package:jin_reflex_new/dashbord_forlder/minerals.dart';
+import 'package:jin_reflex_new/dashbord_forlder/mudra.dart';
+import 'package:jin_reflex_new/dashbord_forlder/spine_screen.dart';
 import 'package:jin_reflex_new/dashbord_forlder/training_coureses.dart';
+import 'package:jin_reflex_new/dashbord_forlder/vitamin.dart';
 import 'package:jin_reflex_new/dashbord_forlder/year_comaining.dart';
+import 'package:jin_reflex_new/dashbord_forlder/yoga.dart';
 import 'package:jin_reflex_new/foot_chart_screen.dart';
 import 'package:jin_reflex_new/hand_chart_screen.dart';
 import 'package:jin_reflex_new/marking_screen.dart';
@@ -83,7 +88,9 @@ class _HomeScreenState extends State<HomeScreen> {
         final data = jsonDecode(response.body);
 
         final bool documentUploaded = data['document_uploaded'] == true;
-print("documentUploaded--------------------------------$documentUploaded");    
+        print(
+          "documentUploaded--------------------------------$documentUploaded",
+        );
         if (!documentUploaded) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             AppPreference().initialAppPreference();
@@ -611,18 +618,42 @@ print("documentUploaded--------------------------------$documentUploaded");
     CampaignItem(
       title: 'Vitamin',
       img: 'assets/jinImages/vitamin.png',
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => VitaminsScreen()),
+        );
+      },
     ),
     CampaignItem(
       title: 'Minerals',
       img: 'assets/jinImages/minerals.png',
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => MineralsScreen()),
+        );
+      },
     ),
-    CampaignItem(title: 'Yoga', img: 'assets/jinImages/yoga.png', onTap: () {}),
+    CampaignItem(
+      title: 'Yoga',
+      img: 'assets/jinImages/yoga.png',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => YogasScreen()),
+        );
+      },
+    ),
     CampaignItem(
       title: 'Mudra',
       img: 'assets/jinImages/mudra.png',
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => MudrasScreen()),
+        );
+      },
     ),
     CampaignItem(
       title: 'Magnet',
@@ -637,7 +668,12 @@ print("documentUploaded--------------------------------$documentUploaded");
     CampaignItem(
       title: 'Spinal',
       img: 'assets/jinImages/spinal.png',
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => SpinesScreen()),
+        );
+      },
     ),
   ];
 
@@ -1024,15 +1060,17 @@ print("documentUploaded--------------------------------$documentUploaded");
             _campaignSection(header: " For Premium", items: campaignItems3()),
             // const SizedBox(height: 4),
             _campaignSection(header: "Contact us", items: campaignItems5()),
-           
+
             // Container(
             //   color: const Color(0xFF3B3B8F),
             //   child: YeraHelathScreen(),
             // ),
 
             // campaignItems4(),
-
-             _campaignSection(header: " India's Biggest Health Awareness Campaign", items: campaignItems4()),
+            _campaignSection(
+              header: " India's Biggest Health Awareness Campaign",
+              items: campaignItems4(),
+            ),
 
             // const SizedBox(height: 4),
           ],
