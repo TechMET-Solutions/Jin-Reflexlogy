@@ -43,7 +43,6 @@ class PointData {
   }
 }
 
-
 class RightHandScreen extends StatefulWidget {
   final String diagnosisId;
   final String pid;
@@ -77,13 +76,15 @@ class _RightHandScreenState extends State<RightHandScreen> {
   // LOAD JSON + LOCAL + SERVER
   Future<void> loadPoints() async {
     try {
-      final jsonString =
-          await rootBundle.loadString("assets/right_hand_btn.json");
+      final jsonString = await rootBundle.loadString(
+        "assets/right_hand_btn.json",
+      );
       final jsonMap = jsonDecode(jsonString);
 
-      points = (jsonMap["RightHand"] as List)
-          .map((e) => PointData.fromJson(e))
-          .toList();
+      points =
+          (jsonMap["RightHand"] as List)
+              .map((e) => PointData.fromJson(e))
+              .toList();
 
       loadSavedState();
       await fetchServer();
@@ -122,7 +123,6 @@ class _RightHandScreenState extends State<RightHandScreen> {
     );
   }
 
-
   Future<void> fetchServer() async {
     try {
       final res = await Dio().post(
@@ -150,7 +150,12 @@ class _RightHandScreenState extends State<RightHandScreen> {
         final val = int.parse(parts[1]);
 
         final p = points.firstWhere((e) => e.index == idx);
-        p.state = val == 1 ? 2 : val == -1 ? 0 : 1;
+        p.state =
+            val == 1
+                ? 2
+                : val == -1
+                ? 0
+                : 1;
       }
     } catch (e) {
       debugPrint("RH SERVER ERROR: $e");
@@ -162,8 +167,7 @@ class _RightHandScreenState extends State<RightHandScreen> {
   String encodeRhData() {
     StringBuffer sb = StringBuffer();
     for (var p in points) {
-      int serverValue =
-          p.state == 2 ? 1 : (p.state == 1 ? 0 : -1);
+      int serverValue = p.state == 2 ? 1 : (p.state == 1 ? 0 : -1);
       sb.write("${p.index}:$serverValue;");
     }
     return sb.toString();
@@ -188,8 +192,9 @@ class _RightHandScreenState extends State<RightHandScreen> {
       await Future.delayed(const Duration(milliseconds: 100));
       await WidgetsBinding.instance.endOfFrame;
 
-      final boundary = screenshotKey.currentContext
-          ?.findRenderObject() as RenderRepaintBoundary?;
+      final boundary =
+          screenshotKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
 
       if (boundary == null) {
         debugPrint("❌ RH boundary null");
@@ -197,8 +202,7 @@ class _RightHandScreenState extends State<RightHandScreen> {
       }
 
       final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
       if (byteData == null) return null;
 
@@ -234,12 +238,37 @@ class _RightHandScreenState extends State<RightHandScreen> {
 
   // --------------------------------------------------
   // DOT UI
-  Widget _buildDot(PointData p) {
+  Widget _buildDot(PointData p, double scaleX, double scaleY) {
     Color color =
-        p.state == 1 ? Colors.red : p.state == 2 ? Colors.green : Colors.white;
+        p.state == 1
+            ? Color(0xFF8B0000)
+            : p.state == 2
+            ? Colors.green
+            : Colors.white;
 
     return GestureDetector(
-      onTap: () => setState(() => p.state = (p.state + 1) % 3),
+      onTap: () {
+        setState(() => p.state = (p.state + 1) % 3);
+
+        // 🔥 TAP PE COORDINATES PRINT
+        debugPrint(
+          "DOT ${p.index} -> x: ${p.x.toStringAsFixed(2)}, y: ${p.y.toStringAsFixed(2)}",
+        );
+      },
+
+      // onPanUpdate: (details) {
+      //   setState(() {
+      //     p.x += details.delta.dx / scaleX;
+      //     p.y += details.delta.dy / scaleY;
+
+      //     p.x = p.x.clamp(0, baseWidth);
+      //     p.y = p.y.clamp(0, baseHeight);
+      //   });
+
+      //   debugPrint(
+      //     "MOVING ${p.index} -> x: ${p.x.toStringAsFixed(2)}, y: ${p.y.toStringAsFixed(2)}",
+      //   );
+      // },
       child: Container(
         width: 20,
         height: 20,
@@ -267,44 +296,45 @@ class _RightHandScreenState extends State<RightHandScreen> {
     double scaleY = containerH / baseHeight;
 
     return Scaffold(
-      appBar: CommonAppBar(title:"Left Hand"),
+      appBar: CommonAppBar(title: "Right Hand"),
       // appBar: AppBar(
       //   title: const Text("Right Hand Editor"),
       //   backgroundColor: Colors.green,b
       // ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _saveAndExit,
-        label: const Text("Save",style: TextStyle(color:Colors.white),),
+        label: const Text("Save", style: TextStyle(color: Colors.white)),
         backgroundColor: const Color.fromARGB(255, 19, 4, 66),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: SizedBox(
-                width: containerW,
-                height: containerH,
-                child: RepaintBoundary(
-                  key: screenshotKey,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Image.asset(
-                          "assets/images/hand_right.png",
-                          fit: BoxFit.fill,
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Center(
+                child: SizedBox(
+                  width: containerW,
+                  height: containerH,
+                  child: RepaintBoundary(
+                    key: screenshotKey,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Image.asset(
+                            "assets/images/hand.jpeg",
+                            fit: BoxFit.fill,
+                          ),
                         ),
-                      ),
-                      ...points.map(
-                        (p) => Positioned(
-                          left: p.x * scaleX,
-                          top: p.y * scaleY,
-                          child: _buildDot(p),
+                        ...points.map(
+                          (p) => Positioned(
+                            left: p.x * scaleX,
+                            top: p.y * scaleY,
+                            child: _buildDot(p, scaleX, scaleY),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
     );
   }
 }

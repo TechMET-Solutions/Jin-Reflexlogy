@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
 class PaymentOptionsScreen extends StatefulWidget {
   const PaymentOptionsScreen({super.key});
@@ -18,20 +19,7 @@ class _PaymentOptionsScreenState extends State<PaymentOptionsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
-      appBar: AppBar(
-        backgroundColor: Colors.blue.shade50,
-        elevation: 0,
-        title: const Text(
-          "Pay AED 2,549",
-          style: TextStyle(color: Colors.black),
-        ),
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.arrow_back, color: Colors.black),
-        ),
-      ),
-
+      appBar: CommonAppBar(title: "Payment Options"),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

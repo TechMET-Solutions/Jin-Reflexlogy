@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:intl/intl.dart';
+import 'package:jin_reflex_new/api_service/global/utils.dart';
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:http/http.dart' as http;
@@ -559,6 +560,16 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                         isLoading
                             ? null
                             : () {
+                              if (matchedProblem.text.isEmpty) {
+                                Utils().showToastMessage(
+                                  "plse enter Which of the Diagnosis points match your problem?",
+                                );
+                                return;
+                              }
+                              if (matchedProblem.text.isEmpty) {
+                                Utils().showToastMessage("message");
+                                return;
+                              }
                               submitDiagnosis();
                             },
                     borderRadius: BorderRadius.circular(30),
@@ -811,17 +822,17 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       FormData formData = FormData.fromMap({
         "lf_data": lfData ?? "",
         "lf_img":
-            compressedLfImg ??
+            lfImg64 ??
             (lfImg64 ?? ""), // जर compress fail झालं तर original
         "lf_result": lfResult ?? "",
         "rf_data": rfData ?? "",
-        "rf_img": compressedRfImg ?? (rfImg ?? ""),
+        "rf_img": rfImg ?? (rfImg ?? ""),
         "rf_result": rfResult ?? "",
         "lh_data": lhData ?? "",
-        "lh_img": compressedLhImg ?? (lhImg ?? ""),
+        "lh_img": lhImg ?? (lhImg ?? ""),
         "lh_result": lhResult ?? "",
         "rh_data": rhData ?? "",
-        "rh_img": compressedRhImg ?? (rhImg ?? ""),
+        "rh_img": rhImg ?? (rhImg ?? ""),
         "rh_result": rhResult ?? "",
         "problems_matched": matchedProblem.text,
         "not_detected": notDetected.text,
@@ -865,6 +876,19 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
           }
         },
       );
+      // 🔍 DEBUG: FormData fields
+      debugPrint("===== FORM DATA FIELDS =====");
+      for (var field in formData.fields) {
+        debugPrint(
+          "${field.key} => ${field.value.length > 100 ? field.value.substring(0, 100) + '...' : field.value}",
+        );
+      }
+
+      // 🔍 DEBUG: FormData files
+      debugPrint("===== FORM DATA FILES =====");
+      for (var file in formData.files) {
+        debugPrint("${file.key} => ${file.value.filename}");
+      }
 
       debugPrint("STATUS: ${response.statusCode}");
 

@@ -1,14 +1,19 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:country_state_city/country_state_city.dart' as csc;
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_paypal_payment/flutter_paypal_payment.dart';
 import 'package:jin_reflex_new/api_service/api_service.dart';
+import 'package:jin_reflex_new/api_service/payment_getway_keys.dart';
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/api_service/urls.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_record_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AddPatientScreen extends StatefulWidget {
   final String patientName;
@@ -37,7 +42,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   final mobile = TextEditingController();
   final postalCode = TextEditingController();
 
-  String? selectedBloodGroup;
+  String? selectedBloodGroup = "A+";
   String? gender;
   String? maritalStatus;
   bool isLoading = false;
@@ -53,13 +58,309 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
 
   final formKey = GlobalKey<FormState>();
 
+  late Razorpay _razorpay;
+  TextEditingController amountController = TextEditingController();
+  String savedAmount = "0";
+  bool showValidation = false;
+
   @override
   void initState() {
     super.initState();
     _loadCountries();
+    _razorpay = Razorpay();
+
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
   }
 
-  // Blood groups list
+  @override
+  void dispose() {
+    _razorpay.clear();
+    super.dispose();
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Payment Success\nPayment ID: ${response.paymentId}"),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    await sendPaymentToBackend(
+      status: "success",
+      paymentId: response.paymentId,
+      orderId: response.orderId,
+      amount: int.parse(amountController.text),
+    );
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Payment Failed\n${response.message}"),
+        backgroundColor: Colors.red,
+      ),
+    );
+
+    await sendPaymentToBackend(
+      status: "failed",
+      reason: response.message,
+      amount: int.parse(amountController.text),
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Wallet Used: ${response.walletName}")),
+    );
+  }
+  Future<bool> isIndianUser() async {
+  final prefs = await SharedPreferences.getInstance();
+  final deliveryType = prefs.getString("delivery_type");
+  return deliveryType == "india";
+}
+
+
+void _showPaymentPopup() {
+  amountController.clear();
+  showValidation = false;
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return FutureBuilder<bool>(
+        future: isIndianUser(), // ✅ async call here
+        builder: (context, snapshot) {
+          final bool isIndia = snapshot.data ?? true; // default India
+
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Insufficient Balance',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Please add money to continue',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText:
+                            'Enter Amount ${isIndia ? "(₹)" : "(\$)"}',
+                        border: const OutlineInputBorder(),
+                        errorText:
+                            showValidation ? 'Minimum 50 required' : null,
+                      ),
+                      onChanged: (_) {
+                        if (showValidation) {
+                          setState(() => showValidation = false);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+
+                  /// 🔥 PAY BUTTON
+                  ElevatedButton(
+                    onPressed: () async {
+                      final amountText =
+                          amountController.text.trim();
+
+                      if (amountText.isEmpty ||
+                          int.tryParse(amountText) == null ||
+                          int.parse(amountText) < 50) {
+                        setState(() => showValidation = true);
+                        return;
+                      }
+
+                      final int rupees = int.parse(amountText);
+
+                      Navigator.pop(context); // close dialog
+
+                      if (isIndia) {
+                        // 🇮🇳 INDIA → Razorpay
+                        _razorpay.open({
+                          'key': razorpayKey,
+                          'amount': rupees * 100, // paise
+                          'name': AppPreference().getString(
+                            PreferencesKey.name,
+                          ),
+                          'description': 'Service Payment',
+                          'prefill': {
+                            'contact': AppPreference().getString(
+                              PreferencesKey.contactNumber,
+                            ),
+                            'email': AppPreference().getString(
+                              PreferencesKey.email,
+                            ),
+                          },
+                        });
+                      } else {
+                        // 🌍 OUTSIDE INDIA → PayPal
+                        final usdAmount =
+                            (rupees / 83).toStringAsFixed(2);
+
+                        _startPayPalPayment(context);
+                      }
+                    },
+                    child: const Text('Pay'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    },
+  );
+}
+
+
+  void _startPayPalPayment(BuildContext context) {
+    String amount = amountController.text.trim();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (_) => PaypalCheckoutView(
+              sandboxMode: isSandboxMode,
+
+              clientId: paypalClientId,
+              secretKey: paypalSecret,
+
+              /// ✅ ONLY AMOUNT – NO PRODUCT
+              transactions: [
+                {
+                  "amount": {
+                    "total": amount, // example: $0.60
+                    "currency": "USD",
+                  },
+                  "description": "Wallet / Service Payment",
+                },
+              ],
+
+              note: "Demo PayPal payment",
+
+              onSuccess: (Map params) async {
+                final paypalPaymentId = params["data"]?["id"]; // PAYID-XXXX
+
+                debugPrint("PayPal Payment ID: $paypalPaymentId");
+
+                // 🔒 Safety check
+                if (paypalPaymentId == null) {
+                  debugPrint("❌ PayPal paymentId null");
+                  return;
+                }
+
+                await sendPaymentToBackend(
+                  status: "success",
+                  paymentId: paypalPaymentId,
+                  orderId: null, // PayPal मध्ये orderId नसतो
+                  amount: int.parse(amountController.text), // wallet ₹ amount
+                );
+
+                if (!mounted) return;
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("PayPal Payment Successful"),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                Navigator.pop(context); // close popup
+
+                Navigator.pop(context); // close PayPal screen
+              },
+
+              onError: (error) async {
+                await sendPaymentToBackend(
+                  status: "failed",
+                  reason: error.toString(),
+                  amount: int.parse(amountController.text),
+                );
+                debugPrint("❌ PayPal Error: $error");
+
+                Navigator.pop(context);
+              },
+
+              onCancel: () async {
+                //      await sendPaymentToBackend(
+                //   status: "failed",
+                //   reason: "Payment cancelled",
+                //   amount: int.parse(amountController.text),
+                // );
+                debugPrint("⚠️ PayPal Cancelled");
+                Navigator.pop(context);
+              },
+            ),
+      ),
+    );
+  }
+
+  Future<void> sendPaymentToBackend({
+    required String status,
+    String? paymentId,
+    String? orderId,
+    String? reason,
+    required int amount,
+  }) async {
+    try {
+      final dio = Dio();
+      var postData = {
+        "user_id": AppPreference().getString(PreferencesKey.userId),
+        "payment_id": paymentId,
+        "orderid": orderId,
+        "amount": amount.toString(),
+        "status": status,
+        "email": AppPreference().getString(PreferencesKey.email),
+        "name": AppPreference().getString(PreferencesKey.name),
+        "contact": AppPreference().getString(PreferencesKey.contactNumber),
+      };
+      log("${postData}");
+      final response = await dio.post(
+        "https://admin.jinreflexology.in/api/payment_callback",
+        data: {
+          "user_id": AppPreference().getString(PreferencesKey.userId),
+          "payment_id": paymentId,
+          "orderid": orderId,
+          "amount": amount.toString(),
+          "status": status,
+          "email": AppPreference().getString(PreferencesKey.email),
+          "name": AppPreference().getString(PreferencesKey.name),
+          "contact": AppPreference().getString(PreferencesKey.contactNumber),
+        },
+      );
+
+      debugPrint("✅ Payment sent to backend: ${response.data}");
+    } catch (e) {
+      debugPrint("❌ Backend API error: $e");
+    }
+  }
+
   final List<String> bloodGroups = [
     'A+',
     'A-',
@@ -430,10 +731,11 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
 
       dynamic jsonBody;
       if (response?.data is String) {
+        // openCheckout();
         debugPrint("INFO: Response data is String, attempting to decode JSON");
         try {
           jsonBody = jsonDecode(response!.data);
-          debugPrint("SUCCESS: JSON decoded successfully");
+          debugPrint("SUCCESS: JSON decoded successfully${jsonBody}");
         } catch (jsonError) {
           debugPrint("ERROR: Failed to decode JSON - $jsonError");
           debugPrint("ERROR: Response appears to be HTML or invalid JSON");
@@ -475,9 +777,12 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
 
         return {"id": patientId, "name": patientName};
       } else {
+        _showPaymentPopup();
+
         debugPrint("ERROR: API response success != 1 or null response");
+
         debugPrint(
-          "ERROR: Response message - ${jsonBody?["message"] ?? "No message"}",
+          "ERROR: Response ss - ${jsonBody?["message"] ?? "No message"}",
         );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -508,255 +813,324 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFFDF3DD),
-      appBar: CommonAppBar(title: "Add a Patient"),
-
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Form(
-              key: formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  buildTextField("First Name", firstName),
-                  buildTextField("Middle Name", middleName),
-                  buildTextField("Last Name", lastName),
-                  buildTextField(
-                    "Email",
-                    email,
-                    keyboard: TextInputType.emailAddress,
+    return WillPopScope(
+      onWillPop: () async {
+        return await showDialog<bool>(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) {
+                return AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  buildTextField("Age", age, keyboard: TextInputType.number),
-
-                  // Gender Selection
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                  title: Row(
+                    children: const [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange,
+                        size: 28,
+                      ),
+                      SizedBox(width: 10),
                       Text(
-                        "Gender",
-                        style: TextStyle(fontWeight: FontWeight.w500),
+                        "Confirm Exit",
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(height: 8),
-                      Row(
-                        children: [
-                          buildRadioOption("Male", "Male", gender ?? "", (
-                            value,
-                          ) {
-                            setState(() {
-                              gender = value;
-                            });
-                          }),
-                          SizedBox(width: 20),
-                          buildRadioOption("Female", "Female", gender ?? "", (
-                            value,
-                          ) {
-                            setState(() {
-                              gender = value;
-                            });
-                          }),
-                        ],
-                      ),
-                      SizedBox(height: 12),
                     ],
                   ),
-
-                  // Marital Status Selection
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Marital Status",
-                        style: TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                      SizedBox(height: 8),
-                      Row(
-                        children: [
-                          buildRadioOption(
-                            "Married",
-                            "Married",
-                            maritalStatus ?? "",
-                            (value) {
-                              setState(() {
-                                maritalStatus = value;
-                              });
-                            },
-                          ),
-                          SizedBox(width: 20),
-                          buildRadioOption(
-                            "Single",
-                            "Single",
-                            maritalStatus ?? "",
-                            (value) {
-                              setState(() {
-                                maritalStatus = value;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 12),
-                    ],
+                  content: const Text(
+                    "Your data will not be saved if you go back.\nAre you sure you want to exit?",
+                    style: TextStyle(fontSize: 15, height: 1.4),
                   ),
+                  actionsPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  actions: [
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text("Cancel"),
+                    ),
 
-                  buildCountryDropdown(),
-                  buildStateDropdown(),
-                  buildCityDropdown(),
-                  buildTextField("Address", address),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: const Text(
+                        "Confirm",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ) ??
+            false;
+      },
+      child: Scaffold(
+        backgroundColor: Color(0xFFFDF3DD),
+        appBar: CommonAppBar(title: "Add a Patient"),
 
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 1,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    buildTextField("First Name", firstName),
+                    buildTextField("Middle Name", middleName),
+                    buildTextField("Last Name", lastName),
+                    buildTextField(
+                      "Email",
+                      email,
+                      keyboard: TextInputType.emailAddress,
+                    ),
+                    buildTextField("Age", age, keyboard: TextInputType.number),
+
+                    // Gender Selection
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Gender",
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        SizedBox(height: 8),
+                        Row(
                           children: [
-                            Text(
-                              "Code",
-                              style: TextStyle(fontWeight: FontWeight.w500),
+                            buildRadioOption("Male", "Male", gender ?? "", (
+                              value,
+                            ) {
+                              setState(() {
+                                gender = value;
+                              });
+                            }),
+                            SizedBox(width: 20),
+                            buildRadioOption("Female", "Female", gender ?? "", (
+                              value,
+                            ) {
+                              setState(() {
+                                gender = value;
+                              });
+                            }),
+                          ],
+                        ),
+                        SizedBox(height: 12),
+                      ],
+                    ),
+
+                    // Marital Status Selection
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Marital Status",
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          children: [
+                            buildRadioOption(
+                              "Married",
+                              "Married",
+                              maritalStatus ?? "",
+                              (value) {
+                                setState(() {
+                                  maritalStatus = value;
+                                });
+                              },
                             ),
-                            SizedBox(height: 5),
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Color(0xffF9CF63),
-                                  width: 1.5,
-                                ),
-                              ),
-                              child: TextFormField(
-                                controller: code,
-                                keyboardType: TextInputType.phone,
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  hintText: "+91",
-                                ),
-                              ),
+                            SizedBox(width: 20),
+                            buildRadioOption(
+                              "Single",
+                              "Single",
+                              maritalStatus ?? "",
+                              (value) {
+                                setState(() {
+                                  maritalStatus = value;
+                                });
+                              },
                             ),
                           ],
                         ),
-                      ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        flex: 3,
-                        child: buildTextField(
-                          "Mobile No",
-                          mobile,
-                          keyboard: TextInputType.phone,
-                        ),
-                      ),
-                    ],
-                  ),
+                        SizedBox(height: 12),
+                      ],
+                    ),
 
-                  SizedBox(height: 12),
-                  buildTextField(
-                    "Postal Code",
-                    postalCode,
-                    keyboard: TextInputType.number,
-                  ),
+                    buildCountryDropdown(),
+                    buildStateDropdown(),
+                    buildCityDropdown(),
+                    buildTextField("Address", address),
 
-                  buildDropdownField(), // Blood group dropdown
-
-                  SizedBox(height: 70),
-                ],
-              ),
-            ),
-          ),
-
-          // Loading Overlay
-          if (isLoading)
-            Container(
-              color: Colors.black.withOpacity(0.3),
-              child: Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xffF9CF63)),
-                ),
-              ),
-            ),
-        ],
-      ),
-
-      bottomNavigationBar: Container(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        color: Color(0xFFFDF3DD),
-        child: Row(
-          children: [
-            Expanded(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black87,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: EdgeInsets.symmetric(vertical: 15),
-                ),
-                onPressed: isLoading ? null : () => Navigator.pop(context),
-                child: Text(
-                  "Cancel",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-            ),
-            SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xffF9CF63),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: EdgeInsets.symmetric(vertical: 15),
-                ),
-                onPressed:
-                    isLoading
-                        ? null
-                        : () async {
-                          final result = await addPatient();
-
-                          if (result != null &&
-                              result["id"] != null &&
-                              result["id"]!.isNotEmpty) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (_) => DiagnosisScreen(
-                                      patient_id: result["id"],
-                                      name: result["name"],
-                                      diagnosis_id: widget.diagnosisId,
-                                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 1,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Code",
+                                style: TextStyle(fontWeight: FontWeight.w500),
                               ),
-                            );
-                          }
-                        },
+                              SizedBox(height: 5),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Color(0xffF9CF63),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: TextFormField(
+                                  controller: code,
+                                  keyboardType: TextInputType.phone,
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: "+91",
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          flex: 3,
+                          child: buildTextField(
+                            "Mobile No",
+                            mobile,
+                            keyboard: TextInputType.phone,
+                          ),
+                        ),
+                      ],
+                    ),
 
-                child:
-                    isLoading
-                        ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.black,
+                    SizedBox(height: 12),
+                    buildTextField(
+                      "Postal Code",
+                      postalCode,
+                      keyboard: TextInputType.number,
+                    ),
+
+                    buildDropdownField(), // Blood group dropdown
+
+                    SizedBox(height: 70),
+                  ],
+                ),
+              ),
+            ),
+
+            // Loading Overlay
+            if (isLoading)
+              Container(
+                color: Colors.black.withOpacity(0.3),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xffF9CF63),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+
+        bottomNavigationBar: Container(
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          color: Color(0xFFFDF3DD),
+          child: Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black87,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 15),
+                  ),
+                  onPressed: isLoading ? null : () => Navigator.pop(context),
+                  child: Text(
+                    "Cancel",
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xffF9CF63),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 15),
+                  ),
+                  onPressed:
+                      isLoading
+                          ? null
+                          : () async {
+                            final result = await addPatient();
+
+                            if (result != null &&
+                                result["id"] != null &&
+                                result["id"]!.isNotEmpty) {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => DiagnosisScreen(
+                                        patient_id: result["id"],
+                                        name: result["name"],
+                                        diagnosis_id: widget.diagnosisId,
+                                      ),
+                                ),
+                              );
+                            }
+                          },
+
+                  child:
+                      isLoading
+                          ? SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.black,
+                              ),
+                            ),
+                          )
+                          : Text(
+                            "Confirm",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
-                        )
-                        : Text(
-                          "Confirm",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -106,7 +106,7 @@ class _PointsScreenState extends State<PointsScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF130442),
         title: const Text(
-          'Direct Points Videos',
+          'Effective Points',
           style: TextStyle(color: Colors.white),
         ),
         centerTitle: true,

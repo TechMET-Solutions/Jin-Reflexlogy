@@ -6,12 +6,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
+import 'package:jin_reflex_new/dashbord_forlder/training_coureses.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_screen_list.dart';
 import 'package:jin_reflex_new/screens/ebook_screen.dart';
 import 'package:jin_reflex_new/screens/life_style/life_style_screen.dart';
 import 'package:jin_reflex_new/screens/point_finder_screen.dart';
 import 'package:jin_reflex_new/screens/treatment/triment_screen.dart';
-import 'package:jin_reflex_new/shop/shop_screen.dart';
 
 import '../screens/shop/shop_screen.dart';
 
@@ -30,9 +30,9 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
     String text,
     String type,
     id,
-    passworld,
-    {DeliveryType}
-  ) async {
+    passworld, {
+    DeliveryType,
+  }) async {
     print("object");
     state = const AsyncValue.loading();
 
@@ -67,19 +67,56 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
         "https://jinreflexology.in/api1/new/login.php",
         data: FormData.fromMap({'id': id, 'password': passworld, 'type': type}),
       );
-print(type);
-       if (response.statusCode == 200 && response.data != null) {
+      print(type);
+      if (response.statusCode == 200 && response.data != null) {
         final jsonData = jsonDecode(response.data.toString());
 
         if (jsonData['success'] == 1) {
-          await AppPreference().setString(
-            PreferencesKey.token,
-            jsonData['token'],
-          );
-          await AppPreference().setString(
-            PreferencesKey.userId,
-            jsonData['id'].toString(),
-          );
+          if (type == "therapist") {
+            print("ssssssssssssssssssssssssssssssssssssssssssss");
+            await AppPreference().setString(
+              PreferencesKey.token,
+              jsonData['user_data']['token'],
+            );
+            await AppPreference().setString(
+              PreferencesKey.contactNumber,
+              jsonData['user_data']['t_mobile'],
+            );
+            await AppPreference().setString(
+              PreferencesKey.name,
+              jsonData['user_data']['t_name'],
+            );
+            await AppPreference().setString(
+              PreferencesKey.userId,
+              jsonData['user_data']['id'].toString(),
+            );
+            await AppPreference().setString(
+              PreferencesKey.email,
+              jsonData['user_data']['t_email'].toString(),
+            );
+          } else {
+            await AppPreference().setString(
+              PreferencesKey.token,
+              jsonData['token'],
+            );
+            await AppPreference().setString(
+              PreferencesKey.contactNumber,
+              jsonData['user_data']['phone'],
+            );
+            await AppPreference().setString(
+              PreferencesKey.name,
+              jsonData['user_data']['name'],
+            );
+            await AppPreference().setString(
+              PreferencesKey.userId,
+              jsonData['user_data']['id'].toString(),
+            );
+            await AppPreference().setString(
+              PreferencesKey.email,
+              jsonData['user_data']['email'].toString(),
+            );
+          }
+
           await AppPreference().setString(PreferencesKey.type, type);
 
           state = const AsyncValue.data(null);
@@ -100,21 +137,24 @@ print(type);
               MaterialPageRoute(builder: (_) => EbookScreen()),
             );
           } else if (text == "PointFinderScreen") {
-            Navigator.pushReplacement(  
+            Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => PointFinderScreen()),
             );
-          }else if (text == "Treatment") {
-            Navigator.pushReplacement(  
+          } else if (text == "CourseScreen") {
+            Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => Treatment()),
+              MaterialPageRoute(
+                builder: (_) => CourseScreen(deliveryType: DeliveryType),
+              ),
             );
-            
-          }
-          else if (text == "ShopScreen") {
-            Navigator.pushReplacement(  
+          } else if (text == "Treatment") {
+          } else if (text == "ShopScreen") {
+            Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => ShopScreen(deliveryType:DeliveryType)),
+              MaterialPageRoute(
+                builder: (_) => ShopScreen(deliveryType: DeliveryType),
+              ),
             );
           }
         } else {

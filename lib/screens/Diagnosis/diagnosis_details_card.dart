@@ -51,7 +51,8 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
         "pid": AppPreference().getString(PreferencesKey.userId),
         "diagnosisId": widget.diagnosisId,
       });
-
+print("ddddddddddddddddddddddddddddddddddddddddddd");
+print("${widget.diagnosisId}");
       final response = await Dio().post(
         diagnosis_images,
         data: formData,

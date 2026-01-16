@@ -59,29 +59,35 @@ class _BannerSliderState extends State<BannerSlider> {
         return Column(
           children: [
             CarouselSlider(
-              items: banners.map((banner) {
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => BannerDetailScreen(banner: banner),
-                      ),
+              items:
+                  banners.map((banner) {
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BannerDetailScreen(banner: banner),
+                          ),
+                        );
+                      },
+                      child: ClipRRect(
+  borderRadius: BorderRadius.circular(15),
+  child: Image.network(
+    banner.image,
+    fit: BoxFit.cover,
+    width: double.infinity,
+    errorBuilder: (context, error, stackTrace) {
+      return Image.asset(
+        'assets/images/jin_slide1.png',
+        fit: BoxFit.cover,
+        width: double.infinity,
+      );
+    },
+  ),
+),
+
                     );
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 6),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      image: DecorationImage(
-                        image: NetworkImage(banner.image),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
+                  }).toList(),
               carouselController: _controller,
               options: CarouselOptions(
                 height: 175,
@@ -102,22 +108,24 @@ class _BannerSliderState extends State<BannerSlider> {
             // ================= INDICATOR =================
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: banners.asMap().entries.map((entry) {
-                return GestureDetector(
-                  onTap: () => _controller.animateToPage(entry.key),
-                  child: Container(
-                    width: _currentIndex == entry.key ? 12 : 8,
-                    height: 8,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _currentIndex == entry.key
-                          ? Colors.blue
-                          : Colors.grey.shade400,
-                    ),
-                  ),
-                );
-              }).toList(),
+              children:
+                  banners.asMap().entries.map((entry) {
+                    return GestureDetector(
+                      onTap: () => _controller.animateToPage(entry.key),
+                      child: Container(
+                        width: _currentIndex == entry.key ? 12 : 8,
+                        height: 8,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              _currentIndex == entry.key
+                                  ? Colors.blue
+                                  : Colors.grey.shade400,
+                        ),
+                      ),
+                    );
+                  }).toList(),
             ),
           ],
         );
@@ -162,10 +170,7 @@ class BannerDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    banner.desc,
-                    style: const TextStyle(fontSize: 14),
-                  ),
+                  Text(banner.desc, style: const TextStyle(fontSize: 14)),
                 ],
               ),
             ),

@@ -3,12 +3,14 @@ class PatientData {
   final String name;
   final String gender;
   final String mobile;
+  final String registerationDate;
 
   PatientData({
     required this.id,
     required this.name,
     required this.gender,
     required this.mobile,
+    required this.registerationDate,
   });
 
   factory PatientData.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class PatientData {
       name: json['name'] ?? "",
       gender: json['gender'] ?? "",
       mobile: json['mobile'].toString(),
+      registerationDate: json['RegisterationDate'],
     );
   }
 }

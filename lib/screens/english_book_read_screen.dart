@@ -16,42 +16,46 @@ class EnglishBookScreen extends StatefulWidget {
 class _EnglishBookScreenState extends State<EnglishBookScreen> {
   int pageIndex = 1;
   int lastPage = 201;
-
+  
+  // For page caching
+  final Map<int, ImageProvider> _pageCache = {};
+  
   bool loading = false;
-  ImageProvider? pageImage;
-
+  ImageProvider? _currentPageImage;
+  
   final TextEditingController searchController = TextEditingController();
-
-  // API URL
-  // final String apiUrl = "${w}";
+  final Dio _dio = Dio(); // Reuse Dio instance
 
   @override
   void initState() {
     super.initState();
-    fetchPage(pageIndex);
+    _fetchPage(pageIndex);
+    // Preload next page
+    _preloadNextPage();
   }
 
-  // ===================== API USING DIO HERE =====================
-  Future<void> fetchPage(int pageNo) async {
-    setState(() => loading = true);
+  // Preloading
+  void _preloadNextPage() {
+    if (pageIndex < lastPage && !_pageCache.containsKey(pageIndex + 1)) {
+      _fetchPageForCache(pageIndex + 1);
+    }
+  }
 
+  // Load page for cache (without refreshing UI)
+  Future<void> _fetchPageForCache(int pageNo) async {
     try {
-      Dio dio = Dio();
-
       FormData formData = FormData.fromMap({
         "a": "1",
-        "name": pageNo.toString(),   // page number
+        "name": pageNo.toString(),
       });
 
-      Response response = await dio.post(
+      Response response = await _dio.post(
         widget.url,
-        data: formData, 
+        data: formData,
         options: Options(contentType: "multipart/form-data"),
       );
 
       dynamic jsonBody;
-
-      // Response may be String or JSON Map
       if (response.data is String) {
         jsonBody = jsonDecode(response.data);
       } else {
@@ -61,20 +65,78 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
       if (jsonBody["success"] == 1) {
         final String base64img = jsonBody["data"][0]["image"];
         final bytes = base64Decode(base64img);
+        
+        // Save to cache
+        _pageCache[pageNo] = MemoryImage(bytes);
+      }
+    } catch (e) {
+      debugPrint("Preload Error for page $pageNo: $e");
+    }
+  }
 
+  // Load current page
+  Future<void> _fetchPage(int pageNo) async {
+    // If already in cache, use it
+    if (_pageCache.containsKey(pageNo)) {
+      setState(() {
+        _currentPageImage = _pageCache[pageNo];
+        loading = false;
+      });
+      return;
+    }
+
+    setState(() => loading = true);
+
+    try {
+      FormData formData = FormData.fromMap({
+        "a": "1",
+        "name": pageNo.toString(),
+      });
+
+      Response response = await _dio.post(
+        widget.url,
+        data: formData,
+        options: Options(contentType: "multipart/form-data"),
+      );
+
+      dynamic jsonBody;
+      if (response.data is String) {
+        jsonBody = jsonDecode(response.data);
+      } else {
+        jsonBody = response.data;
+      }
+
+      if (jsonBody["success"] == 1) {
+        final String base64img = jsonBody["data"][0]["image"];
+        final bytes = base64Decode(base64img);
+        final image = MemoryImage(bytes);
+        
+        // Save to cache
+        _pageCache[pageNo] = image;
+        
         setState(() {
-          pageImage = MemoryImage(bytes);
+          _currentPageImage = image;
         });
       } else {
         debugPrint("Failed: ${jsonBody["data"]}");
+        _showErrorSnackbar("Failed to load page");
       }
     } catch (e) {
       debugPrint("Error: $e");
+      _showErrorSnackbar("Connection error");
     }
 
     setState(() => loading = false);
   }
-  // ===============================================================
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
 
   // Next Page
   void nextPage() {
@@ -83,64 +145,91 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
     } else {
       pageIndex++;
     }
-    fetchPage(pageIndex);
+    
+    // Update URL parameter
+    setState(() {});
+    
+    _fetchPage(pageIndex);
+    _preloadNextPage();
+    
+    // Also preload previous page
+    if (pageIndex > 1 && !_pageCache.containsKey(pageIndex - 1)) {
+      _fetchPageForCache(pageIndex - 1);
+    }
   }
 
   // Previous Page
   void prevPage() {
     if (pageIndex <= 1) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("You are at first page")));
-    } else {
-      pageIndex--;
-      fetchPage(pageIndex);
+      _showErrorSnackbar("You are on the first page");
+      return;
     }
+    
+    pageIndex--;
+    
+    // Update URL parameter
+    setState(() {});
+    
+    _fetchPage(pageIndex);
   }
 
-  // Go to page
+  // Go to specific page
   void gotoPage() {
-    int page = int.tryParse(searchController.text) ?? 0;
-
-    if (page < 1 || page > lastPage) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("This book has $lastPage pages.")),
-      );
+    final text = searchController.text.trim();
+    if (text.isEmpty) return;
+    
+    int? page = int.tryParse(text);
+    
+    if (page == null || page < 1 || page > lastPage) {
+      _showErrorSnackbar("This book has only $lastPage pages");
+      searchController.clear();
       return;
     }
 
     pageIndex = page;
-    fetchPage(pageIndex);
+    
+    // Update URL parameter
+    setState(() {});
+    
+    _fetchPage(pageIndex);
+    searchController.clear();
+    
+    // Remove focus
+    FocusScope.of(context).unfocus();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xfff5f5f5),
-
-      appBar: CommonAppBar(title: "${widget.name}"),
+      appBar: CommonAppBar(title: "${widget.name} - Page $pageIndex/$lastPage"),
+      
       body: Column(
         children: [
-          // TOP CONTROLS
+          // Controls Bar
           Container(
             padding: const EdgeInsets.all(10),
             color: Colors.white,
             child: Row(
               children: [
-                _button("Prev", Colors.red, prevPage),
+                _button("Prev", Colors.blue, prevPage),
                 const SizedBox(width: 8),
 
-                // Search input
+                // Page number search
                 Expanded(
                   child: TextField(
                     controller: searchController,
                     keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => gotoPage(),
                     decoration: InputDecoration(
-                      hintText: "Page No",
+                      hintText: "Enter page number",
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                       filled: true,
                       fillColor: Colors.grey.shade100,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
                       ),
                     ),
                   ),
@@ -149,33 +238,47 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
                 const SizedBox(width: 8),
                 _button("Go", Colors.green, gotoPage),
                 const SizedBox(width: 8),
-                _button("Next", Colors.red, nextPage),
+                _button("Next", Colors.blue, nextPage),
               ],
             ),
           ),
 
-          // IMAGE VIEWER (Zoomable)
+          // Page Viewer
           Expanded(
-            child: loading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Colors.deepOrange),
-                  )
-                : pageImage == null
-                    ? const Center(child: Text("No Image"))
-                    : PhotoView(
-                        backgroundDecoration:
-                            const BoxDecoration(color: Colors.white),
-                        imageProvider: pageImage!,
-                        minScale: PhotoViewComputedScale.contained,
-                        maxScale: PhotoViewComputedScale.covered * 4,
+            child: Stack(
+              children: [
+                // Image viewer
+                if (_currentPageImage != null)
+                  PhotoView(
+                    backgroundDecoration:
+                        const BoxDecoration(color: Colors.white),
+                    imageProvider: _currentPageImage!,
+                    minScale: PhotoViewComputedScale.contained,
+                    maxScale: PhotoViewComputedScale.covered * 4,
+                    loadingBuilder: (context, event) =>
+                        const Center(child: CircularProgressIndicator()),
+                  ),
+
+                // Loading indicator
+                if (loading)
+                  Container(
+                    color: Colors.black54,
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.deepOrange,
+                        strokeWidth: 3,
                       ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  // Reusable Buttons
+  // Button widget
   Widget _button(String text, Color color, VoidCallback onTap) {
     return SizedBox(
       height: 45,
@@ -187,9 +290,19 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
-        child: Text(text, style: const TextStyle(fontSize: 15)),
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+        ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 }

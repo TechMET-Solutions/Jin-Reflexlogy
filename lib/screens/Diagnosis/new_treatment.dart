@@ -3,8 +3,14 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 class NewTreatment extends StatefulWidget {
   final String patientId;
+  final String diagnosisId;
 
-  const NewTreatment({super.key, required this.patientId});
+  const NewTreatment({
+    super.key,
+    required this.patientId,
+    required this.diagnosisId,
+  });
+
 
   @override
   State<NewTreatment> createState() => _NewTreatmentState();
@@ -36,7 +42,8 @@ class _NewTreatmentState extends State<NewTreatment> {
           )
           ..loadRequest(
             Uri.parse(
-              "https://jinreflexology.in/api1/new/patient_lifestyle_therapist.php?id=${widget.patientId}",
+              "https://jinreflexology.in/api1/new/patient_lifestyle_therapist.php"
+              "?id=${widget.patientId}&diagnosisId=${widget.diagnosisId}",
             ),
           );
   }

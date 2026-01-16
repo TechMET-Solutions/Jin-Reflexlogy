@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:page_flip/page_flip.dart';
 
 class TreatmentPlanScreen extends StatefulWidget {
@@ -73,12 +74,7 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xfff6f6f6),
-      appBar: AppBar(
-        backgroundColor: const Color(0xff101926),
-        foregroundColor: Colors.white,
-        title: const Text("Treatment Plan"),
-        centerTitle: true,
-      ),
+      appBar: CommonAppBar(title: "Treatment Plan") ,
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Column(

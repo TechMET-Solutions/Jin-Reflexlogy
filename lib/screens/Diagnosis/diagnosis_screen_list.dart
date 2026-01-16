@@ -18,6 +18,23 @@ class MemberListScreen extends StatefulWidget {
 }
 
 class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
+  String getLimitedName({required String text, required double screenWidth}) {
+    // 1️⃣ numbers remove
+    final withoutNumbers = text.replaceAll(RegExp(r'\d'), '');
+
+    // 2️⃣ clean extra spaces
+    final cleanText = withoutNumbers.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+    // 3️⃣ decide character limit
+    final int charLimit = screenWidth < 600 ? 22 : 32;
+
+    // 4️⃣ apply limit
+    if (cleanText.length <= charLimit) {
+      return cleanText;
+    }
+    return cleanText.substring(0, charLimit);
+  }
+
   List<PatientData> patients = [];
   bool isLoading = true;
   bool isFetchingMore = false;
@@ -40,7 +57,6 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
   }
 
   void _scrollListener() {
-
     if (!scrollController.hasClients) return;
     final maxScroll = scrollController.position.maxScrollExtent;
     final currentScroll = scrollController.position.pixels;
@@ -88,7 +104,7 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
       if (!mounted) return;
 
       final newText = searchController.text.trim();
-      
+
       // Only search if text changed
       if (newText != _currentSearchText) {
         _currentSearchText = newText;
@@ -170,7 +186,7 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
       if (response.statusCode == 200) {
         var jsonBody = jsonDecode(response.body);
         print("   Success: ${jsonBody['success']}");
-        
+
         final List raw = jsonBody["data"] ?? [];
         print("   Data Items Received: ${raw.length}");
 
@@ -232,219 +248,236 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
   // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
     final token = AppPreference().getString(PreferencesKey.userId);
     final type = AppPreference().getString(PreferencesKey.type);
 
     return Scaffold(
       appBar: CommonAppBar(title: "Patient List"),
       backgroundColor: Color(0xFFFDF3DD),
-      body: type == "patient" || token.isEmpty
-          ? JinLoginScreen(
-              text: "MemberListScreen",
-              type: "therapist",
-              onTab: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => MemberListScreen()),
-                );
-              },
-            )
-          : SafeArea(
-              child: Column(
-                children: [
-                  SizedBox(height: 10),
+      body:
+          type == "patient" || token.isEmpty
+              ? JinLoginScreen(
+                text: "MemberListScreen",
+                type: "therapist",
+                onTab: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MemberListScreen()),
+                  );
+                },
+              )
+              : SafeArea(
+                child: Column(
+                  children: [
+                    SizedBox(height: screenSize.height * 0.0125),
 
-                  // SEARCH + ADD BUTTON
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 14),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(30),
-                              border: Border.all(
-                                color: Colors.orange,
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                SizedBox(width: 12),
-                                Icon(Icons.search, color: Colors.orange),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: TextField(
-                                    controller: searchController,
-                                    focusNode: _searchFocusNode,
-                                    decoration: InputDecoration(
-                                      hintText:
-                                          "Search patient by name, mobile or ID",
-                                      hintStyle: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 14,
-                                      ),
-                                      border: InputBorder.none,
-                                      focusedBorder: InputBorder.none,
-                                      enabledBorder: InputBorder.none,
-                                      errorBorder: InputBorder.none,
-                                      disabledBorder: InputBorder.none,
-                                      contentPadding: EdgeInsets.symmetric(
-                                        vertical: 12,
-                                      ),
-                                    ),
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                                if (searchController.text.isNotEmpty)
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.clear,
-                                      color: Colors.grey,
-                                      size: 20,
-                                    ),
-                                    onPressed: () {
-                                      searchController.clear();
-                                      _currentSearchText = '';
-                                      fetchPatients(isInitial: true);
-                                    },
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => AddPatientScreen(
-                                  patientName: '',
-                                  patientId: '',
-                                  pid: AppPreference()
-                                      .getString(PreferencesKey.userId),
-                                  diagnosisId: '',
-                                ),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            height: 48,
-                            width: 48,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: Colors.orange,
-                                width: 2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.add,
-                              color: Colors.orange,
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: 16),
-
-                  // LIST HEADER WITH DEBUG INFO
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Total Patients: ${patients.length}",
-                          style: TextStyle(
-                            color: Colors.orange,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                        if (_currentSearchText.isNotEmpty)
-                          Text(
-                            "Search: '$_currentSearchText'",
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                          ),
-                        // DEBUG INFO
-                        Row(
-                          children: [
-                            Text(
-                              "Page: $page",
-                              style: TextStyle(color: Colors.green, fontSize: 12),
-                            ),
-                            SizedBox(width: 8),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
+                    // SEARCH + ADD BUTTON
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenSize.width * 0.035,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: screenSize.height * 0.06,
                               decoration: BoxDecoration(
-                                color: hasMore ? Colors.green[100] : Colors.red[100],
-                                borderRadius: BorderRadius.circular(4),
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(
+                                  color: Colors.orange,
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                              child: Text(
-                                hasMore ? "Has More" : "No More",
+                              child: Row(
+                                children: [
+                                  SizedBox(width: screenSize.width * 0.03),
+                                  Icon(Icons.search, color: Colors.orange),
+                                  SizedBox(width: screenSize.width * 0.02),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: searchController,
+                                      focusNode: _searchFocusNode,
+                                      decoration: InputDecoration(
+                                        hintText:
+                                            "Search patient by name, mobile or ID",
+                                        hintStyle: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 14,
+                                        ),
+                                        border: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                        errorBorder: InputBorder.none,
+                                        disabledBorder: InputBorder.none,
+                                        contentPadding: EdgeInsets.symmetric(
+                                          vertical: 12,
+                                        ),
+                                      ),
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                  if (searchController.text.isNotEmpty)
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.clear,
+                                        color: Colors.grey,
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        searchController.clear();
+                                        _currentSearchText = '';
+                                        fetchPatients(isInitial: true);
+                                      },
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: screenSize.width * 0.025),
+                          InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => AddPatientScreen(
+                                        patientName: '',
+                                        patientId: '',
+                                        pid: AppPreference().getString(
+                                          PreferencesKey.userId,
+                                        ),
+                                        diagnosisId: '',
+                                      ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              height: screenSize.height * 0.06,
+                              width: screenSize.width * 0.12,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: Colors.orange,
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.add,
+                                color: Colors.orange,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(height: screenSize.height * 0.02),
+
+                    // LIST HEADER WITH DEBUG INFO
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenSize.width * 0.05,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Total Patients: ${patients.length}",
+                            style: TextStyle(
+                              color: Colors.orange,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          if (_currentSearchText.isNotEmpty)
+                            Text(
+                              "Search: '$_currentSearchText'",
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            ),
+                          // DEBUG INFO
+                          Row(
+                            children: [
+                              Text(
+                                "Page: $page",
                                 style: TextStyle(
-                                  color: hasMore ? Colors.green : Colors.red,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                  fontSize: 12,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                              SizedBox(width: screenSize.width * 0.02),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: screenSize.width * 0.015,
+                                  vertical: screenSize.height * 0.0025,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      hasMore
+                                          ? Colors.green[100]
+                                          : Colors.red[100],
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  hasMore ? "Has More" : "No More",
+                                  style: TextStyle(
+                                    color: hasMore ? Colors.green : Colors.red,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  SizedBox(height: 10),
+                    SizedBox(height: screenSize.height * 0.0125),
 
-                  // PATIENT LIST
-                  Expanded(
-                    child: isLoading
-                        ? Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.orange,
-                            ),
-                          )
-                        : patients.isEmpty
-                            ? Center(
+                    // PATIENT LIST
+                    Expanded(
+                      child:
+                          isLoading
+                              ? Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.orange,
+                                ),
+                              )
+                              : patients.isEmpty
+                              ? Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
                                       Icons.people_outline,
                                       color: Colors.grey[400],
-                                      size: 64,
+                                      size: screenSize.width * 0.16,
                                     ),
-                                    SizedBox(height: 16),
+                                    SizedBox(height: screenSize.height * 0.02),
                                     Text(
                                       _currentSearchText.isEmpty
                                           ? "No Patients Found"
@@ -454,7 +487,7 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
                                         fontSize: 16,
                                       ),
                                     ),
-                                    SizedBox(height: 8),
+                                    SizedBox(height: screenSize.height * 0.01),
                                     if (_currentSearchText.isNotEmpty)
                                       TextButton(
                                         onPressed: () {
@@ -471,15 +504,19 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
                                   ],
                                 ),
                               )
-                            : NotificationListener<ScrollNotification>(
-                                onNotification: (ScrollNotification scrollInfo) {
+                              : NotificationListener<ScrollNotification>(
+                                onNotification: (
+                                  ScrollNotification scrollInfo,
+                                ) {
                                   // Additional scroll debug
                                   if (scrollInfo is ScrollEndNotification) {
                                     print("📜 Scroll ended");
                                     print(
-                                        "   Position: ${scrollController.position.pixels}");
+                                      "   Position: ${scrollController.position.pixels}",
+                                    );
                                     print(
-                                        "   Max: ${scrollController.position.maxScrollExtent}");
+                                      "   Max: ${scrollController.position.maxScrollExtent}",
+                                    );
                                   }
                                   return false;
                                 },
@@ -493,11 +530,12 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
                                     controller: scrollController,
                                     physics: AlwaysScrollableScrollPhysics(),
                                     padding: EdgeInsets.only(
-                                      left: 14,
-                                      right: 14,
-                                      bottom: 20,
+                                      left: screenSize.width * 0.035,
+                                      right: screenSize.width * 0.035,
+                                      bottom: screenSize.height * 0.025,
                                     ),
-                                    itemCount: patients.length +
+                                    itemCount:
+                                        patients.length +
                                         (hasMore &&
                                                 !isFetchingMore &&
                                                 _currentSearchText.isEmpty
@@ -508,14 +546,18 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
                                       if (index >= patients.length) {
                                         return Padding(
                                           padding: EdgeInsets.symmetric(
-                                              vertical: 20),
+                                            vertical: screenSize.height * 0.025,
+                                          ),
                                           child: Center(
                                             child: Column(
                                               children: [
                                                 CircularProgressIndicator(
                                                   color: Colors.orange,
                                                 ),
-                                                SizedBox(height: 8),
+                                                SizedBox(
+                                                  height:
+                                                      screenSize.height * 0.01,
+                                                ),
                                                 Text(
                                                   "Loading more patients...",
                                                   style: TextStyle(
@@ -533,47 +575,56 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
 
                                       return Card(
                                         margin: EdgeInsets.symmetric(
-                                          vertical: 6,
+                                          vertical: screenSize.height * 0.0075,
                                           horizontal: 0,
                                         ),
                                         elevation: 2,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                         child: InkWell(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           onTap: () {
                                             Navigator.push(
                                               context,
                                               MaterialPageRoute(
-                                                builder: (_) =>
-                                                    DiagnosisListScreen(
-                                                  patientName: patient.name,
-                                                  pid: AppPreference()
-                                                      .getString(
-                                                          PreferencesKey.userId)
-                                                      .toString(),
-                                                  diagnosisId: patient.id,
-                                                  patientId: patient.id,
-                                                ),
+                                                builder:
+                                                    (_) => DiagnosisListScreen(
+                                                      patientName: patient.name,
+                                                      pid:
+                                                          AppPreference()
+                                                              .getString(
+                                                                PreferencesKey
+                                                                    .userId,
+                                                              )
+                                                              .toString(),
+                                                      diagnosisId: patient.id,
+                                                      patientId: patient.id,
+                                                    ),
                                               ),
                                             );
                                           },
                                           child: Padding(
-                                            padding: EdgeInsets.all(16),
+                                            padding: EdgeInsets.all(
+                                              screenSize.width * 0.04,
+                                            ),
                                             child: Row(
                                               children: [
                                                 Container(
-                                                  width: 40,
-                                                  height: 40,
+                                                  width: screenSize.width * 0.1,
+                                                  height:
+                                                      screenSize.width * 0.1,
                                                   decoration: BoxDecoration(
                                                     color: Colors.orange
                                                         .withOpacity(0.1),
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                            20),
+                                                          20,
+                                                        ),
                                                   ),
                                                   child: Center(
                                                     child: Text(
@@ -590,61 +641,135 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
                                                     ),
                                                   ),
                                                 ),
-                                                SizedBox(width: 16),
+                                                SizedBox(
+                                                  width:
+                                                      screenSize.width * 0.04,
+                                                ),
                                                 Expanded(
                                                   child: Column(
                                                     crossAxisAlignment:
                                                         CrossAxisAlignment
                                                             .start,
                                                     children: [
-                                                      Text(
-                                                        patient.name,
-                                                        style: TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color: Colors.black87,
-                                                        ),
-                                                        maxLines: 1,
-                                                        overflow:
-                                                            TextOverflow.ellipsis,
+                                                      Row(
+                                                        children: [
+                                                          Expanded(
+                                                            flex: 2,
+                                                            child: Text(
+                                                              patient.name,
+                                                              style: const TextStyle(
+                                                                fontSize: 16,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                color:
+                                                                    Colors
+                                                                        .black87,
+                                                              ),
+                                                              maxLines: 1,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                          ),
+
+                                                          const SizedBox(
+                                                            width: 8,
+                                                          ),
+
+                                                          Expanded(
+                                                            flex: 1,
+                                                            child: Text(
+                                                              patient
+                                                                  .registerationDate,
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .right,
+                                                              style: const TextStyle(
+                                                                fontSize: 15,
+                                                                color:
+                                                                    Colors
+                                                                        .black87,
+                                                              ),
+                                                              maxLines: 1,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
-                                                      SizedBox(height: 4),
+                                                      SizedBox(
+                                                        height:
+                                                            screenSize.height *
+                                                            0.005,
+                                                      ),
+
                                                       Row(
                                                         children: [
                                                           Icon(
                                                             Icons.phone,
                                                             color:
-                                                                Colors.grey[600],
+                                                                Colors
+                                                                    .grey[600],
                                                             size: 14,
                                                           ),
-                                                          SizedBox(width: 4),
-                                                          Text(
-                                                            patient.mobile,
-                                                            style: TextStyle(
-                                                              color:
-                                                                  Colors
-                                                                      .grey[600],
-                                                              fontSize: 13,
+                                                          SizedBox(
+                                                            width:
+                                                                screenSize
+                                                                    .width *
+                                                                0.01,
+                                                          ),
+                                                          Flexible(
+                                                            child: Text(
+                                                              patient.mobile,
+                                                              maxLines: 1,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                              style: TextStyle(
+                                                                color:
+                                                                    Colors
+                                                                        .grey[600],
+                                                                fontSize: 13,
+                                                              ),
                                                             ),
                                                           ),
-                                                          SizedBox(width: 12),
+                                                          SizedBox(
+                                                            width:
+                                                                screenSize
+                                                                    .width *
+                                                                0.03,
+                                                          ),
                                                           Icon(
                                                             Icons.person,
                                                             color:
-                                                                Colors.grey[600],
+                                                                Colors
+                                                                    .grey[600],
                                                             size: 14,
                                                           ),
-                                                          SizedBox(width: 4),
-                                                          Text(
-                                                            patient.id,
-                                                            style: TextStyle(
-                                                              color:
-                                                                  Colors.orange,
-                                                              fontSize: 13,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w500,
+                                                          SizedBox(
+                                                            width:
+                                                                screenSize
+                                                                    .width *
+                                                                0.01,
+                                                          ),
+                                                          Flexible(
+                                                            child: Text(
+                                                              patient.id,
+                                                              maxLines: 1,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                              style: TextStyle(
+                                                                color:
+                                                                    Colors
+                                                                        .orange,
+                                                                fontSize: 13,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                              ),
                                                             ),
                                                           ),
                                                         ],
@@ -666,10 +791,10 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
                                   ),
                                 ),
                               ),
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-            ),
     );
   }
 }

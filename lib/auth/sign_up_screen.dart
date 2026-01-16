@@ -1,12 +1,20 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_paypal_payment/flutter_paypal_payment.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
+import 'package:jin_reflex_new/api_service/payment_getway_keys.dart';
+import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
+import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/api_service/urls.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Provider for managing upload state
 final uploadProvider = StateNotifierProvider<UploadNotifier, List<File?>>((
@@ -55,7 +63,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final TextEditingController _countryController = TextEditingController();
   final TextEditingController _postalCodeController = TextEditingController();
   final TextEditingController _educationController = TextEditingController();
-
+  List<int> selectedCourseIds = [];
+  double selectedCourseTotal = 0.0;
+  String selectedCountryCode = "in";
   // Form state
   String? _selectedGender;
   String? _selectedMaritalStatus;
@@ -63,7 +73,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   int _currentStep = 0;
   bool _isSubmitting = false;
 
-  // Upload types - Now 4 images
   final List<String> _uploadTitles = [
     "Passport Size Photo",
     "Photo ID",
@@ -71,7 +80,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     "Education Qualification",
   ];
 
-  // Validation functions
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {
       return 'Email is required';
@@ -134,143 +142,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     }
   }
 
-  // API Call function
-  Future<void> _callSignUpAPI() async {
-    try {
-      setState(() {
-        _isSubmitting = true;
-      });
-
-      final uploadFiles = ref.read(uploadProvider.notifier).getFiles();
-
-      // Prepare data - REMOVED keyword and hobby fields
-      Map<String, dynamic> formData = {
-        // -------- TEXT FIELDS --------
-        "name":
-            "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}",
-        "email": _emailController.text.trim(),
-        "gender": _selectedGender ?? "",
-        "date": _dobController.text.trim(),
-        "address": _addressController.text.trim(),
-        "city": _cityController.text.trim(),
-        "state": _stateController.text.trim(),
-        "country": _countryController.text.trim(),
-        "pincode": _postalCodeController.text.trim(),
-        "maritalStatus": _selectedMaritalStatus ?? "",
-        "m_no": _mobileController.text.trim(),
-        "pid": "1",
-        "education": _educationController.text.trim(),
-
-        // -------- BASE64 IMAGES --------
-        "image1": _fileToBase64(uploadFiles[0]),
-        "image2": _fileToBase64(uploadFiles[1]),
-        "image3": _fileToBase64(uploadFiles[2]),
-        "image4": _fileToBase64(uploadFiles[3]),
-      };
-
-      // Remove null values
-      formData.removeWhere((key, value) => value == null);
-
-      print("Sending data to API...");
-      print("Form Data Keys: ${formData.keys}");
-
-      Dio dio = Dio();
-      Response response = await dio.post(
-       therapist,
-        data: formData,
-        options: Options(
-          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        ),
-      );
-
-      print("STATUS CODE: ${response.statusCode}");
-      print("FULL RESPONSE: ${response.data}");
-
-      // Handle response
-      dynamic jsonBody;
-
-      if (response.data is String) {
-        try {
-          jsonBody = jsonDecode(response.data);
-        } catch (e) {
-          jsonBody = response.data;
-        }
-      } else {
-        jsonBody = response.data;
-      }
-
-      // Check for HTML response
-      if (response.data.toString().contains('<!DOCTYPE html>') ||
-          response.data.toString().contains('<html>')) {
-        _showSuccessDialog(
-          "Registration Submitted",
-          "Your application has been received successfully.",
-        );
-        return;
-      }
-
-      String message = "";
-      bool isSuccess = false;
-
-      if (jsonBody is Map) {
-        if (jsonBody['data'] != null) {
-          final rawData = jsonBody['data'];
-          if (rawData is Map) {
-            message =
-                rawData['message']?.toString() ??
-                rawData['status']?.toString() ??
-                "Success";
-          } else if (rawData is String) {
-            message = rawData;
-          }
-        }
-
-        if (message.isEmpty && jsonBody['message'] != null) {
-          message = jsonBody['message'].toString();
-        }
-
-        if (jsonBody['status'] != null) {
-          final status = jsonBody['status'].toString().toLowerCase();
-          isSuccess =
-              status.contains('success') ||
-              status.contains('true') ||
-              status == '1';
-        }
-
-        if (jsonBody['error'] != null) {
-          message = "Error: ${jsonBody['error']}";
-          isSuccess = false;
-        }
-      }
-
-      if (message.isEmpty) {
-        message = response.data.toString();
-      }
-
-      if (isSuccess ||
-          message.toLowerCase().contains('success') ||
-          message.toLowerCase().contains('created') ||
-          response.statusCode == 200) {
-        _showSuccessDialog("Registration Successful!", message);
-      } else {
-        _showErrorDialog("Registration Failed", message);
-      }
-    } on DioException catch (e) {
-      print("DIO ERROR: $e");
-      _showErrorDialog(
-        "Network Error",
-        e.response?.data?.toString() ?? e.message ?? "Please try again",
-      );
-    } catch (e) {
-      print("GENERAL ERROR: $e");
-      _showErrorDialog("Error", e.toString());
-    } finally {
-      setState(() {
-        _isSubmitting = false;
-      });
-    }
-  }
-
   void _showSuccessDialog(String title, String message) {
     showDialog(
       context: context,
@@ -313,6 +184,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // log("${ selectedCourseIds.join(",")}");
     final size = MediaQuery.of(context).size;
     final uploadFiles = ref.watch(uploadProvider);
 
@@ -378,16 +250,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               ],
             ),
           ),
-
-          // Progress Indicator
           Positioned(
             top: size.height * 0.15,
             left: 0,
             right: 0,
             child: _buildProgressIndicator(),
           ),
-
-          // Main Form Container
           Positioned(
             top: size.height * 0.20,
             left: 16,
@@ -447,10 +315,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         if (_currentStep == 0) _buildPersonalInfoStep(),
                         if (_currentStep == 1) _buildContactInfoStep(),
                         if (_currentStep == 2) _buildUploadStep(uploadFiles),
+                        // if (_currentStep == 3) _buildUploadStep(uploadFiles),j
+                        if (_currentStep == 3)
+                          CourseSelectionScreen(
+                            onSelectionDone: (ids, total, countryCode) {
+                              setState(() {
+                                selectedCourseIds = ids;
+                                selectedCourseTotal = total;
+                                selectedCountryCode = countryCode;
+                              });
+                            },
+                          ),
 
-                        const SizedBox(height: 30),
-
-                        // Navigation Buttons
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -550,6 +426,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           _buildProgressStep(1, "Contact"),
           _buildProgressLine(),
           _buildProgressStep(2, "Upload"),
+          _buildProgressLine(),
+          _buildProgressStep(3, "Courses"),
         ],
       ),
     );
@@ -793,13 +671,31 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Please upload the following documents:",
+          "Please upload the following documents (Optional):",
           style: TextStyle(fontSize: 14, color: Colors.grey),
         ),
         const SizedBox(height: 20),
 
         for (int i = 0; i < _uploadTitles.length; i++)
           _buildUploadCard(i, uploadFiles[i]),
+
+        const SizedBox(height: 20),
+
+        // ✅ SKIP BUTTON
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () {
+              setState(() {
+                _currentStep = 3; // Jump to Course / Subscription step
+              });
+            },
+            child: const Text(
+              "SKIP DOCUMENT UPLOAD",
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -1227,21 +1123,26 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   void _submitForm() {
-    final uploadFiles = ref.read(uploadProvider);
-    final hasAllUploads = uploadFiles.every((file) => file != null);
-
-    if (!hasAllUploads) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please upload all 4 required documents'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (selectedCourseIds.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please select a course")));
       return;
     }
 
-    // Call API
-    _callSignUpAPI();
+    _openPaymentGateway(); // ✅ FIRST payment
+  }
+
+  late Razorpay _razorpay;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
   }
 
   @override
@@ -1257,7 +1158,243 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     _countryController.dispose();
     _postalCodeController.dispose();
     _educationController.dispose();
+    _razorpay.clear();
     super.dispose();
+  }
+
+  void _openPaymentGateway() {
+    final isIndia = selectedCountryCode == "in";
+
+    if (isIndia) {
+      // 🇮🇳 Razorpay
+      _razorpay.open({
+        'key': razorpayKey,
+        'amount': (selectedCourseTotal * 100).toInt(), // ✅ course amount
+        'name': _firstNameController.text.trim(),
+        'description': 'Course Registration Payment',
+        'prefill': {
+          'contact': _mobileController.text.trim(),
+          'email': _emailController.text.trim(),
+        },
+      });
+    } else {
+      // 🌍 PayPal
+      _startPayPalPayment(context);
+    }
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Payment Successful"),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    // ✅ REGISTER AFTER PAYMENT
+    final userId = await _callSignUpAPI();
+
+    if (userId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Registration failed")));
+      return;
+    }
+
+    // ✅ CALLBACK AFTER REGISTER
+    await sendPaymentToBackend(
+      userId: userId,
+      status: "success",
+      paymentId: response.paymentId,
+      orderId: response.orderId,
+      amount: selectedCourseTotal.toInt(),
+    );
+  }
+
+  Future<String?> _callSignUpAPI() async {
+    try {
+      final uploadFiles = ref.read(uploadProvider.notifier).getFiles();
+
+      final formData = {
+        "name":
+            "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}",
+        "email": _emailController.text.trim(),
+        "gender": _selectedGender ?? "",
+        "date": _dobController.text.trim(),
+        "address": _addressController.text.trim(),
+        "city": _cityController.text.trim(),
+        "state": _stateController.text.trim(),
+        "country": _countryController.text.trim(),
+        "pincode": _postalCodeController.text.trim(),
+        "maritalStatus": _selectedMaritalStatus ?? "",
+        "m_no": _mobileController.text.trim(),
+        "pid": "1",
+        "education": _educationController.text.trim(),
+        "image1": _fileToBase64(uploadFiles[0]),
+        "image2": _fileToBase64(uploadFiles[1]),
+        "image3": _fileToBase64(uploadFiles[2]),
+        "image4": _fileToBase64(uploadFiles[3]),
+        "courseId": selectedCourseIds.join(","),
+      };
+
+      final dio = Dio();
+      final response = await dio.post(
+        therapist,
+        data: formData,
+        options: Options(
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        ),
+      );
+
+      final json = response.data;
+
+      if (json["success"] == 1) {
+        return json["data"]["id"].toString(); // ✅ USER ID
+      }
+      return null;
+    } catch (e) {
+      debugPrint("Register error: $e");
+      return null;
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Payment Failed\n${response.message}"),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _startPayPalPayment(BuildContext context) {
+    // String amount = amountController.text.trim();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (_) => PaypalCheckoutView(
+              sandboxMode: isSandboxMode,
+
+              clientId: paypalClientId,
+              secretKey: paypalSecret,
+
+              /// ✅ ONLY AMOUNT – NO PRODUCT
+              transactions: [
+                {
+                  "amount": {
+                    "total": "${selectedCourseTotal}", 
+                    "currency": "USD",
+                  },
+                  "description": "Wallet / Service Payment",
+                },
+              ],
+
+              note: "Demo PayPal payment",
+
+              onSuccess: (Map params) async {
+                final paypalPaymentId = params["data"]?["id"]; // PAYID-XXXX
+
+                debugPrint("PayPal Payment ID: $paypalPaymentId");
+
+                // 🔒 Safety check
+                if (paypalPaymentId == null) {
+                  debugPrint("❌ PayPal paymentId null");
+                  return;
+                }
+                final userId = await _callSignUpAPI();
+
+                await sendPaymentToBackend(
+                  userId: userId!,
+                  status: "success",
+                  paymentId: paypalPaymentId,
+                  orderId: null, // PayPal मध्ये orderId नसतो
+                  amount: selectedCourseTotal.toInt(),
+                );
+
+                if (!mounted) return;
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("PayPal Payment Successful"),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                Navigator.pop(context); // close popup
+
+                Navigator.pop(context); // close PayPal screen
+              },
+
+              onError: (error) async {
+                final userId = await _callSignUpAPI();
+
+                await sendPaymentToBackend(
+                  userId: userId!,
+                  status: "failed",
+                  reason: error.toString(),
+                  amount: selectedCourseTotal.toInt(),
+                );
+                debugPrint("❌ PayPal Error: $error");
+
+                Navigator.pop(context);
+              },
+
+              onCancel: () async {
+                final userId = await _callSignUpAPI();
+
+                await sendPaymentToBackend(
+                  userId: userId!,
+                  status: "failed",
+                  reason: "Payment cancelled",
+                  amount: selectedCourseTotal.toInt(),
+                );
+                debugPrint("⚠️ PayPal Cancelled");
+                Navigator.pop(context);
+              },
+            ),
+      ),
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Wallet Used: ${response.walletName}")),
+    );
+  }
+
+  Future<bool> isIndianUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final deliveryType = prefs.getString("delivery_type");
+    return deliveryType == "india";
+  }
+
+  Future<void> sendPaymentToBackend({
+    required String userId,
+    required String status,
+    String? paymentId,
+    String? orderId,
+    String? reason,
+    required int amount,
+  }) async {
+    try {
+      final dio = Dio();
+
+      await dio.post(
+        "https://admin.jinreflexology.in/api/payment_callback",
+        data: {
+          "user_id": userId,
+          "payment_id": paymentId,
+          "orderid": orderId,
+          "amount": amount.toString(),
+          "status": status,
+          "email": _emailController.text.trim(),
+          "name":
+              "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}",
+          "contact": _mobileController.text.trim(),
+        },
+      );
+    } catch (e) {
+      debugPrint("❌ Callback error: $e");
+    }
   }
 }
 
@@ -1296,4 +1433,559 @@ class SignUpWaveClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+class Course {
+  final String code;
+  final String title;
+  final String amount;
+  bool isSelected;
+
+  Course({
+    required this.code,
+    required this.title,
+    required this.amount,
+    this.isSelected = false,
+  });
+}
+
+class CourseSelectionScreen extends StatefulWidget {
+  final Function(List<int> ids, double total, String countryCode)
+  onSelectionDone;
+
+  const CourseSelectionScreen({super.key, required this.onSelectionDone});
+
+  @override
+  State<CourseSelectionScreen> createState() => _CourseSelectionScreenState();
+}
+
+class _CourseSelectionScreenState extends State<CourseSelectionScreen> {
+  List<Map<String, dynamic>> courses = [];
+  bool isLoading = true;
+  bool hasError = false;
+
+  // Corrected: Changed return type to Future<String> for country
+  Future<String> getCountryCode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final deliveryType = prefs.getString("delivery_type");
+    return deliveryType == "india" ? "in" : "us";
+  }
+
+  // Toggle function removed as it's not being used in the current UI
+  // void toggleCourseSelection(int index) {
+  //   setState(() {
+  //     courses[index].isSelected = !courses[index].isSelected;
+  //   });
+  // }
+
+  @override
+  void initState() {
+    fetchCourses();
+    // TODO: implement initState
+    super.initState();
+  }
+  String countryCode = "in";
+  Future<void> fetchCourses() async {
+    try {
+      // Get country code correctly
+      countryCode = await getCountryCode();
+
+      final response = await http.post(
+        Uri.parse("https://admin.jinreflexology.in/api/courses/by-country"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"country": countryCode}),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception("HTTP ${response.statusCode}");
+      }
+
+      final data = jsonDecode(response.body);
+      final List list = data['data'] ?? [];
+
+      courses =
+          list.map<Map<String, dynamic>>((e) {
+            final List pricing = e['pricing'] ?? [];
+
+            // Find pricing for the current country
+            Map<String, dynamic>? pricingForCountry;
+            for (var price in pricing) {
+              if (price['country'] == countryCode) {
+                pricingForCountry = price;
+                break;
+              }
+            }
+
+            // 👇👇 इथेच हा line टाकायचा
+            final total = (pricingForCountry?['total_price'] ?? 0).toDouble();
+
+            return {
+              "id": e['id'],
+              "title": e['title'] ?? "",
+              "description": e['description'] ?? "",
+              "longDesc": e['longDesc'] ?? "",
+              "image":
+                  (e['images'] != null && e['images'].isNotEmpty)
+                      ? e['images'][0]
+                      : "",
+              "total": total,
+              "isSelected": false,
+            };
+          }).toList();
+
+      hasError = false;
+    } catch (e) {
+      debugPrint("❌ Course API Error: $e");
+      hasError = true;
+    }
+
+    if (mounted) {
+      setState(() => isLoading = false);
+    }
+  }
+
+  void toggleCourseSelection(int index) {
+    setState(() {
+      for (int i = 0; i < courses.length; i++) {
+        courses[i]["isSelected"] = i == index;
+      }
+    });
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    print(countryCode);
+    final currency = countryCode == "us" ? "\$" : "₹";
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Available Courses',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+
+        if (isLoading)
+          const Center(child: CircularProgressIndicator())
+        else if (hasError)
+          const Center(child: Text('Error loading courses'))
+        else if (courses.isEmpty)
+          const Center(child: Text('No courses available'))
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            padding: EdgeInsets.zero,
+            itemCount: courses.length,
+            physics: const NeverScrollableScrollPhysics(),
+            itemBuilder: (context, index) {
+              final course = courses[index];
+              final isPopular = index % 3 == 0;
+              final isSelected = course["isSelected"] ?? false;
+
+              return Container(
+                //  margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Container(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Material(
+                      color: isSelected ? Colors.blue[50] : Colors.white,
+                      child: InkWell(
+                        onTap: () {
+                          // ✅ FIRST toggle selection
+                          toggleCourseSelection(index);
+
+                          // ⏳ UI update होईपर्यंत wait
+                          Future.delayed(Duration.zero, () {
+                            final selected =
+                                courses
+                                    .where((c) => c["isSelected"] == true)
+                                    .toList();
+
+                            if (selected.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Please select at least one course',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
+                            final ids =
+                                selected
+                                    .map<int>((e) => e["id"] as int)
+                                    .toList();
+                            final total = selected.fold<double>(
+                              0,
+                              (sum, e) => sum + (e["total"] as double),
+                            );
+
+                            // ✅ SEND DATA TO PARENT
+                            widget.onSelectionDone(ids, total, countryCode);
+                          });
+                        },
+
+                        splashColor: Colors.blue.withOpacity(0.1),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Popular badge
+                              if (isPopular)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber[50],
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.amber,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.star,
+                                        size: 14,
+                                        color: Colors.amber[700],
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        "Popular",
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.amber[800],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                              SizedBox(height: isPopular ? 12 : 0),
+
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Course Image
+                                  Container(
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: Colors.grey[100],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child:
+                                          course['image'] != null &&
+                                                  course['image']
+                                                      .toString()
+                                                      .isNotEmpty
+                                              ? Image.network(
+                                                course['image'].toString(),
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (_, __, ___) => Center(
+                                                      child: Icon(
+                                                        Icons.school_outlined,
+                                                        size: 40,
+                                                        color: Colors.grey[400],
+                                                      ),
+                                                    ),
+                                              )
+                                              : Center(
+                                                child: Icon(
+                                                  Icons.school_outlined,
+                                                  size: 40,
+                                                  color: Colors.grey[400],
+                                                ),
+                                              ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 16),
+
+                                  // Course Details
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // Title with selection indicator
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                course['title']?.toString() ??
+                                                    'Untitled Course',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.grey[900],
+                                                ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (isSelected)
+                                              Icon(
+                                                Icons.check_circle,
+                                                color: Colors.blue,
+                                                size: 20,
+                                              ),
+                                          ],
+                                        ),
+
+                                        const SizedBox(height: 6),
+
+                                        // Description
+                                        Text(
+                                          course['description']?.toString() ??
+                                              'No description available',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey[600],
+                                            height: 1.4,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+
+                                        const SizedBox(height: 12),
+
+                                        // Price and Enroll Button Row
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: [
+                                            // Price
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 6,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green[50],
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                "$currency${course['total']}",
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.green[800],
+                                                ),
+                                              ),
+                                            ),
+
+                                            // Selection/Enroll Button
+                                            ElevatedButton(
+                                              onPressed: () {
+                                                final selected =
+                                                    courses
+                                                        .where(
+                                                          (c) =>
+                                                              c["isSelected"] ==
+                                                              true,
+                                                        )
+                                                        .toList();
+
+                                                if (selected.isEmpty) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        'Please select at least one course',
+                                                      ),
+                                                    ),
+                                                  );
+                                                  return;
+                                                }
+
+                                                final ids =
+                                                    selected
+                                                        .map<int>(
+                                                          (e) => e["id"] as int,
+                                                        )
+                                                        .toList();
+                                                final total = selected
+                                                    .fold<double>(
+                                                      0,
+                                                      (sum, e) =>
+                                                          sum +
+                                                          (e["total"]
+                                                              as double),
+                                                    );
+
+                                                widget.onSelectionDone(
+                                                  ids,
+                                                  total,
+                                                  countryCode,
+                                                );
+                                                // Toggle selection on button press
+                                                toggleCourseSelection(index);
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    isSelected
+                                                        ? Colors.green
+                                                        : Colors.blue,
+                                                foregroundColor: Colors.white,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 13,
+                                                      vertical: 10,
+                                                    ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                elevation: 0,
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    isSelected
+                                                        ? Icons.check
+                                                        : Icons
+                                                            .add_circle_outline,
+                                                    size: 18,
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    isSelected
+                                                        ? "Selected"
+                                                        : "Select",
+                                                    style: const TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              // Divider
+                              if (index != courses.length - 1)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 16),
+                                  child: Divider(
+                                    height: 1,
+                                    color: Colors.grey[200],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+
+        const SizedBox(height: 20),
+        // Container(
+        //   padding: const EdgeInsets.all(16),
+        //   decoration: BoxDecoration(
+        //     color: Colors.grey[100],
+        //     borderRadius: BorderRadius.circular(12),
+        //     border: Border.all(color: Colors.grey[300]!),
+        //   ),
+        //   child: Row(
+        //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        //     children: [
+        //       Column(
+        //         crossAxisAlignment: CrossAxisAlignment.start,
+        //         children: [
+        //           const Text(
+        //             'Selected Courses:',
+        //             style: TextStyle(
+        //               fontWeight: FontWeight.w500,
+        //               color: Colors.grey,
+        //             ),
+        //           ),
+        //           const SizedBox(height: 4),
+        //           Text(
+        //             '${courses.where((c) => c["isSelected"] == true).length} courses',
+        //             style: const TextStyle(
+        //               fontSize: 22,
+        //               fontWeight: FontWeight.bold,
+        //               color: Colors.blue,
+        //             ),
+        //           ),
+        //         ],
+        //       ),
+        //       ElevatedButton(
+        //         onPressed: () {
+        //           final selectedCourses =
+        //               courses.where((c) => c["isSelected"] == true).toList();
+        //           if (selectedCourses.isEmpty) {
+        //             ScaffoldMessenger.of(context).showSnackBar(
+        //               const SnackBar(
+        //                 content: Text('Please select at least one course'),
+        //               ),
+        //             );
+        //           } else {
+        //             // Navigate to next screen or process selection
+        //             ScaffoldMessenger.of(context).showSnackBar(
+        //               SnackBar(
+        //                 content: Text(
+        //                   '${selectedCourses.length} courses selected',
+        //                 ),
+        //               ),
+        //             );
+        //             // TODO: Add navigation logic here
+        //             // Navigator.push(context, MaterialPageRoute(builder: (_) => NextScreen()));
+        //           }
+        //         },
+        //         style: ElevatedButton.styleFrom(
+        //           padding: const EdgeInsets.symmetric(
+        //             horizontal: 32,
+        //             vertical: 12,
+        //           ),
+        //           shape: RoundedRectangleBorder(
+        //             borderRadius: BorderRadius.circular(8),
+        //           ),
+        //         ),
+        //         child: const Text('Continue'),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+      ],
+    );
+  }
 }

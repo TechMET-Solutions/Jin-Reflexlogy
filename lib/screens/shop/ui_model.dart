@@ -10,6 +10,9 @@ class Product {
   final String details;
   final String additionalInfo;
 
+  // 🔥 REQUIRED FOR CATEGORY FILTER
+  final List<String> categories;
+
   Product({
     required this.id,
     required this.title,
@@ -19,5 +22,6 @@ class Product {
     required this.description,
     required this.details,
     required this.additionalInfo,
+    required this.categories,
   });
 }

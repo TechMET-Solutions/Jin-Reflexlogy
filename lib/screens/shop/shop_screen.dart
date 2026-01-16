@@ -20,9 +20,14 @@ class ShopScreen extends StatefulWidget {
 }
 
 class _ShopScreenState extends State<ShopScreen> {
-  List<Product> products = [];
   bool isLoading = true;
   bool hasError = false;
+
+  List<Product> allProducts = [];
+  List<Product> filteredProducts = [];
+
+  List<String> categories = ["All"];
+  String selectedCategory = "All";
 
   @override
   void initState() {
@@ -33,7 +38,18 @@ class _ShopScreenState extends State<ShopScreen> {
   // ================= LOAD PRODUCTS =================
   Future<void> loadProducts() async {
     try {
-      products = await fetchProducts();
+      allProducts = await fetchProducts();
+      filteredProducts = allProducts;
+
+      final Set<String> categorySet = {};
+
+      for (var product in allProducts) {
+        for (var cat in product.categories) {
+          categorySet.add(cat);
+        }
+      }
+
+      categories = ["All", ...categorySet];
       hasError = false;
     } catch (e) {
       hasError = true;
@@ -43,6 +59,19 @@ class _ShopScreenState extends State<ShopScreen> {
     if (mounted) {
       setState(() => isLoading = false);
     }
+  }
+
+  // ================= FILTER =================
+  void filterByCategory(String category) {
+    setState(() {
+      selectedCategory = category;
+      if (category == "All") {
+        filteredProducts = allProducts;
+      } else {
+        filteredProducts =
+            allProducts.where((p) => p.categories.contains(category)).toList();
+      }
+    });
   }
 
   // ================= UI =================
@@ -67,176 +96,182 @@ class _ShopScreenState extends State<ShopScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => CartScreen(deliveryType: widget.deliveryType,)),
+                MaterialPageRoute(
+                  builder: (_) => CartScreen(deliveryType: widget.deliveryType),
+                ),
               );
             },
           ),
         ],
       ),
       body:
-          type == "therapist" || token.isEmpty
-              ? JinLoginScreen(
-                text: "ShopScreen",
-                type: "user",
-                diliveryType: widget.deliveryType,
-                onTab: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => LifestyleScreen()),
-                  );
-                },
-              )
-              : hasError
-              ? const Center(child: Text("Something went wrong"))
-              : products.isEmpty
-              ? const Center(child: Text("No products available"))
-              : GridView.builder(
-                padding: const EdgeInsets.all(10),
-                itemCount: products.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: 0.65,
-                ),
-                itemBuilder: (context, index) {
-                  final product = products[index];
-
-                  return GestureDetector(
-                    onTap: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => ProductDetailScreen(
-        product: product,
-        deliveryType: widget.deliveryType, // ✅ PASS SAME VALUE
-      ),
-    ),
-  );
-},
-
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFFf7c85a)),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child:
-                                product.image.isNotEmpty
-                                    ? Image.network(
-                                      product.image,
-                                      fit: BoxFit.contain,
-                                      errorBuilder:
-                                          (_, __, ___) => const Icon(
-                                            Icons.broken_image,
-                                            size: 40,
-                                          ),
-                                    )
-                                    : const Icon(Icons.image, size: 40),
+           Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 10, top: 5, bottom: 5),
+                    child: SizedBox(
+                      width: 200,
+                      child: DropdownButtonFormField<String>(
+                        value: selectedCategory,
+                        isDense: true,
+                        decoration: const InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
                           ),
-                          const Divider(color: Color(0xFFf7c85a)),
-                          Text(
-                            product.title,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "₹ ${product.unitPrice.toStringAsFixed(0)}",
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                        ],
+                          labelText: "Select Category",
+                          border: OutlineInputBorder(),
+                        ),
+                        items:
+                            categories
+                                .map(
+                                  (cat) => DropdownMenuItem(
+                                    value: cat,
+                                    child: Text(
+                                      cat,
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            filterByCategory(value);
+                          }
+                        },
                       ),
                     ),
-                  );
-                },
+                  ),
+
+                  // 🔲 PRODUCTS GRID
+                  Expanded(
+                    child:
+                        filteredProducts.isEmpty
+                            ? const Center(child: Text("No products found"))
+                            : GridView.builder(
+                              padding: const EdgeInsets.all(10),
+                              itemCount: filteredProducts.length,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 3,
+                                    mainAxisSpacing: 8,
+                                    crossAxisSpacing: 8,
+                                    childAspectRatio: 0.65,
+                                  ),
+                              itemBuilder: (context, index) {
+                                final product = filteredProducts[index];
+
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (_) => ProductDetailScreen(
+                                              product: product,
+                                              deliveryType: widget.deliveryType,
+                                            ),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: const Color(0xFFf7c85a),
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Expanded(
+                                          child:
+                                              product.image.isNotEmpty
+                                                  ? Image.network(
+                                                    product.image,
+                                                    fit: BoxFit.contain,
+                                                  )
+                                                  : const Icon(
+                                                    Icons.image,
+                                                    size: 40,
+                                                  ),
+                                        ),
+                                        const Divider(color: Color(0xFFf7c85a)),
+                                        Text(
+                                          product.title,
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          "${widget.deliveryType == "india" ? "₹" : "\$"}${product.unitPrice.toStringAsFixed(0)}",
+                                          style: const TextStyle(fontSize: 13),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                  ),
+                ],
               ),
     );
   }
 
-  // ================= API (NEW STRUCTURE) =================
+  // ================= API =================
   Future<List<Product>> fetchProducts() async {
     final String country = widget.deliveryType == "india" ? "in" : "us";
 
     const String url =
         "https://admin.jinreflexology.in/api/products/by-country";
 
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"country": country}),
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"country": country}),
+    );
+
+    final Map<String, dynamic> jsonData = json.decode(response.body);
+    final List list = jsonData["data"] ?? [];
+
+    return list.map<Product>((e) {
+      final List images = e["images"] ?? [];
+      final List pricing = e["pricing"] ?? [];
+      final List categoryList = e["categories"] ?? [];
+
+      final pricingForCountry = pricing.firstWhere(
+        (p) => p["country"] == country,
+        orElse: () => null,
       );
 
-      debugPrint("🌐 RAW RESPONSE => ${response.body}");
+      final double unitPrice =
+          pricingForCountry != null
+              ? double.parse(pricingForCountry["unit_price"].toString())
+              : 0;
 
-      if (response.statusCode != 200) {
-        throw Exception("HTTP Error ${response.statusCode}");
-      }
-
-      final Map<String, dynamic> jsonData = json.decode(response.body);
-
-      final List list = jsonData["data"] ?? [];
-
-      return list.map<Product>((e) {
-        final List images = e["images"] ?? [];
-        final List pricing = e["pricing"] ?? [];
-
-        // 🔥 get pricing for selected country
-        final pricingForCountry =
-            pricing.isNotEmpty
-                ? pricing.firstWhere(
-                  (p) => p["country"] == country,
-                  orElse: () => null,
-                )
-                : null;
-
-        final double unitPrice =
-            pricingForCountry != null
-                ? double.tryParse(
-                      pricingForCountry["unit_price"]?.toString() ?? "0",
-                    ) ??
-                    0
-                : 0;
-
-        final double shippingPrice =
-            pricingForCountry != null
-                ? double.tryParse(
-                      pricingForCountry["shipping_price"]?.toString() ?? "0",
-                    ) ??
-                    0
-                : 0;
-
-        final double totalPrice =
-            pricingForCountry != null
-                ? double.tryParse(
-                      pricingForCountry["total_price"]?.toString() ?? "0",
-                    ) ??
-                    0
-                : unitPrice + shippingPrice;
-
-        return Product(
-          id: e["id"].toString(),
-          title: e["title"] ?? "",
-          image: images.isNotEmpty ? images.first.toString() : "",
-          unitPrice: unitPrice,
-          shippingPrice: shippingPrice,
-          description: e["description"] ?? "",
-          details: e["description"] ?? "",
-          additionalInfo: "Shipping ₹ $shippingPrice",
-        );
-      }).toList();
-    } catch (e) {
-      debugPrint("❌ Country API Error: $e");
-      rethrow;
-    }
+      return Product(
+        id: e["id"].toString(),
+        title: e["title"] ?? "",
+        image: images.isNotEmpty ? images.first : "",
+        unitPrice: unitPrice,
+        shippingPrice: 0,
+        description: e["description"] ?? "",
+        details: e["description"] ?? "",
+        additionalInfo: "",
+        categories:
+            categoryList
+                .map<String>((c) => c['name']?.toString() ?? "")
+                .where((e) => e.isNotEmpty)
+                .toList(),
+      );
+    }).toList();
   }
 }

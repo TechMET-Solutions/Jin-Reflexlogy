@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// ===============================
@@ -108,11 +109,7 @@ class _HealthyTipsScreenState extends State<HealthyTipsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Healthy Tips"),
-        backgroundColor: Colors.orange,
-        foregroundColor: Colors.white,
-      ),
+      appBar: CommonAppBar(title: "Healthy Tips") ,
       body:
           isLoading
               ? const Center(child: CircularProgressIndicator())

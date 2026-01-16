@@ -27,7 +27,6 @@ class DiagnosisHistoryScreen extends StatefulWidget {
 
 class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
   bool isLoading = true;
-
   List<Map<String, String>> historyList = [];
 
   @override
@@ -38,6 +37,7 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
 
   // ================= API CALL =================
   Future<void> fetchTreatmentHistory() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
 
     final formData = FormData.fromMap({
@@ -70,7 +70,7 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
       debugPrint("API ERROR => $e");
     }
 
-    setState(() => isLoading = false);
+    if (mounted) setState(() => isLoading = false);
   }
 
   // ================= UI =================
@@ -119,121 +119,137 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
                 isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : historyList.isEmpty
-                    ? const Center(child: Text("No Treatment History Found"))
-                    : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: historyList.length,
-                      itemBuilder: (context, index) {
-                        final item = historyList[index];
+                    ? RefreshIndicator(
+                      onRefresh: fetchTreatmentHistory,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 200),
+                          Center(child: Text("No Treatment History Found")),
+                        ],
+                      ),
+                    )
+                    : RefreshIndicator(
+                      onRefresh: fetchTreatmentHistory,
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: historyList.length,
+                        itemBuilder: (context, index) {
+                          final item = historyList[index];
 
-                        return InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (_) => TreatmentAddV2Screen(
-                                      patientId: widget.patientId,
-                                      patientName: widget.patientName,
-                                      diagnosisId: widget.diagnosisId,
-                                      day: index + 1,
-                                      id: item["id"]!,
-                                    ),
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => TreatmentAddV2Screen(
+                                        patientId: widget.patientId,
+                                        patientName: widget.patientName,
+                                        diagnosisId: widget.diagnosisId,
+                                        day: index + 1,
+                                        id: item["id"]!,
+                                      ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 14),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                    offset: Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 14),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 8,
-                                  spreadRadius: 2,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item["id"]!,
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item["id"]!,
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        item["day"]!,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[700],
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          item["day"]!,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[700],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        item["date"]!,
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w500,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          item["date"]!,
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        item["time"]!,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[700],
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          item["time"]!,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[700],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
           ),
         ],
       ),
 
-      // ================= FAB LOGIC =================
+      // ================= FAB =================
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.pinkAccent,
         child: const Icon(Icons.add, size: 28),
         onPressed: () {
           final int totalDays = historyList.length;
 
-          // 0 OR 8+ → NEW CYCLE
           if (totalDays == 0 || totalDays >= 8) {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => NewTreatment(patientId: widget.patientId),
+                builder:
+                    (_) => NewTreatment(
+                      patientId: widget.patientId,
+                      diagnosisId: widget.diagnosisId,
+                    ),
               ),
             );
-          }
-          // 1–7 → alternate flow
-          else {
+          } else {
             final int nextDay = totalDays + 1;
             final String lastId = historyList.last["id"]!;
 

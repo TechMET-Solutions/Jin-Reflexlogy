@@ -115,10 +115,10 @@ class InfoScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 9),
           children: [
             Container(
-              height: 180,
+              height: 300,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: HexColor("#F7C85A"), width: 3),
+                //  border: Border.all(color: HexColor("#F7C85A"), width: 3),
                 image: DecorationImage(
                   fit: BoxFit.fill,
                   image: AssetImage("assets/images/classification.jpg"),
@@ -135,52 +135,46 @@ class InfoScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     Container(
                       decoration: BoxDecoration(
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(15),
-                        border: Border.all(
-                          color: HexColor("#F7C85A"),
-                          width: 3,
-                        ),
+                        // border: Border.all(
+                        //  // color: HexColor("#F7C85A"),
+                        //   width: 3,
+                        // ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            height: 35,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: HexColor("#D7B59E"),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: HexColor("#F7C85A"),
-                                width: 3,
-                              ),
-                            ),
-                            child: Center(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 15,
-                                    backgroundColor: HexColor("#D7B59E"),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4.0),
-                                      child: Image.asset(
-                                        "assets/images/leg.png",
-                                      ),
+                          Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                CircleAvatar(
+                                  radius: 25,
+                                  backgroundColor: Colors.white,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: Image.asset(
+                                      "assets/images/feet.png",
                                     ),
                                   ),
+                                ),
 
-                                  SizedBox(width: 5),
-                                  Text(
-                                    'Reflexology',
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
+                                SizedBox(width: 5),
+                                Text(
+                                  'Reflexology',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 25,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
+                          ),
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: Divider(thickness: 2, color: Colors.blue),
                           ),
                           const SizedBox(height: 8),
                           Padding(
@@ -202,60 +196,41 @@ class InfoScreen extends StatelessWidget {
             ),
             SizedBox(height: 12),
             Container(
-              decoration: BoxDecoration(),
+              decoration: BoxDecoration(color: Colors.white),
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 0),
+                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 6),
                 child: Column(
                   children: [
                     const SizedBox(width: 12),
                     Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(15),
-                        border: Border.all(
-                          color: HexColor("#F7C85A"),
-                          width: 3,
-                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            height: 35,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: HexColor("#D7B59E"),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: HexColor("#F7C85A"),
-                                width: 3,
-                              ),
-                            ),
-                            child: Center(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 15,
-                                    backgroundColor: HexColor("#D7B59E"),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4.0),
-                                      child: Image.asset(
-                                        "assets/images/quetions.png",
-                                      ),
-                                    ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              CircleAvatar(
+                                radius: 25,
+                                // backgroundColor: HexColor("#D7B59E"),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Image.asset(
+                                    "assets/images/questionmark.png",
                                   ),
-
-                                  SizedBox(width: 5),
-                                  Text(
-                                    'What is JIN Reflexology',
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
+                              SizedBox(width: 5),
+                              Text(
+                                'What is JIN Reflexology',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 8),
                           Padding(
@@ -283,8 +258,8 @@ class InfoScreen extends StatelessWidget {
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(15),
-                // color: Colors.yellow,
-                border: Border.all(color: HexColor("#F7C85A"), width: 5),
+                color: Colors.white,
+                //border: Border.all(color: HexColor("#F7C85A"), width: 5),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -352,7 +327,7 @@ class InfoScreen extends StatelessWidget {
                   children: [
                     _sectionHeader(
                       "Don't provide JIN treatment in the following condtions",
-                      "assets/images/box.png",
+                      "assets/images/featuresphoto.png",
                     ),
                     const SizedBox(height: 12),
                     ...features.asMap().entries.map((e) {
@@ -398,9 +373,10 @@ class InfoScreen extends StatelessWidget {
     return Container(
       height: 45,
       decoration: BoxDecoration(
-        color: HexColor("#D7B59E"),
+        color: Colors.transparent,
+        // color: HexColor("#D7B59E"),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: HexColor("#F7C85A"), width: 5),
+        // border: Border.all(color: HexColor("#F7C85A"), width: 5),
       ),
       child: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -485,39 +461,42 @@ class InfoScreen extends StatelessWidget {
     return Container(
       //padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       decoration: BoxDecoration(
-        color: HexColor("#F0E6D6"), // Beige background (photo सारखा)
+        border: Border.all(color: Colors.grey),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(40),
       ),
-      child: Row(
-        children: [
-          // LEFT SIDE YELLOW CURVED SHAPE
-          Container(
-            width: 22,
-            height: 38,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF7C548),
-              borderRadius: BorderRadius.only(
-                topRight: Radius.circular(100),
-                bottomRight: Radius.circular(100),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          children: [
+            // // LEFT SIDE YELLOW CURVED SHAPE
+            // Container(
+            //   width: 22,
+            //   height: 38,
+            //   decoration: const BoxDecoration(
+            //     color: Color(0xFFF7C548),
+            //     borderRadius: BorderRadius.only(
+            //       topRight: Radius.circular(100),
+            //       bottomRight: Radius.circular(100),
+            //     ),
+            //   ),
+            // ),
+            const SizedBox(width: 12),
+
+            // NUMBER + TEXT
+            Expanded(
+              child: Text(
+                "$index-  $text",
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF2D3748),
+                  fontWeight: FontWeight.w600,
+                  height: 1.4,
+                ),
               ),
             ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // NUMBER + TEXT
-          Expanded(
-            child: Text(
-              "$index-  $text",
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF2D3748),
-                fontWeight: FontWeight.w600,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

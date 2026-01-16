@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// =====================
@@ -136,18 +137,7 @@ class _PowerYogaScreenState extends State<PowerYogaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Power Yoga"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 1,
-        iconTheme: const IconThemeData(color: Colors.black),
-        titleTextStyle: const TextStyle(
-          color: Colors.black,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      appBar:CommonAppBar(title:"Power Yoga"),
       body:
           isLoading
               ? const Center(child: CircularProgressIndicator())

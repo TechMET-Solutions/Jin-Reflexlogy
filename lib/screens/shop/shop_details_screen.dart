@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
+import 'package:jin_reflex_new/login_screen.dart';
+import 'package:jin_reflex_new/screens/life_style/life_style_screen.dart';
 import 'package:jin_reflex_new/screens/shop/buy_now_form.dart';
 import 'package:jin_reflex_new/screens/shop/ui_model.dart';
 import 'package:jin_reflex_new/screens/shop/cartscreen.dart';
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -59,13 +62,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     final prefs = AppPreference();
     final token = prefs.getString(PreferencesKey.token);
 
-    final String country =
-        widget.deliveryType == "india" ? "in" : "us";
+    final String country = widget.deliveryType == "india" ? "in" : "us";
 
     if (token.isEmpty || userId == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please login first")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please login first")));
       return;
     }
 
@@ -97,16 +99,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         );
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) =>  CartScreen(deliveryType: widget.deliveryType,)),
+          MaterialPageRoute(
+            builder: (_) => CartScreen(deliveryType: widget.deliveryType),
+          ),
         );
       } else {
         throw decoded["message"] ?? "Add to cart failed";
       }
     } catch (e) {
       debugPrint("❌ ADD TO CART ERROR: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
 
     setState(() => isAddingToCart = false);
@@ -132,141 +136,181 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
+    final token = AppPreference().getString(PreferencesKey.token);
+    final type = AppPreference().getString(PreferencesKey.type);
+
     final imgCount = imageCount(p.image);
 
     return Scaffold(
-      appBar: AppBar(title: Text(p.title)),
+      appBar: CommonAppBar(title: p.title),
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // IMAGE SECTION
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 300,
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFFF7C85A)),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: imgCount > 0
-                            ? Image.network(
-                                imageAt(p.image, activeImage),
-                                fit: BoxFit.contain,
-                              )
-                            : const Icon(Icons.image),
-                      ),
-                      SizedBox(
-                        height: 80,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: imgCount,
-                          itemBuilder: (context, i) {
-                            return GestureDetector(
-                              onTap: () => setState(() => activeImage = i),
-                              child: Container(
-                                width: 70,
-                                margin: const EdgeInsets.only(right: 10),
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: activeImage == i
-                                        ? Colors.orange
-                                        : Colors.grey,
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Image.network(
-                                  imageAt(p.image, i),
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // PRODUCT INFO
-                Expanded(
-                  flex: 2,
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // IMAGE SECTION
+                  Expanded(
+                    flex: 3,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          p.title,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                        Container(
+                          height: 300,
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: const Color(0xFFF7C85A)),
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          child:
+                              imgCount > 0
+                                  ? Image.network(
+                                    imageAt(p.image, activeImage),
+                                    fit: BoxFit.contain,
+                                  )
+                                  : const Icon(Icons.image),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          "₹ ${p.unitPrice.toStringAsFixed(0)}",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    BuyNowFormScreen(product: p),
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            "Buy Now",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        OutlinedButton(
-                          onPressed:
-                              isAddingToCart ? null : addToCart,
-                          child: isAddingToCart
-                              ? const SizedBox(
-                                  height: 18,
-                                  width: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                        SizedBox(height: 10),
+                        SizedBox(
+                          height: 80,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: imgCount,
+                            itemBuilder: (context, i) {
+                              return GestureDetector(
+                                onTap: () => setState(() => activeImage = i),
+                                child: Container(
+                                  width: 70,
+                                  margin: const EdgeInsets.only(right: 10),
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color:
+                                          activeImage == i
+                                              ? Colors.orange
+                                              : Colors.grey,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                )
-                              : const Text("Add to Cart"),
+                                  child: Image.network(
+                                    imageAt(p.image, i),
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
 
-            productTabs(
-              controller: _tabController,
-              details: p.details,
-              description: p.description,
-              additionalInfo: p.additionalInfo,
-            ),
-          ],
+                  // PRODUCT INFO
+                  Expanded(
+                    flex: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            p.title,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            "${widget.deliveryType == "india" ? "₹" : "\$"}${p.unitPrice.toStringAsFixed(0)}",
+
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+
+                          // ElevatedButton(
+                          //   style: ElevatedButton.styleFrom(
+                          //     backgroundColor: Colors.black,
+                          //   ),
+                          //   onPressed: () {
+                          //     Navigator.push(
+                          //       context,
+                          //       MaterialPageRoute(
+                          //         builder: (_) =>
+                          //             BuyNowFormScreen(product: p),
+                          //       ),
+                          //     );
+                          //   },
+                          //   child: const Text(
+                          //     "Buy Now",
+                          //     style: TextStyle(color: Colors.white),
+                          //   ),
+                          // ),
+                          const SizedBox(height: 8),
+
+                          OutlinedButton(
+                            onPressed:
+                                isAddingToCart
+                                    ? null
+                                    : () {
+                                      if (type == "therapist" ||
+                                          token.isEmpty) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (context) => JinLoginScreen(
+                                                  text: "ShopScreen",
+                                                  type: "user",
+                                                  diliveryType:
+                                                      widget.deliveryType,
+                                                  onTab: () {
+                                                    Navigator.pushReplacement(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder:
+                                                            (context) =>
+                                                                LifestyleScreen(),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                          ),
+                                        );
+                                      } else {
+                                        addToCart();
+                                      }
+                                    },
+                            child:
+                                isAddingToCart
+                                    ? const SizedBox(
+                                      height: 18,
+                                      width: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                    : const Text("Add to Cart"),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              productTabs(
+                controller: _tabController,
+                details: p.details,
+                description: p.description,
+                additionalInfo: p.additionalInfo,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -293,11 +337,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           height: 140,
           child: TabBarView(
             controller: controller,
-            children: [
-              Text(details),
-              Text(description),
-              Text(additionalInfo),
-            ],
+            children: [Text(details), Text(description), Text(additionalInfo)],
           ),
         ),
       ],

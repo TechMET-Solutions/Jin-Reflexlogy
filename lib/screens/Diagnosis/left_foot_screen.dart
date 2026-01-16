@@ -69,7 +69,7 @@ class LeftFootScreenNew extends StatefulWidget {
 
 class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
   static const double baseWidth = 340;
-  static const double baseHeight = 800;
+  static const double baseHeight = 805;
 
   List<PointData> points = [];
   bool isLoading = true;
@@ -342,11 +342,11 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
   Widget _buildDot(PointData p, double scale) {
     Color color;
     if (p.state == 1)
-      color = Colors.red;
+      color = Color(0xFF8B0000);
     else if (p.state == 2)
       color = Colors.green;
     else
-      color = Colors.white;
+      color = Colors.transparent;
 
     return GestureDetector(
       onTap: () {
@@ -356,12 +356,12 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
         });
       },
       child: Container(
-        width: 18 * scale,
-        height: 18 * scale,
+        width: 15 * scale,
+        height: 15 * scale,
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.black, width: 2),
+          border: Border.all(color: Colors.transparent, width: 2),
         ),
       ),
     );
@@ -373,7 +373,7 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
   Future<void> _saveTagsToServer(String encodedTags) async {
     try {
       await Dio().post(
-        "https://jinreflexology.in/api/save_tags.php", // योग्य endpoint वापरा
+        "https://jinreflexology.in/api/save_tags.php",
         data: FormData.fromMap({
           "diagnosisId": widget.diagnosisId,
           "pid": widget.patientId,
@@ -496,14 +496,17 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
                           children: [
                             Positioned.fill(
                               child: Image.asset(
-                                'assets/images/point_finder_lf.png',
+                                'assets/images/left_foot_new.png',
                                 fit: BoxFit.fill,
                               ),
                             ),
                             ...points.map((p) {
+                              double rightOffset =
+                                  5 * scaleX; // value adjust kar (5–15 try kar)
+                              double topOffset = -1 * scaleY;
                               return Positioned(
-                                left: p.x * scaleX,
-                                top: p.y * scaleY,
+                                left: p.x * scaleX + rightOffset,
+                                top: (p.y * scaleY) + topOffset,
                                 child: _buildDot(p, scale),
                               );
                             }).toList(),

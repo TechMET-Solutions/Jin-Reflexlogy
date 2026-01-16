@@ -78,33 +78,50 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
     super.initState();
     loadPoints();
   }
+
+  // --------------------------------------------------
+  // LOAD POINTS
   Future<void> loadPoints() async {
     try {
-      final jsonString =
-          await rootBundle.loadString("assets/left_hand_btn.json");
-      final Map<String, dynamic> jsonMap = json.decode(jsonString);
+      final jsonString = await rootBundle.loadString(
+        "assets/left_hand_btn.json",
+      );
 
-      final List<dynamic> jsonList = jsonMap["LeftHand"]; 
+      if (!mounted) return;
+
+      final Map<String, dynamic> jsonMap = json.decode(jsonString);
+      final List<dynamic> jsonList = jsonMap["LeftHand"];
+
       points = jsonList.map((p) => PointData.fromJson(p)).toList();
 
       loadSavedLocal();
-  await fetchServer();
+      await fetchServer();
+
+      if (!mounted) return;
       setState(() => isLoading = false);
     } catch (e) {
       debugPrint("JSON ERROR: $e");
     }
   }
- Future<void> fetchServer() async {
+
+  // --------------------------------------------------
+  // FETCH SERVER DATA
+  Future<void> fetchServer() async {
     try {
       final res = await Dio().post(
-        "https://jinreflexology.in/api1/get_data.php ",
+        "https://jinreflexology.in/api1/get_data.php",
         data: FormData.fromMap({
           "diagnosisId": widget.diagnosisId,
           "pid": widget.pid,
           "which": "lh",
         }),
-        options: Options(responseType: ResponseType.plain),
+        options: Options(
+          responseType: ResponseType.plain,
+          validateStatus: (status) => status != null && status < 500,
+        ),
       );
+
+      if (res.statusCode != 200) return;
 
       final raw = res.data.toString();
       final start = raw.indexOf("{");
@@ -121,10 +138,10 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
         final val = int.parse(parts[1]);
 
         final p = points.firstWhere((e) => e.index == idx);
-        p.state = val == 1 ? 2 : val == -1 ? 0 : 1;
+        p.state = val == 1 ? 2 : (val == -1 ? 0 : 1);
       }
     } catch (e) {
-      debugPrint("RH SERVER ERROR: $e");
+      debugPrint("LH SERVER ERROR: $e");
     }
   }
 
@@ -165,8 +182,7 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
   String encodeLhData() {
     StringBuffer sb = StringBuffer();
     for (var p in points) {
-      int serverValue =
-          p.state == 2 ? 1 : (p.state == 1 ? 0 : -1);
+      int serverValue = p.state == 2 ? 1 : (p.state == 1 ? 0 : -1);
       sb.write("${p.index}:$serverValue;");
     }
     return sb.toString();
@@ -189,14 +205,7 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
     final encodedLhResult = encodeLhResult();
 
     await saveAllPointsFast();
-
     final base64 = await captureScreenshot();
-
-    debugPrint("=== LH COMPLETE DATA ===");
-    debugPrint("lh_data   : $encodedLhData");
-    debugPrint("lh_result : $encodedLhResult");
-    debugPrint("lh_img len: ${base64?.length}");
-    debugPrint("========================");
 
     Navigator.pop(context, {
       "lh_data": encodedLhData,
@@ -205,23 +214,25 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
     });
   }
 
-
+  // --------------------------------------------------
+  // SCREENSHOT
   Future<String?> captureScreenshot() async {
     try {
-      await Future.delayed(const Duration(milliseconds: 100));
+      if (!mounted) return null;
+
+      await Future.delayed(const Duration(milliseconds: 120));
       await WidgetsBinding.instance.endOfFrame;
 
-      final boundary = screenshotKey.currentContext
-          ?.findRenderObject() as RenderRepaintBoundary?;
+      if (!mounted) return null;
 
-      if (boundary == null) {
-        debugPrint("❌ Screenshot boundary null");
-        return null;
-      }
+      final boundary =
+          screenshotKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
 
-      final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      if (boundary == null) return null;
+
+      final image = await boundary.toImage(pixelRatio: 2.5);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
       if (byteData == null) return null;
 
@@ -233,17 +244,18 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
   }
 
   // --------------------------------------------------
-  Widget _buildDot(PointData p, double scaleX, double scaleY) {
+  // FIXED DOT (NO MOVE, NO COORDS)
+  Widget _buildDot(PointData p) {
     Color color =
-        p.state == 1 ? Colors.red : p.state == 2 ? Colors.green : Colors.white;
+        p.state == 1
+            ? Color(0xFF8B0000)
+            : p.state == 2
+            ? Colors.green
+            : Colors.white;
 
     return GestureDetector(
-      onTap: () => setState(() => p.state = (p.state + 1) % 3),
-      onPanUpdate: (details) {
-        setState(() {
-          p.x += details.delta.dx / scaleX;
-          p.y += details.delta.dy / scaleY;
-        });
+      onTap: () {
+        setState(() => p.state = (p.state + 1) % 3);
       },
       child: Container(
         width: 20,
@@ -271,42 +283,41 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
     double scaleY = containerH / baseHeight;
 
     return Scaffold(
-
-     
-      appBar:CommonAppBar(title:"Left Hand"),
+      appBar: CommonAppBar(title: "Left Hand"),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _saveAndExit,
-        label:Text("Save",style: TextStyle(color: Colors.white),),
-        backgroundColor:const Color.fromARGB(255, 19, 4, 66),
+        label: const Text("Save", style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color.fromARGB(255, 19, 4, 66),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: SizedBox(
-                width: containerW,
-                height: containerH,
-                child: RepaintBoundary(
-                  key: screenshotKey,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Image.asset(
-                          "assets/images/hand_left.png",
-                          fit: BoxFit.fill,
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Center(
+                child: SizedBox(
+                  width: containerW,
+                  height: containerH,
+                  child: RepaintBoundary(
+                    key: screenshotKey,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Image.asset(
+                            "assets/images/hand2.jpeg",
+                            fit: BoxFit.fill,
+                          ),
                         ),
-                      ),
-                      ...points.map(
-                        (p) => Positioned(
-                          left: p.x * scaleX,
-                          top: p.y * scaleY,
-                          child: _buildDot(p, scaleX, scaleY),
+                        ...points.map(
+                          (p) => Positioned(
+                            left: p.x * scaleX,
+                            top: p.y * scaleY,
+                            child: _buildDot(p),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
     );
   }
 }

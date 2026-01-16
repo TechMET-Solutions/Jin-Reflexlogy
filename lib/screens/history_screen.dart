@@ -216,25 +216,29 @@ class HistoryScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: HexColor("#F0E6D6"),
-              borderRadius: BorderRadius.circular(10),
-              border: Border(
-                left: BorderSide(color: HexColor("#F7C85A"), width: 5),
-                right: BorderSide(color: HexColor("#F7C85A"), width: 5),
+          Material(
+            elevation: 2,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                // border: Border(
+                //   left: BorderSide(color: HexColor("#F7C85A"), width: 5),
+                //   right: BorderSide(color: HexColor("#F7C85A"), width: 5),
+                // ),
               ),
-            ),
-            child: const Text(
-              'In India, for thousands of years this type of therapy has been used as a routine lifestyle practice called the Indian life style.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.black87,
-                height: 1.4,
+              child: const Text(
+                'In India, for thousands of years this type of therapy has been used as a routine lifestyle practice called the Indian life style.',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.black87,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
           ),
 
@@ -243,95 +247,86 @@ class HistoryScreen extends StatelessWidget {
           // 🔹 Image 1
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: HexColor("#F0E6D6"),
-                border: Border(
-                  left: BorderSide(color: HexColor("#F7C85A"), width: 5),
-                  right: BorderSide(color: HexColor("#F7C85A"), width: 5),
+            child: Column(
+              children: [
+                SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: Image.asset(
+                    'assets/images/history_one.jpg',
+                    width: double.infinity,
+                    height: 210,
+                    fit: BoxFit.fill,
+                  ),
                 ),
-              ),
-              child: Column(
-                children: [
-                  SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: Image.asset(
-                      'assets/images/history_one.jpg',
-                      width: double.infinity,
-                      height: 210,
-                      fit: BoxFit.cover,
-                    ),
+                SizedBox(height: 8),
+                const Text(
+                  'At the Feet of the Gods: a very early picture of foot work being offered. Lakshmi working on the feet of the Hindu god Vishnu.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w700,
                   ),
-                  SizedBox(height: 8),
-                  const Text(
-                    'At the Feet of the Gods: a very early picture of foot work being offered. Lakshmi working on the feet of the Hindu god Vishnu.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 8),
-                ],
-              ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 8),
+              ],
             ),
           ),
           const SizedBox(height: 16),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: HexColor("#F0E6D6"),
-                border: Border(
-                  left: BorderSide(color: HexColor("#F7C85A"), width: 5),
-                  right: BorderSide(color: HexColor("#F7C85A"), width: 5),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Image.asset(
+                    'assets/images/history_two.jpg',
+                    width: double.infinity,
+                    height: 210,
+                    fit: BoxFit.fill,
+                  ),
                 ),
-              ),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Image.asset(
-                      'assets/images/history_two.jpg',
-                      width: double.infinity,
-                      height: 210,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Depiction of divine healing through foot massage, representing balance and spiritual connection.',
-                    style: TextStyle(fontSize: 14, color: Colors.black87),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Depiction of divine healing through foot massage, representing balance and spiritual connection.',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+              ],
             ),
           ),
 
           const SizedBox(height: 20),
-          Container(
-            width: double.infinity,
+          Padding(
             padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 08.0,
-            ),
-            decoration: BoxDecoration(
-              color: HexColor("#F7C85A"),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Text(
-                'Timeline',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
+                  horizontal: 20.0,
+                  vertical: 08.0,
+                ),
+            child: Material(
+              elevation: 1,
+              child: Container(
+                child: Container(
+                  width: double.infinity,
+                 
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Center(
+                      child: Text(
+                        'Timeline',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -383,17 +378,17 @@ class HistoryScreen extends StatelessWidget {
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                        color: HexColor("#F0E6D6"),
-                        border: Border(
-                          left: BorderSide(
-                            color: HexColor("#F7C85A"),
-                            width: 5,
-                          ),
-                          right: BorderSide(
-                            color: HexColor("#F7C85A"),
-                            width: 5,
-                          ),
-                        ),
+                        color:Colors.white,
+                        // border: Border(
+                        //   left: BorderSide(
+                        //     color: HexColor("#F7C85A"),
+                        //     width: 5,
+                        //   ),
+                        //   right: BorderSide(
+                        //     color: HexColor("#F7C85A"),
+                        //     width: 5,
+                        //   ),
+                        // ),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -403,19 +398,40 @@ class HistoryScreen extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  data['title']!,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 15,
+                                Container( decoration: BoxDecoration(
+                                    color: const Color.fromARGB(255, 151, 232, 154),
+                                    border: Border.all(color: const Color.fromARGB(255, 151, 232, 154),width: 1),
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      data['year']!,
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                                Text(
-                                  data['year']!,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
+
+                                Container(
+
+                                  decoration: BoxDecoration(
+                                    
+                                    border: Border.all(color: Colors.black,width: 1),
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      data['title']!,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],

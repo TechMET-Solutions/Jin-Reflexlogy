@@ -24,10 +24,8 @@ class JinLoginScreen extends ConsumerStatefulWidget {
 class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
-
   @override
   void initState() {
     super.initState();
@@ -53,7 +51,6 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
           height: size.height,
           child: Stack(
             children: [
-              /// 🔵 Top Purple Background with Wave
               Positioned(
                 top: 0,
                 left: 0,

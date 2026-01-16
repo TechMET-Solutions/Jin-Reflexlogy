@@ -1,13 +1,19 @@
+import 'dart:convert';
+
 import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
+import 'package:jin_reflex_new/auth/upload_document.dart';
 import 'package:jin_reflex_new/bannar.dart';
 import 'package:jin_reflex_new/dashbord_forlder/feedback_form.dart';
 import 'package:jin_reflex_new/dashbord_forlder/feedback_from_screen.dart';
 import 'package:jin_reflex_new/dashbord_forlder/free_power_yoga.dart';
 import 'package:jin_reflex_new/dashbord_forlder/healthy_tips.dart';
 import 'package:jin_reflex_new/dashbord_forlder/training_coureses.dart';
+import 'package:jin_reflex_new/dashbord_forlder/year_comaining.dart';
 import 'package:jin_reflex_new/foot_chart_screen.dart';
 import 'package:jin_reflex_new/hand_chart_screen.dart';
 import 'package:jin_reflex_new/marking_screen.dart';
@@ -25,6 +31,7 @@ import 'package:jin_reflex_new/screens/info_screen.dart';
 import 'package:jin_reflex_new/screens/life_style/life_style_screen.dart';
 import 'package:jin_reflex_new/screens/life_style/treatmentPlan.dart';
 import 'package:jin_reflex_new/screens/shop/shop_screen.dart';
+import 'package:jin_reflex_new/screens/speesh_screen.dart';
 import 'package:jin_reflex_new/screens/visitUsScreen.dart';
 import 'package:jin_reflex_new/screens/point_finder_screen.dart';
 import 'package:jin_reflex_new/screens/point_screen.dart';
@@ -59,7 +66,149 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _requestLocationPermission();
+    _checkDocumentsAndShowPopup();
     Future.delayed(const Duration(seconds: 2), _autoSlide);
+  }
+
+  Future<void> _checkDocumentsAndShowPopup() async {
+    AppPreference().initialAppPreference();
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://jinreflexology.in/api1/new/check_documents.php?id=${AppPreference().getString(PreferencesKey.userId).toString()}',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        final bool documentUploaded = data['document_uploaded'] == true;
+print("documentUploaded--------------------------------$documentUploaded");    
+        if (!documentUploaded) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            AppPreference().initialAppPreference();
+            _showUploadPopup();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Document check error: $e');
+    }
+  }
+
+  void _showUploadPopup() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder:
+          (_) => PopScope(
+            canPop: true,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              icon: Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.grey),
+                  onPressed: () => Navigator.pop(context),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+              iconPadding: const EdgeInsets.only(top: 8, right: 8),
+              title: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.cloud_upload,
+                      size: 40,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Upload Required",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              content: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Your documents are pending upload.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    "Upload now to continue using all features.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+              actions: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.grey,
+                          side: const BorderSide(color: Colors.grey),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text("LATER"),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => DocumentUploadScreen(),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.upload, size: 20),
+                            SizedBox(width: 8),
+                            Text("UPLOAD NOW"),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            ),
+          ),
+    );
   }
 
   void _autoSlide() {
@@ -244,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ),
     CampaignItem(
-      title: 'Direct Points',
+      title: 'Effective Points',
       img: 'assets/jinImages/07.png',
       onTap: () {
         Navigator.push(
@@ -448,6 +597,48 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     ),
+
+    CampaignItem(
+      title: 'Speeches',
+      img: 'assets/jinImages/speech.png',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => SpeechesScreen()),
+        );
+      },
+    ),
+    CampaignItem(
+      title: 'Vitamin',
+      img: 'assets/jinImages/vitamin.png',
+      onTap: () {},
+    ),
+    CampaignItem(
+      title: 'Minerals',
+      img: 'assets/jinImages/minerals.png',
+      onTap: () {},
+    ),
+    CampaignItem(title: 'Yoga', img: 'assets/jinImages/yoga.png', onTap: () {}),
+    CampaignItem(
+      title: 'Mudra',
+      img: 'assets/jinImages/mudra.png',
+      onTap: () {},
+    ),
+    CampaignItem(
+      title: 'Magnet',
+      img: 'assets/jinImages/magnet.png',
+      onTap: () {},
+    ),
+    CampaignItem(
+      title: 'Color',
+      img: 'assets/jinImages/color.png',
+      onTap: () {},
+    ),
+    CampaignItem(
+      title: 'Spinal',
+      img: 'assets/jinImages/spinal.png',
+      onTap: () {},
+    ),
   ];
 
   List<CampaignItem> campaignItems4() => [
@@ -594,7 +785,17 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
     ),
-    CampaignItem(title: 'Review', img: 'assets/jinImages/41.png', onTap: () {}),
+    CampaignItem(
+      title: 'Review',
+      img: 'assets/jinImages/41.png',
+      onTap: () {
+        Navigator.pop(context);
+        launchUrl(
+          Uri.parse("https://maps.app.goo.gl/scfouzyb2nEzdBkr8?g_st=aw"),
+          mode: LaunchMode.externalApplication,
+        );
+      },
+    ),
     CampaignItem(
       title: 'Facebook',
       img: 'assets/jinImages/42.png',
@@ -767,9 +968,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.privacy_tip_rounded),
-              title:  Text('Privacy Policy'),
+              title: Text('Privacy Policy'),
               onTap: () {
-               Navigator.push(
+                Navigator.pop(context);
+                Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder:
@@ -795,7 +997,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _showLogoutDialog(context); 
+                  _showLogoutDialog(context);
                 },
               ),
             ),
@@ -809,31 +1011,30 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(height: 10),
             // AutoSlider(pageController: _pageController),
             BannerSlider(),
-
             _campaignSection(
               header: "JIN Reflexology",
               items: campaignItems1(),
             ),
-
             const SizedBox(height: 4),
-
             _campaignSection(
-              header: "For JIN Reflexology        For Patients",
+              header: "For JIN Reflexolog                      For Patients",
               items: campaignItems2(),
             ),
-
             const SizedBox(height: 4),
-
             _campaignSection(header: " For Premium", items: campaignItems3()),
-            const SizedBox(height: 4),
-
-            _campaignSection(
-              header: "India’s Biggest Health Awareness Campaign",
-              items: campaignItems4(),
-            ),
-            const SizedBox(height: 4),
-
+            // const SizedBox(height: 4),
             _campaignSection(header: "Contact us", items: campaignItems5()),
+           
+            // Container(
+            //   color: const Color(0xFF3B3B8F),
+            //   child: YeraHelathScreen(),
+            // ),
+
+            // campaignItems4(),
+
+             _campaignSection(header: " India's Biggest Health Awareness Campaign", items: campaignItems4()),
+
+            // const SizedBox(height: 4),
           ],
         ),
       ),
@@ -855,7 +1056,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             header,
             style: const TextStyle(
-              color: Colors.yellow,
+              color: Colors.white,
               fontSize: 17,
               fontWeight: FontWeight.bold,
             ),
@@ -988,8 +1189,7 @@ void _showLogoutDialog(BuildContext context) {
         actions: [
           TextButton(
             onPressed: () {
-              
-           Navigator.pop(context);
+              Navigator.pop(context);
             },
             child: const Text('Cancel'),
           ),

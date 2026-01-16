@@ -216,6 +216,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
 class FeedbackFormScreen extends StatefulWidget {
   const FeedbackFormScreen({super.key});
@@ -318,16 +319,7 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        centerTitle: true,
-        title: const Text(
-          "Feedback",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
+      appBar: CommonAppBar(title: "Feedback") ,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
