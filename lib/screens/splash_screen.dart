@@ -156,7 +156,7 @@ class _SplashScreenState extends State<SplashScreen>
                     );
                   },
                   child: Image.asset(
-                    "assets/images/jin_reflexo.png",
+                    "assets/images/logo.png",
                     width: w * 0.45,
                   ),
                 ),

@@ -3,6 +3,7 @@ import 'package:hexcolor/hexcolor.dart';
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/dashbard_screen.dart';
+import 'package:jin_reflex_new/e-book_login.dart';
 import 'package:jin_reflex_new/login_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_screen_list.dart';
 import 'package:jin_reflex_new/screens/english_book_read_screen.dart';
@@ -30,7 +31,7 @@ class EbookScreen extends StatelessWidget {
       ),
       body:
           type == "patient" || token.isEmpty
-              ? JinLoginScreen(
+              ? EbookJinLoginScreen(
                 text: "EbookScreen",
                 type: "therapist",
                 onTab: () {

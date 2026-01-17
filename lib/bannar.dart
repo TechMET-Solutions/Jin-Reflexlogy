@@ -71,21 +71,20 @@ class _BannerSliderState extends State<BannerSlider> {
                         );
                       },
                       child: ClipRRect(
-  borderRadius: BorderRadius.circular(15),
-  child: Image.network(
-    banner.image,
-    fit: BoxFit.cover,
-    width: double.infinity,
-    errorBuilder: (context, error, stackTrace) {
-      return Image.asset(
-        'assets/images/jin_slide1.png',
-        fit: BoxFit.cover,
-        width: double.infinity,
-      );
-    },
-  ),
-),
-
+                        borderRadius: BorderRadius.circular(15),
+                        child: Image.network(
+                          banner.image,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              'assets/images/jin_slide1.png',
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                            );
+                          },
+                        ),
+                      ),
                     );
                   }).toList(),
               carouselController: _controller,

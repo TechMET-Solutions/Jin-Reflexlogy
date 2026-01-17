@@ -301,7 +301,7 @@ class _rightFootScreenNewState extends State<rightFootScreenNew> {
   Widget _buildDot(PointData p, double scaleX, double scaleY) {
     Color color;
     if (p.state == 1)
-      color = Colors.red;
+      color = Color(0xFF8B0000);
     else if (p.state == 2)
       color = Colors.green;
     else

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:http/http.dart' as http;
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/dashbord_forlder/training_coureses.dart';
@@ -101,7 +102,7 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
             );
             await AppPreference().setString(
               PreferencesKey.contactNumber,
-              jsonData['user_data']['phone'],
+              jsonData['user_data']['p_mobile'],
             );
             await AppPreference().setString(
               PreferencesKey.name,
@@ -113,7 +114,7 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
             );
             await AppPreference().setString(
               PreferencesKey.email,
-              jsonData['user_data']['email'].toString(),
+              jsonData['user_data']['p_email'].toString(),
             );
           }
 
@@ -204,4 +205,38 @@ void _showTypeConflictDialog(
       );
     },
   );
+}
+
+
+
+class ApiService {
+  ApiService._privateConstructor();
+  static final ApiService instance = ApiService._privateConstructor();
+
+  final String _baseUrl = "https://jinreflexology.in/api1/new/";
+
+  Future<Map<String, dynamic>> get(String endpoint) async {
+    try {
+      final response = await http.get(
+        Uri.parse(_baseUrl + endpoint),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {
+          "success": 0,
+          "message": "Server Error ${response.statusCode}"
+        };
+      }
+    } catch (e) {
+      return {
+        "success": 0,
+        "message": e.toString(),
+      };
+    }
+  }
 }

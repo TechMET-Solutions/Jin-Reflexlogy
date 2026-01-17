@@ -72,7 +72,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       "screen": LeftFootScreenNew(
         diagnosisId: "", // Will be set dynamically
         patientId: "", // Will be set dynamically
-        pid: "22",
+    
       ),
     },
     {
@@ -361,7 +361,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                                 (_) => LeftFootScreenNew(
                                   diagnosisId: widget.diagnosis_id.toString(),
                                   patientId: widget.patient_id.toString(),
-                                  pid: "22",
+                                 
                                 ),
                           ),
                         );

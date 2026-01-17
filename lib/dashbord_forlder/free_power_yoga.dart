@@ -47,13 +47,17 @@ class PowerYoga {
 class YogaVideo {
   final String title;
   final String youtubeLink;
+  final String image;
+  final String image_url;
 
-  YogaVideo({required this.title, required this.youtubeLink});
+  YogaVideo({required this.title, required this.youtubeLink,required this.image,required this.image_url});
 
   factory YogaVideo.fromJson(Map<String, dynamic> json) {
     return YogaVideo(
       title: json['title'] ?? "",
       youtubeLink: json['youtube_link'] ?? "",
+      image: json['image'] ?? "",
+      image_url: json['image_url'] ?? "",
     );
   }
 }
@@ -199,7 +203,7 @@ class _PowerYogaScreenState extends State<PowerYogaScreen> {
                                       alignment: Alignment.center,
                                       children: [
                                         Image.network(
-                                          thumbnail,
+                                            "${video.image_url}",
                                           height: 200,
                                           width: double.infinity,
                                           fit: BoxFit.cover,

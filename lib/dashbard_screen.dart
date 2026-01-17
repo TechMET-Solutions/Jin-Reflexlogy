@@ -8,17 +8,19 @@ import 'package:http/http.dart' as http;
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/auth/upload_document.dart';
 import 'package:jin_reflex_new/bannar.dart';
+import 'package:jin_reflex_new/dashbord_forlder/colors/color_screen.dart';
 import 'package:jin_reflex_new/dashbord_forlder/feedback_form.dart';
 import 'package:jin_reflex_new/dashbord_forlder/feedback_from_screen.dart';
 import 'package:jin_reflex_new/dashbord_forlder/free_power_yoga.dart';
 import 'package:jin_reflex_new/dashbord_forlder/healthy_tips.dart';
-import 'package:jin_reflex_new/dashbord_forlder/minerals.dart';
-import 'package:jin_reflex_new/dashbord_forlder/mudra.dart';
-import 'package:jin_reflex_new/dashbord_forlder/spine_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/food/food_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/minerals/minerals.dart';
+import 'package:jin_reflex_new/dashbord_forlder/murdra/mudra.dart';
+import 'package:jin_reflex_new/dashbord_forlder/spine/spine_screen.dart';
 import 'package:jin_reflex_new/dashbord_forlder/training_coureses.dart';
-import 'package:jin_reflex_new/dashbord_forlder/vitamin.dart';
+import 'package:jin_reflex_new/dashbord_forlder/vitamin/vitamin.dart';
 import 'package:jin_reflex_new/dashbord_forlder/year_comaining.dart';
-import 'package:jin_reflex_new/dashbord_forlder/yoga.dart';
+import 'package:jin_reflex_new/dashbord_forlder/yoga/yoga.dart';
 import 'package:jin_reflex_new/foot_chart_screen.dart';
 import 'package:jin_reflex_new/hand_chart_screen.dart';
 import 'package:jin_reflex_new/marking_screen.dart';
@@ -75,33 +77,45 @@ class _HomeScreenState extends State<HomeScreen> {
     Future.delayed(const Duration(seconds: 2), _autoSlide);
   }
 
-  Future<void> _checkDocumentsAndShowPopup() async {
-    AppPreference().initialAppPreference();
-    try {
-      final response = await http.get(
-        Uri.parse(
-          'https://jinreflexology.in/api1/new/check_documents.php?id=${AppPreference().getString(PreferencesKey.userId).toString()}',
-        ),
-      );
+Future<void> _checkDocumentsAndShowPopup() async {
+  try {
+    final userId =
+        AppPreference().getString(PreferencesKey.userId);
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+    if (userId == null || userId.isEmpty) return;
 
-        final bool documentUploaded = data['document_uploaded'] == true;
-        print(
-          "documentUploaded--------------------------------$documentUploaded",
-        );
-        if (!documentUploaded) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            AppPreference().initialAppPreference();
-            _showUploadPopup();
-          });
-        }
-      }
-    } catch (e) {
-      debugPrint('❌ Document check error: $e');
+    final response = await http.get(
+      Uri.parse(
+        'https://jinreflexology.in/api1/new/check_documents.php?id=$userId',
+      ),
+    );
+
+    if (response.statusCode != 200) return;
+
+    final data = jsonDecode(response.body);
+
+    /// ✅ If status true → all good
+    if (data["status"] == true) {
+      return;
     }
+
+    /// ❗ document_uploaded false असेल तर popup
+    final bool documentUploaded =
+        data['document_uploaded'] == true;
+
+    debugPrint(
+        "📄 Document Uploaded: $documentUploaded");
+
+    if (!documentUploaded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showUploadPopup();
+      });
+    }
+  } catch (e) {
+    debugPrint('❌ Document check error: $e');
   }
+}
+
 
   void _showUploadPopup() {
     showDialog(
@@ -656,14 +670,24 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ),
     CampaignItem(
-      title: 'Magnet',
-      img: 'assets/jinImages/magnet.png',
-      onTap: () {},
+      title: 'Food',
+      img: 'assets/jinImages/food.png',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => FoodScreen()),
+        );
+      },
     ),
     CampaignItem(
       title: 'Color',
       img: 'assets/jinImages/color.png',
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ColorsScreen()),
+        );
+      },
     ),
     CampaignItem(
       title: 'Spinal',
@@ -789,7 +813,7 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'Update',
       img: 'assets/jinImages/38.png',
       onTap: () {
-        Navigator.pop(context);
+        //Navigator.pop(context);
         launchUrl(
           Uri.parse("https://www.facebook.com/profile.php?id=61580519183420"),
           mode: LaunchMode.externalApplication,
@@ -811,7 +835,7 @@ class _HomeScreenState extends State<HomeScreen> {
       img: 'assets/jinImages/40.png',
       onTap: () async {
         final url = Uri.parse(
-          "https://wa.me/${9325616269}?text=${Uri.encodeComponent("")}",
+          "https://wa.me/${7620616269}?text=${Uri.encodeComponent("")}",
         );
 
         if (await canLaunchUrl(url)) {
@@ -1053,7 +1077,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 4),
             _campaignSection(
-              header: "For JIN Reflexolog                      For Patients",
+              header: "For JIN Reflexology                   For Patients",
               items: campaignItems2(),
             ),
             const SizedBox(height: 4),

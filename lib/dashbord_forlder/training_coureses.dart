@@ -83,36 +83,34 @@ class _CourseScreenState extends State<CourseScreen> {
       final data = jsonDecode(response.body);
       final List list = data['data'] ?? [];
 
-      courses =
-          list.map<Map<String, dynamic>>((e) {
-            final List pricing = e['pricing'] ?? [];
+      courses = list.map<Map<String, dynamic>>((e) {
+        final List pricing = e['pricing'] ?? [];
 
-            // Find pricing for the current country
-            Map<String, dynamic>? pricingForCountry;
-            for (var price in pricing) {
-              if (price['country'] == countryCode) {
-                pricingForCountry = price;
-                break;
-              }
-            }
+        // Find pricing for the current country
+        Map<String, dynamic>? pricingForCountry;
+        for (var price in pricing) {
+          if (price['country'] == countryCode) {
+            pricingForCountry = price;
+            break;
+          }
+        }
 
-            final total = (pricingForCountry?['total_price'] ?? 0).toDouble();
-            final borrowed = e['Borrowed'] ?? false;
+        final total = (pricingForCountry?['total_price'] ?? 0).toDouble();
+        final borrowed = e['Borrowed'] ?? false;
 
-            return {
-              "id": e['id'],
-              "title": e['title'] ?? "",
-              "description": e['description'] ?? "",
-              "longDesc": e['longDesc'] ?? "",
-              "image":
-                  (e['images'] != null && e['images'].isNotEmpty)
-                      ? e['images'][0]
-                      : "",
-              "total": total,
-              "isSelected": false,
-              "borrowed": borrowed,
-            };
-          }).toList();
+        return {
+          "id": e['id'],
+          "title": e['title'] ?? "",
+          "description": e['description'] ?? "",
+          "longDesc": e['longDesc'] ?? "",
+          "image": (e['images'] != null && e['images'].isNotEmpty)
+              ? e['images'][0]
+              : "",
+          "total": total,
+          "isSelected": false,
+          "borrowed": borrowed,
+        };
+      }).toList();
 
       hasError = false;
     } catch (e) {
@@ -123,13 +121,6 @@ class _CourseScreenState extends State<CourseScreen> {
     if (mounted) {
       setState(() => isLoading = false);
     }
-  }
-
-  void openCourseDetail(Map<String, dynamic> course) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => CourseDetailScreen(course: course)),
-    );
   }
 
   // Payment Gateway Methods
@@ -216,8 +207,7 @@ class _CourseScreenState extends State<CourseScreen> {
         "name": AppPreference().getString(PreferencesKey.name),
         "contact": AppPreference().getString(PreferencesKey.contactNumber),
         "paymentGateway":
-            paymentGateway ??
-            (widget.deliveryType == "india" ? "razorpay" : "paypal"),
+            paymentGateway ?? (widget.deliveryType == "india" ? "razorpay" : "paypal"),
       };
 
       print("Enrollment Request Body: $body");
@@ -235,7 +225,7 @@ class _CourseScreenState extends State<CourseScreen> {
       if (response.statusCode == 200) {
         final res = jsonDecode(response.body);
         print("Enrollment Response: $res");
-fetchCourses();
+        fetchCourses();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -323,75 +313,72 @@ fetchCourses();
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (_) => PaypalCheckoutView(
-              sandboxMode: isSandboxMode,
-              clientId: paypalClientId,
-              secretKey: paypalSecret,
-              transactions: [
-                {
-                  "amount": {"total": amount, "currency": "USD"},
-                  "description": "Course Enrollment Payment",
-                },
-              ],
-              note: "Course Enrollment Payment",
-              onSuccess: (Map params) async {
-                final paypalPaymentId = params["data"]?["id"];
+        builder: (_) => PaypalCheckoutView(
+          sandboxMode: isSandboxMode,
+          clientId: paypalClientId,
+          secretKey: paypalSecret,
+          transactions: [
+            {
+              "amount": {"total": amount, "currency": "USD"},
+              "description": "Course Enrollment Payment",
+            },
+          ],
+          note: "Course Enrollment Payment",
+          onSuccess: (Map params) async {
+            final paypalPaymentId = params["data"]?["id"];
 
-                if (paypalPaymentId == null) {
-                  debugPrint("❌ PayPal paymentId null");
-                  return;
-                }
+            if (paypalPaymentId == null) {
+              debugPrint("❌ PayPal paymentId null");
+              return;
+            }
 
-                await _callSubmitEnrollmentAPI(
-                  paymentId: paypalPaymentId,
-                  orderId: null,
-                  status: "success",
-                  paymentGateway: "PayPal",
-                );
+            await _callSubmitEnrollmentAPI(
+              paymentId: paypalPaymentId,
+              orderId: null,
+              status: "success",
+              paymentGateway: "PayPal",
+            );
 
-                if (!mounted) return;
+            if (!mounted) return;
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("✅ PayPal Payment Successful"),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("✅ PayPal Payment Successful"),
+                backgroundColor: Colors.green,
+              ),
+            );
 
-                Navigator.pop(context); // close PayPal screen
-              },
-              onError: (error) async {
-                await sendPaymentToBackend(
-                  userId:
-                      userId.isNotEmpty
-                          ? userId
-                          : "guest_${DateTime.now().millisecondsSinceEpoch}",
-                  status: "failed",
-                  reason: error.toString(),
-                  amount: amount.toInt(),
-                );
+            Navigator.pop(context); // close PayPal screen
+          },
+          onError: (error) async {
+            await sendPaymentToBackend(
+              userId: userId.isNotEmpty
+                  ? userId
+                  : "guest_${DateTime.now().millisecondsSinceEpoch}",
+              status: "failed",
+              reason: error.toString(),
+              amount: amount.toInt(),
+            );
 
-                debugPrint("❌ PayPal Error: $error");
+            debugPrint("❌ PayPal Error: $error");
 
-                if (mounted) Navigator.pop(context);
-              },
-              onCancel: () async {
-                await sendPaymentToBackend(
-                  userId:
-                      userId.isNotEmpty
-                          ? userId
-                          : "guest_${DateTime.now().millisecondsSinceEpoch}",
-                  status: "failed",
-                  reason: "Payment cancelled",
-                  amount: amount.toInt(),
-                );
+            if (mounted) Navigator.pop(context);
+          },
+          onCancel: () async {
+            await sendPaymentToBackend(
+              userId: userId.isNotEmpty
+                  ? userId
+                  : "guest_${DateTime.now().millisecondsSinceEpoch}",
+              status: "failed",
+              reason: "Payment cancelled",
+              amount: amount.toInt(),
+            );
 
-                debugPrint("⚠️ PayPal Cancelled");
+            debugPrint("⚠️ PayPal Cancelled");
 
-                if (mounted) Navigator.pop(context);
-              },
-            ),
+            if (mounted) Navigator.pop(context);
+          },
+        ),
       ),
     );
   }
@@ -400,86 +387,85 @@ fetchCourses();
   Future<void> _showPaymentDialog() async {
     return showDialog(
       context: context,
-      builder:
-          (context) => StatefulBuilder(
-            builder: (context, setState) {
-              return AlertDialog(
-                title: Text("Complete Enrollment"),
-                content: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "Please provide your details to proceed with payment:",
-                      ),
-                      SizedBox(height: 20),
-                      TextField(
-                        controller: _firstNameController,
-                        decoration: InputDecoration(
-                          labelText: "First Name *",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      TextField(
-                        controller: _lastNameController,
-                        decoration: InputDecoration(
-                          labelText: "Last Name",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      TextField(
-                        controller: _emailController,
-                        decoration: InputDecoration(
-                          labelText: "Email *",
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      SizedBox(height: 10),
-                      TextField(
-                        controller: _mobileController,
-                        decoration: InputDecoration(
-                          labelText: "Mobile Number *",
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.phone,
-                      ),
-                    ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text("Complete Enrollment"),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Please provide your details to proceed with payment:",
                   ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text("Cancel"),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Validate required fields
-                      if (_firstNameController.text.trim().isEmpty ||
-                          _emailController.text.trim().isEmpty ||
-                          _mobileController.text.trim().isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("Please fill all required fields"),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-
-                      Navigator.pop(context);
-                      _startPayment();
-                    },
-                    child: Text(
-                      "Proceed to Pay ${widget.deliveryType == "india" ? "₹" : "\$"}${selectedCourse?['total']}",
+                  SizedBox(height: 20),
+                  TextField(
+                    controller: _firstNameController,
+                    decoration: InputDecoration(
+                      labelText: "First Name *",
+                      border: OutlineInputBorder(),
                     ),
                   ),
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: _lastNameController,
+                    decoration: InputDecoration(
+                      labelText: "Last Name",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      labelText: "Email *",
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: _mobileController,
+                    decoration: InputDecoration(
+                      labelText: "Mobile Number *",
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.phone,
+                  ),
                 ],
-              );
-            },
-          ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // Validate required fields
+                  if (_firstNameController.text.trim().isEmpty ||
+                      _emailController.text.trim().isEmpty ||
+                      _mobileController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Please fill all required fields"),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+
+                  Navigator.pop(context);
+                  _startPayment();
+                },
+                child: Text(
+                  "Proceed to Pay ${widget.deliveryType == "india" ? "₹" : "\$"}${selectedCourse?['total']}",
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -503,25 +489,20 @@ fetchCourses();
     final amount = (selectedCourse!['total'] * 100).toInt(); // Convert to paise
 
     var options = {
-      'key':
-          'rzp_test_1DP5mmOlF5G5ag', // 🔴 Replace with your actual Razorpay key
+      'key': 'rzp_test_1DP5mmOlF5G5ag', // 🔴 Replace with your actual Razorpay key
       'amount': amount.toString(),
       'name': 'Jin Reflexology',
       'description': selectedCourse!['title'],
       'prefill': {
-        'contact':
-            _mobileController.text.trim().isNotEmpty
-                ? _mobileController.text.trim()
-                : '9999999999',
-        'email':
-            _emailController.text.trim().isNotEmpty
-                ? _emailController.text.trim()
-                : 'user@example.com',
-        'name':
-            _firstNameController.text.trim().isNotEmpty
-                ? "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}"
-                    .trim()
-                : 'Customer',
+        'contact': _mobileController.text.trim().isNotEmpty
+            ? _mobileController.text.trim()
+            : '9999999999',
+        'email': _emailController.text.trim().isNotEmpty
+            ? _emailController.text.trim()
+            : 'user@example.com',
+        'name': _firstNameController.text.trim().isNotEmpty
+            ? "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}".trim()
+            : 'Customer',
       },
       'external': {
         'wallets': ['paytm', 'phonepe', 'gpay'],
@@ -563,8 +544,7 @@ fetchCourses();
           "status": status,
           "reason": reason,
           "email": _emailController.text.trim(),
-          "name":
-              "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}",
+          "name": "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}",
           "contact": _mobileController.text.trim(),
           "course_id": selectedCourse?['id'],
           "delivery_type": widget.deliveryType,
@@ -575,6 +555,19 @@ fetchCourses();
     }
   }
 
+  // ✅ Navigate to Course Detail Screen
+  void _navigateToCourseDetail(Map<String, dynamic> course) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CourseDetailScreen(
+          course: course,
+          deliveryType: widget.deliveryType,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final token = AppPreference().getString(PreferencesKey.userId);
@@ -582,712 +575,638 @@ fetchCourses();
 
     return Scaffold(
       appBar: CommonAppBar(
-        title:
-            widget.deliveryType == "india"
-                ? "Courses (India Delivery)"
-                : "Courses (Outside India)",
+        title: widget.deliveryType == "india"
+            ? "Courses (India Delivery)"
+            : "Courses (Outside India)",
       ),
-      body:
-          type == "patient" || token.isEmpty
-              ? JinLoginScreen(
-                text: "CourseScreen",
-                type: "therapist",
-                onTab: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => MemberListScreen()),
-                  );
-                },
-              )
-              : Column(
-                children: [
-                  Expanded(
-                    child:
-                        isLoading
-                            ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.blue,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    "Loading Courses...",
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ],
+      body: type == "patient" || token.isEmpty
+          ? JinLoginScreen(
+              text: "CourseScreen",
+              type: "therapist",
+              onTab: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MemberListScreen()),
+                );
+              },
+            )
+          : Column(
+              children: [
+                // 🔹 Header Section
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color.fromARGB(255, 19, 4, 66).withOpacity(0.9),
+                        const Color.fromARGB(255, 88, 72, 137).withOpacity(0.9),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.school_rounded,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "JIN Reflexology Courses",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
                               ),
-                            )
-                            : hasError
-                            ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    size: 64,
-                                    color: Colors.red,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    "Something went wrong",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    "Please try again later",
-                                    style: TextStyle(color: Colors.grey[600]),
-                                  ),
-                                  SizedBox(height: 20),
-                                  ElevatedButton(
-                                    onPressed: fetchCourses,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.blue,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      "Retry",
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                            : courses.isEmpty
-                            ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.school_outlined,
-                                    size: 80,
-                                    color: Colors.grey[400],
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    "No Courses Available",
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    "Check back soon for new courses",
-                                    style: TextStyle(color: Colors.grey[600]),
-                                  ),
-                                ],
-                              ),
-                            )
-                            : ListView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: courses.length,
-                              itemBuilder: (context, index) {
-                                final course = courses[index];
-                                final isPopular = index % 3 == 0;
-                                final isSelected = selectedIndex == index;
-                                final isBorrowed = course['borrowed'] == true;
-
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    // boxShadow: isSelected
-                                    //     ? [
-                                    //         BoxShadow(
-                                    //           color: Colors.blue.withOpacity(0.3),
-                                    //           blurRadius: 10,
-                                    //           spreadRadius: 2,
-                                    //           offset: Offset(0, 4),
-                                    //         ),
-                                    //       ]
-                                    //     : [],
-                                  ),
-                                  child: Card(
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      side: BorderSide(
-                                        color:
-                                            isSelected
-                                                ? Colors.blue
-                                                : Colors.transparent,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: InkWell(
-                                      onTap:
-                                          isBorrowed
-                                              ? null // ❌ Borrowed course ला tap नाही काम करणार
-                                              : () {
-                                                setState(() {
-                                                  if (selectedIndex == index) {
-                                                    selectedIndex = null;
-                                                    selectedCourse = null;
-                                                  } else {
-                                                    selectedIndex = index;
-                                                    selectedCourse = course;
-                                                  }
-                                                });
-                                              },
-                                      borderRadius: BorderRadius.circular(16),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(16),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            // Borrowed Badge - जर borrowed असेल तर
-                                            if (isBorrowed)
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 6,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.orange[50],
-                                                  borderRadius:
-                                                      BorderRadius.circular(20),
-                                                  border: Border.all(
-                                                    color: Colors.orange,
-                                                    width: 1,
-                                                  ),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Icon(
-                                                      Icons.bookmark,
-                                                      size: 14,
-                                                      color: Colors.orange[700],
-                                                    ),
-                                                    SizedBox(width: 4),
-                                                    Text(
-                                                      "Borrowed",
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        color:
-                                                            Colors.orange[800],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-
-                                            SizedBox(
-                                              height: isBorrowed ? 8 : 0,
-                                            ),
-
-                                            if (isSelected && !isBorrowed)
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.check_circle,
-                                                    color: Colors.blue,
-                                                    size: 20,
-                                                  ),
-                                                  SizedBox(width: 8),
-                                                  Text(
-                                                    "Selected",
-                                                    style: TextStyle(
-                                                      color: Colors.blue,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-
-                                            SizedBox(
-                                              height:
-                                                  (isSelected && !isBorrowed)
-                                                      ? 8
-                                                      : 0,
-                                            ),
-
-                                            if (isPopular && !isBorrowed)
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 4,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.amber[50],
-                                                  borderRadius:
-                                                      BorderRadius.circular(20),
-                                                  border: Border.all(
-                                                    color: Colors.amber,
-                                                    width: 1,
-                                                  ),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Icon(
-                                                      Icons.star,
-                                                      size: 14,
-                                                      color: Colors.amber[700],
-                                                    ),
-                                                    SizedBox(width: 4),
-                                                    Text(
-                                                      "Popular",
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        color:
-                                                            Colors.amber[800],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-
-                                            SizedBox(
-                                              height:
-                                                  ((isSelected || isPopular) &&
-                                                          !isBorrowed)
-                                                      ? 12
-                                                      : 0,
-                                            ),
-
-                                            Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Stack(
-                                                  children: [
-                                                    Container(
-                                                      width: 100,
-                                                      height: 100,
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              12,
-                                                            ),
-                                                        color: Colors.grey[100],
-                                                      ),
-                                                      child: ClipRRect(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              12,
-                                                            ),
-                                                        child:
-                                                            course['image'] !=
-                                                                    ""
-                                                                ? Image.network(
-                                                                  course['image'],
-                                                                  fit:
-                                                                      BoxFit
-                                                                          .cover,
-                                                                  errorBuilder:
-                                                                      (
-                                                                        _,
-                                                                        __,
-                                                                        ___,
-                                                                      ) => Center(
-                                                                        child: Icon(
-                                                                          Icons
-                                                                              .school_outlined,
-                                                                          size:
-                                                                              40,
-                                                                          color:
-                                                                              Colors.grey[400],
-                                                                        ),
-                                                                      ),
-                                                                )
-                                                                : Center(
-                                                                  child: Icon(
-                                                                    Icons
-                                                                        .school_outlined,
-                                                                    size: 40,
-                                                                    color:
-                                                                        Colors
-                                                                            .grey[400],
-                                                                  ),
-                                                                ),
-                                                      ),
-                                                    ),
-                                                    // if (isBorrowed)
-                                                    //   Container(
-                                                    //     width: 100,
-                                                    //     height: 100,
-                                                    //     decoration: BoxDecoration(
-                                                    //       borderRadius: BorderRadius.circular(12),
-                                                    //       color: Colors.black.withOpacity(0.5),
-                                                    //     ),
-                                                    //     child: Center(
-                                                    //       child: Icon(
-                                                    //         Icons.lock,
-                                                    //         color: Colors.white,
-                                                    //         size: 30,
-                                                    //       ),
-                                                    //     ),
-                                                    //   ),
-                                                  ],
-                                                ),
-
-                                                SizedBox(width: 16),
-
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        course['title'],
-                                                        style: TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          color:
-                                                              Colors.grey[900],
-                                                        ),
-                                                        maxLines: 2,
-                                                        overflow:
-                                                            TextOverflow
-                                                                .ellipsis,
-                                                      ),
-
-                                                      SizedBox(height: 6),
-
-                                                      Text(
-                                                        course['description'],
-                                                        style: TextStyle(
-                                                          fontSize: 13,
-                                                          color:
-                                                              Colors.grey[600],
-                                                          height: 1.4,
-                                                        ),
-                                                        maxLines: 2,
-                                                        overflow:
-                                                            TextOverflow
-                                                                .ellipsis,
-                                                      ),
-
-                                                      SizedBox(height: 12),
-                                                      Row(
-                                                        children: [
-                                                          if (isBorrowed)
-                                                            Container(
-                                                              padding:
-                                                                  const EdgeInsets.symmetric(
-                                                                    horizontal:
-                                                                        10,
-                                                                    vertical: 4,
-                                                                  ),
-                                                              decoration: BoxDecoration(
-                                                                color:
-                                                                    Colors
-                                                                        .green[100],
-                                                                borderRadius:
-                                                                    BorderRadius.circular(
-                                                                      12,
-                                                                    ),
-                                                              ),
-                                                              child: const Text(
-                                                                "Already Enrolled",
-                                                                style: TextStyle(
-                                                                  color:
-                                                                      Colors
-                                                                          .green,
-                                                                  fontSize: 12,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                        ],
-                                                      ),
-                                                      if (!isBorrowed)
-                                                        Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
-                                                          children: [
-                                                            Container(
-                                                              padding:
-                                                                  const EdgeInsets.symmetric(
-                                                                    horizontal:
-                                                                        12,
-                                                                    vertical: 6,
-                                                                  ),
-                                                              decoration: BoxDecoration(
-                                                                color:
-                                                                    Colors
-                                                                        .green[50],
-                                                                borderRadius:
-                                                                    BorderRadius.circular(
-                                                                      8,
-                                                                    ),
-                                                                // border: isBorrowed
-                                                                //     ? Border.all(color: Colors.grey)
-                                                                //     : null,
-                                                              ),
-                                                              child: Text(
-                                                                "${widget.deliveryType == "india" ? "₹" : "\$"}${course['total']}",
-                                                                style: TextStyle(
-                                                                  fontSize: 18,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w700,
-                                                                  color:
-                                                                      isBorrowed
-                                                                          ? Colors
-                                                                              .grey[600]
-                                                                          : Colors
-                                                                              .green[800],
-                                                                ),
-                                                              ),
-                                                            ),
-
-                                                            // ❌ Borrowed असल्यास button दिसणार नाही
-                                                            if (!isBorrowed)
-                                                              ElevatedButton(
-                                                                onPressed: () {
-                                                                  setState(() {
-                                                                    if (selectedIndex ==
-                                                                        index) {
-                                                                      selectedIndex =
-                                                                          null;
-                                                                      selectedCourse =
-                                                                          null;
-                                                                    } else {
-                                                                      selectedIndex =
-                                                                          index;
-                                                                      selectedCourse =
-                                                                          course;
-                                                                    }
-                                                                  });
-                                                                },
-                                                                style: ElevatedButton.styleFrom(
-                                                                  backgroundColor:
-                                                                      isSelected
-                                                                          ? Colors
-                                                                              .grey[300]
-                                                                          : Colors
-                                                                              .blue,
-                                                                  foregroundColor:
-                                                                      isSelected
-                                                                          ? Colors
-                                                                              .grey[700]
-                                                                          : Colors
-                                                                              .white,
-                                                                  padding:
-                                                                      const EdgeInsets.symmetric(
-                                                                        horizontal:
-                                                                            24,
-                                                                        vertical:
-                                                                            10,
-                                                                      ),
-                                                                  shape: RoundedRectangleBorder(
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                          8,
-                                                                        ),
-                                                                  ),
-                                                                  elevation: 0,
-                                                                ),
-                                                                child: Row(
-                                                                  mainAxisSize:
-                                                                      MainAxisSize
-                                                                          .min,
-                                                                  children: [
-                                                                    Icon(
-                                                                      isSelected
-                                                                          ? Icons
-                                                                              .check
-                                                                          : Icons
-                                                                              .add_circle_outline,
-                                                                      size: 18,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      width: 6,
-                                                                    ),
-                                                                    Text(
-                                                                      isSelected
-                                                                          ? "Selected"
-                                                                          : "Select",
-                                                                      style: TextStyle(
-                                                                        fontSize:
-                                                                            14,
-                                                                        fontWeight:
-                                                                            FontWeight.w600,
-                                                                      ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              )
-                                                            else
-                                                              Container(
-                                                                padding:
-                                                                    const EdgeInsets.symmetric(
-                                                                      horizontal:
-                                                                          24,
-                                                                      vertical:
-                                                                          10,
-                                                                    ),
-                                                                decoration: BoxDecoration(
-                                                                  color:
-                                                                      Colors
-                                                                          .grey[200],
-                                                                  borderRadius:
-                                                                      BorderRadius.circular(
-                                                                        8,
-                                                                      ),
-                                                                ),
-                                                                child: Row(
-                                                                  mainAxisSize:
-                                                                      MainAxisSize
-                                                                          .min,
-                                                                  children: [
-                                                                    Icon(
-                                                                      Icons
-                                                                          .lock,
-                                                                      size: 18,
-                                                                      color:
-                                                                          Colors
-                                                                              .grey[600],
-                                                                    ),
-                                                                    SizedBox(
-                                                                      width: 6,
-                                                                    ),
-                                                                    Text(
-                                                                      "Borrowed",
-                                                                      style: TextStyle(
-                                                                        fontSize:
-                                                                            14,
-                                                                        fontWeight:
-                                                                            FontWeight.w600,
-                                                                        color:
-                                                                            Colors.grey[600],
-                                                                      ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              ),
-                                                          ],
-                                                        ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-
-                                            if (index != courses.length - 1)
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                  top: 16,
-                                                ),
-                                                child: Divider(
-                                                  height: 1,
-                                                  color: Colors.grey[200],
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
                             ),
+                            SizedBox(height: 4),
+                            Text(
+                              "Professional courses for therapists and enthusiasts",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withOpacity(0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          widget.deliveryType == "india" ? "₹ INR" : "\$ USD",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 🔹 Selected Course Bar (if any)
+                if (selectedCourse != null &&
+                    selectedCourse!['borrowed'] != true)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      border: Border(
+                        top: BorderSide(color: Colors.blue[100]!, width: 1),
+                        bottom: BorderSide(color: Colors.blue[100]!, width: 1),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.blue, size: 20),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Selected Course: ${selectedCourse!['title']}",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blue[800],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                "Price: ${widget.deliveryType == "india" ? "₹" : "\$"}${selectedCourse!['total']}",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.green[700],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: submitEnrollment,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            elevation: 2,
+                          ),
+                          child: const Text(
+                            "Enroll Now",
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
-                  // Bottom enrollment section - borrowed course selected असल्यास दिसणार नाही
-                  if (selectedCourse != null &&
-                      !isLoading &&
-                      !hasError &&
-                      courses.isNotEmpty &&
-                      selectedCourse!['borrowed'] != true)
-                    Container(
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border(
-                          top: BorderSide(color: Colors.grey[200]!, width: 1),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 10,
-                            offset: Offset(0, -2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
+                Expanded(
+                  child: isLoading
+                      ? _buildLoadingState()
+                      : hasError
+                          ? _buildErrorState()
+                          : courses.isEmpty
+                              ? _buildEmptyState()
+                              : _buildCourseList(),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color.fromARGB(255, 19, 4, 66).withOpacity(0.1),
+                  const Color.fromARGB(255, 88, 72, 137).withOpacity(0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color.fromARGB(255, 19, 4, 66),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            "Loading Courses...",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Please wait while we fetch the best courses for you",
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[500],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                size: 50,
+                color: Colors.red[400],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "Something went wrong",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                "We couldn't load the courses. Please check your internet connection and try again.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: fetchCourses,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 19, 4, 66),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                elevation: 2,
+              ),
+              child: const Text(
+                "Try Again",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.school_outlined,
+                size: 60,
+                color: Colors.grey[400],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "No Courses Available",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                "There are no courses available at the moment. Please check back soon for new courses.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCourseList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: courses.length,
+      itemBuilder: (context, index) {
+        final course = courses[index];
+        final isSelected = selectedIndex == index;
+        final isBorrowed = course['borrowed'] == true;
+        final isPopular = index % 3 == 0;
+
+        return GestureDetector(
+          onTap: () {
+            _navigateToCourseDetail(course);
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Material(
+              elevation: 3,
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.white,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color.fromARGB(255, 19, 4, 66)
+                        : Colors.grey[200]!,
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  selectedCourse!['title'],
+                          // 🔹 Top Row: Badges
+                          Row(
+                            children: [
+                              // Popular Badge
+                              if (isPopular && !isBorrowed)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.amber[600]!,
+                                        Colors.orange[400]!,
+                                      ],
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.star, size: 12, color: Colors.white),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        "Popular",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              
+                              // Borrowed Badge
+                              if (isBorrowed)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green[50],
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.green[200]!),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.check_circle,
+                                          size: 12, color: Colors.green[700]),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        "Already Enrolled",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.green[800],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              
+                              Spacer(),
+                              
+                              // Price Tag
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.green[50]!,
+                                      Colors.green[100]!,
+                                    ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.green[200]!),
+                                ),
+                                child: Text(
+                                  "${widget.deliveryType == "india" ? "₹" : "\$"}${course['total']}",
                                   style: TextStyle(
                                     fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  "${widget.deliveryType == "india" ? "₹" : "\$"} ${selectedCourse!['total']}",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.bold,
                                     color: Colors.green[800],
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
 
-                          ElevatedButton(
-                            onPressed: submitEnrollment,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 32,
-                                vertical: 16,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 3,
+                          SizedBox(height: 12),
+
+                          // 🔹 Course Title
+                          Text(
+                            course['title'],
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[900],
+                              height: 1.3,
                             ),
-                            child: Text(
-                              "Enroll Now",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+
+                          SizedBox(height: 8),
+
+                          // 🔹 Course Description
+                          Text(
+                            course['description'],
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                              height: 1.5,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+
+                          SizedBox(height: 16),
+
+                          // 🔹 Image and Details Row
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Course Image
+                              Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.grey[100],
+                                  image: course['image'] != ""
+                                      ? DecorationImage(
+                                          image: NetworkImage(course['image']),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null,
+                                ),
+                                child: course['image'] == ""
+                                    ? Center(
+                                        child: Icon(
+                                          Icons.school_outlined,
+                                          size: 32,
+                                          color: Colors.grey[400],
+                                        ),
+                                      )
+                                    : null,
+                              ),
+
+                              SizedBox(width: 16),
+
+                              // Course Details
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // View Details Button
+                                    OutlinedButton.icon(
+                                      onPressed: () {
+                                        _navigateToCourseDetail(course);
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor:
+                                            const Color.fromARGB(255, 19, 4, 66),
+                                        side: BorderSide(
+                                            color: const Color.fromARGB(255, 19, 4, 66)),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 6),
+                                      ),
+                                      icon: Icon(Icons.remove_red_eye_outlined,
+                                          size: 14),
+                                      label: Text(
+                                        "View Details",
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+
+                                    SizedBox(height: 12),
+
+                                    // Select Button (for non-borrowed courses)
+                                    if (!isBorrowed)
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            if (selectedIndex == index) {
+                                              selectedIndex = null;
+                                              selectedCourse = null;
+                                            } else {
+                                              selectedIndex = index;
+                                              selectedCourse = course;
+                                            }
+                                          });
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: isSelected
+                                              ? Colors.grey[200]
+                                              : const Color.fromARGB(255, 19, 4, 66),
+                                          foregroundColor: isSelected
+                                              ? Colors.grey[700]
+                                              : Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 8),
+                                          elevation: 0,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              isSelected
+                                                  ? Icons.check
+                                                  : Icons.add_circle_outline,
+                                              size: 16,
+                                            ),
+                                            SizedBox(width: 6),
+                                            Text(
+                                              isSelected ? "Selected" : "Select",
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                ],
+
+                    // Selected Checkmark
+                    if (isSelected)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 19, 4, 66),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

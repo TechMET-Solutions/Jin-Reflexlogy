@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:country_state_city/country_state_city.dart' as csc;
@@ -15,7 +16,7 @@ import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class AddPatientScreen extends StatefulWidget {
+class AddPatientScreen extends ConsumerStatefulWidget {
   final String patientName;
   final String patientId;
   final String pid;
@@ -28,10 +29,10 @@ class AddPatientScreen extends StatefulWidget {
     required this.diagnosisId,
   });
   @override
-  State<AddPatientScreen> createState() => _AddPatientScreenState();
+  ConsumerState<AddPatientScreen> createState() => _AddPatientScreenState();
 }
 
-class _AddPatientScreenState extends State<AddPatientScreen> {
+class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
   final firstName = TextEditingController();
   final middleName = TextEditingController();
   final lastName = TextEditingController();
@@ -116,130 +117,126 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
       SnackBar(content: Text("Wallet Used: ${response.walletName}")),
     );
   }
+
   Future<bool> isIndianUser() async {
-  final prefs = await SharedPreferences.getInstance();
-  final deliveryType = prefs.getString("delivery_type");
-  return deliveryType == "india";
-}
+    final prefs = await SharedPreferences.getInstance();
+    final deliveryType = prefs.getString("delivery_type");
+    return deliveryType == "india";
+  }
 
+  void _showPaymentPopup() {
+    amountController.clear();
+    showValidation = false;
 
-void _showPaymentPopup() {
-  amountController.clear();
-  showValidation = false;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return FutureBuilder<bool>(
+          future: isIndianUser(), // ✅ async call here
+          builder: (context, snapshot) {
+            final bool isIndia = snapshot.data ?? true; // default India
 
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return FutureBuilder<bool>(
-        future: isIndianUser(), // ✅ async call here
-        builder: (context, snapshot) {
-          final bool isIndia = snapshot.data ?? true; // default India
-
-          return StatefulBuilder(
-            builder: (context, setState) {
-              return AlertDialog(
-                title: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Insufficient Balance',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
+            return StatefulBuilder(
+              builder: (context, setState) {
+                return AlertDialog(
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Insufficient Balance',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Please add money to continue',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: amountController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText:
-                            'Enter Amount ${isIndia ? "(₹)" : "(\$)"}',
-                        border: const OutlineInputBorder(),
-                        errorText:
-                            showValidation ? 'Minimum 50 required' : null,
+                      SizedBox(height: 4),
+                      Text(
+                        'Please add money to continue',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
-                      onChanged: (_) {
-                        if (showValidation) {
-                          setState(() => showValidation = false);
+                    ],
+                  ),
+
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: amountController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: 'Enter Amount ${isIndia ? "(₹)" : "(\$)"}',
+                          border: const OutlineInputBorder(),
+                          errorText:
+                              showValidation ? 'Minimum 50 required' : null,
+                        ),
+                        onChanged: (_) {
+                          if (showValidation) {
+                            setState(() => showValidation = false);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ),
+
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+
+                    /// 🔥 PAY BUTTON
+                    ElevatedButton(
+                      onPressed: () async {
+                        final amountText = amountController.text.trim();
+
+                        if (amountText.isEmpty ||
+                            int.tryParse(amountText) == null ||
+                            int.parse(amountText) < 50) {
+                          setState(() => showValidation = true);
+                          return;
+                        }
+
+                        final int rupees = int.parse(amountText);
+
+                        Navigator.pop(context); // close dialog
+
+                        if (isIndia) {
+                          // 🇮🇳 INDIA → Razorpay
+                          _razorpay.open({
+                            'key': razorpayKey,
+                            'amount': rupees * 100, // paise
+                            'name': AppPreference().getString(
+                              PreferencesKey.name,
+                            ),
+                            'description': 'Service Payment',
+                            'prefill': {
+                              'contact': AppPreference().getString(
+                                PreferencesKey.contactNumber,
+                              ),
+                              'email': AppPreference().getString(
+                                PreferencesKey.email,
+                              ),
+                            },
+                          });
+                        } else {
+                          // 🌍 OUTSIDE INDIA → PayPal
+                          final usdAmount = (rupees / 83).toStringAsFixed(2);
+
+                          _startPayPalPayment(context);
                         }
                       },
+                      child: const Text('Pay'),
                     ),
-                    const SizedBox(height: 10),
                   ],
-                ),
-
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-
-                  /// 🔥 PAY BUTTON
-                  ElevatedButton(
-                    onPressed: () async {
-                      final amountText =
-                          amountController.text.trim();
-
-                      if (amountText.isEmpty ||
-                          int.tryParse(amountText) == null ||
-                          int.parse(amountText) < 50) {
-                        setState(() => showValidation = true);
-                        return;
-                      }
-
-                      final int rupees = int.parse(amountText);
-
-                      Navigator.pop(context); // close dialog
-
-                      if (isIndia) {
-                        // 🇮🇳 INDIA → Razorpay
-                        _razorpay.open({
-                          'key': razorpayKey,
-                          'amount': rupees * 100, // paise
-                          'name': AppPreference().getString(
-                            PreferencesKey.name,
-                          ),
-                          'description': 'Service Payment',
-                          'prefill': {
-                            'contact': AppPreference().getString(
-                              PreferencesKey.contactNumber,
-                            ),
-                            'email': AppPreference().getString(
-                              PreferencesKey.email,
-                            ),
-                          },
-                        });
-                      } else {
-                        // 🌍 OUTSIDE INDIA → PayPal
-                        final usdAmount =
-                            (rupees / 83).toStringAsFixed(2);
-
-                        _startPayPalPayment(context);
-                      }
-                    },
-                    child: const Text('Pay'),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-      );
-    },
-  );
-}
-
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
 
   void _startPayPalPayment(BuildContext context) {
     String amount = amountController.text.trim();
@@ -266,11 +263,10 @@ void _showPaymentPopup() {
               note: "Demo PayPal payment",
 
               onSuccess: (Map params) async {
-                final paypalPaymentId = params["data"]?["id"]; // PAYID-XXXX
+                final paypalPaymentId = params["data"]?["id"];
 
                 debugPrint("PayPal Payment ID: $paypalPaymentId");
 
-                // 🔒 Safety check
                 if (paypalPaymentId == null) {
                   debugPrint("❌ PayPal paymentId null");
                   return;
@@ -279,7 +275,7 @@ void _showPaymentPopup() {
                 await sendPaymentToBackend(
                   status: "success",
                   paymentId: paypalPaymentId,
-                  orderId: null, // PayPal मध्ये orderId नसतो
+                  orderId: null,
                   amount: int.parse(amountController.text), // wallet ₹ amount
                 );
 
@@ -759,6 +755,11 @@ void _showPaymentPopup() {
 
       if (jsonBody != null && jsonBody["success"] == 1) {
         debugPrint("SUCCESS: API response success = 1");
+        ref.refresh(
+          therapistBalanceProvider(
+            AppPreference().getString(PreferencesKey.userId),
+          ),
+        );
 
         /// 🔥 API RESPONSE SE DATA NIKALO
         final String patientId = jsonBody["data"]?["id"]?.toString() ?? "";
@@ -881,7 +882,7 @@ void _showPaymentPopup() {
       },
       child: Scaffold(
         backgroundColor: Color(0xFFFDF3DD),
-        appBar: CommonAppBar(title: "Add a Patient"),
+        appBar: CommonAppBar(title: "Add a Patient", showBalance: true),
 
         body: Stack(
           children: [
