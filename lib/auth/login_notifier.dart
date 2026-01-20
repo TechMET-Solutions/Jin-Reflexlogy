@@ -143,12 +143,16 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
               MaterialPageRoute(builder: (_) => PointFinderScreen()),
             );
           } else if (text == "CourseScreen") {
+            print("sssssssssssssssssssss${DeliveryType}aaaaaa");
+
+            
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (_) => CourseScreen(deliveryType: DeliveryType),
               ),
             );
+            
           } else if (text == "Treatment") {
           } else if (text == "ShopScreen") {
             Navigator.pushReplacement(

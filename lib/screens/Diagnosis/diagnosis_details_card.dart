@@ -92,37 +92,49 @@ print("${widget.diagnosisId}");
     setState(() {});
   }
 
-  Widget imageBox(Uint8List? image, String label) {
-    if (image == null) return SizedBox();
+Widget imageBox(Uint8List? image, String label) {
+  if (image == null) return const SizedBox();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
-        ],
-      ),
-      child: Center(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.memory(image, width: 200, fit: BoxFit.contain),
-            ),
-          ],
+  return Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.all(10),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: const [
+        BoxShadow(
+          color: Colors.white,
+          blurRadius: 6,
+          offset: Offset(0, 3),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
+        const SizedBox(height: 10),
+
+       
+        Container(
+          width: double.infinity,
+          color: Colors.white, // 👈 black काढण्यासाठी
+          padding: const EdgeInsets.all(8),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.memory(
+              image,
+              fit: BoxFit.contain, // 👈 IMPORTANT
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {

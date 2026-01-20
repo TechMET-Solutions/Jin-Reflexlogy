@@ -592,7 +592,7 @@ Future<void> _checkDocumentsAndShowPopup() async {
           MaterialPageRoute(builder: (_) => HealthyTipsScreen()),
         );
       },
-    ),
+    ), 
     CampaignItem(
       title: 'Health Meter',
       img: 'assets/jinImages/22.png',

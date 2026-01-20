@@ -11,13 +11,38 @@ class Treatment extends StatelessWidget {
   Treatment({super.key});
 
   final List<String> items = [
-    "Acidity", "Anaemia", "Anorexia", "Arthritis", "Asthma", "Headache",
-    "Blood Pressure Low", "Blood Pressure High", "Cold", "Cough",
-    "Flatulence", "Constipation", "Diabetes", "Diarrhoea", "Ear Ache",
-    "Eczema", "Epilepsy", "Epistaxis", "Eye Diseases", "Piles / Hemorrhoid",
-    "Osteomalacia", "Giddiness / vertigo", "Gout / Rheumatism", "Urticaria",
-    "Acne", "Lumbago", "Sciatica", "Deafness", "Gall Stone",
-    "Jaundice / Icterus", "Dysmenorrhoea", "Obesity",
+    "Acidity",
+    "Anaemia",
+    "Anorexia",
+    "Arthritis",
+    "Asthma",
+    "Headache",
+    "Blood Pressure Low",
+    "Blood Pressure High",
+    "Cold",
+    "Cough",
+    "Flatulence",
+    "Constipation",
+    "Diabetes",
+    "Diarrhoea",
+    "Ear Ache",
+    "Eczema",
+    "Epilepsy",
+    "Epistaxis",
+    "Eye Diseases",
+    "Piles / Hemorrhoid",
+    "Osteomalacia",
+    "Giddiness / vertigo",
+    "Gout / Rheumatism",
+    "Urticaria",
+    "Acne",
+    "Lumbago",
+    "Sciatica",
+    "Deafness",
+    "Gall Stone",
+    "Jaundice / Icterus",
+    "Dysmenorrhoea",
+    "Obesity",
   ];
 
   @override
@@ -46,9 +71,7 @@ class Treatment extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xFFF7C85A), width: 2),
                 ),
-                child: const Center(
-                  child: Icon(Icons.image, size: 50),
-                ),
+                child: const Center(child: Icon(Icons.image, size: 50)),
               ),
 
               const SizedBox(height: 10),
@@ -86,7 +109,6 @@ class Treatment extends StatelessWidget {
                   final item = items[index];
                   final isAcidity = item == "Acidity";
                   final isLoggedIn = type == "patient" || token.isNotEmpty;
-
                   return InkWell(
                     onTap: () {
                       if (isAcidity) {
@@ -111,20 +133,22 @@ class Treatment extends StatelessWidget {
                           // Login नसल्यास login screen दाखवा
                           showDialog(
                             context: context,
-                            builder: (context) => JinLoginScreen(
-                              text: "Treatment",
-                              type: "therapist",
-                              
-                              onTab: () {
-                                Navigator.pop(context);
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => MemberListScreen(),
-                                  ),
-                                );
-                              },
-                            ),
+                            builder:
+                                (context) => JinLoginScreen(
+                                  text: "Treatment",
+                                  type: "therapist",
+
+                                  onTab: () {
+                                    Navigator.pop(context);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) => MemberListScreen(),
+                                      ),
+                                    );
+                                  },
+                                ),
                           );
                         }
                       }
@@ -133,8 +157,10 @@ class Treatment extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFFF8E8C5),
                         borderRadius: BorderRadius.circular(20),
-                        border:
-                            Border.all(color: const Color(0xFFF7C85A), width: 2),
+                        border: Border.all(
+                          color: const Color(0xFFF7C85A),
+                          width: 2,
+                        ),
                       ),
                       child: Center(
                         child: Text(
@@ -160,7 +186,6 @@ class Treatment extends StatelessWidget {
   }
 }
 
-
 class TreatmentDetailsScreen extends StatelessWidget {
   final String title;
 
@@ -181,8 +206,7 @@ class TreatmentDetailsScreen extends StatelessWidget {
           ),
           child: Text(
             "$heading :",
-            style: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
 
@@ -197,10 +221,7 @@ class TreatmentDetailsScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: const Color(0xFFF7C85A), width: 2),
           ),
-          child: Text(
-            desc,
-            style: const TextStyle(fontSize: 15),
-          ),
+          child: Text(desc, style: const TextStyle(fontSize: 15)),
         ),
 
         const SizedBox(height: 12),
@@ -232,9 +253,7 @@ class TreatmentDetailsScreen extends StatelessWidget {
             sectionBox("Main Point", sampleText),
             sectionBox("Related Points", sampleText),
             sectionBox("Using Micro Magnet", sampleText),
-
             const SizedBox(height: 20),
-
             Row(
               children: [
                 Expanded(
@@ -245,9 +264,7 @@ class TreatmentDetailsScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                       color: Colors.white,
                     ),
-                    child: const Center(
-                      child: Icon(Icons.image, size: 40),
-                    ),
+                    child: const Center(child: Icon(Icons.image, size: 40)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -259,13 +276,11 @@ class TreatmentDetailsScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                       color: Colors.white,
                     ),
-                    child: const Center(
-                      child: Icon(Icons.image, size: 40),
-                    ),
+                    child: const Center(child: Icon(Icons.image, size: 40)),
                   ),
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),

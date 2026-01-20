@@ -144,22 +144,7 @@ class _SplashScreenState extends State<SplashScreen>
                 const SizedBox(height: 25),
 
                 // LOGO with rotation and pulse
-                AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return Transform.rotate(
-                      angle: _logoRotation.value,
-                      child: Transform.scale(
-                        scale: 1 + 0.1 * sin(_controller.value * 2 * pi * 3),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: Image.asset(
-                    "assets/images/logo.png",
-                    width: w * 0.45,
-                  ),
-                ),
+                Image.asset("assets/images/image 4.png", width: w * 0.45),
 
                 const SizedBox(height: 25),
 

@@ -64,16 +64,23 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
   String savedAmount = "0";
   bool showValidation = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadCountries();
-    _razorpay = Razorpay();
+@override
+void initState() {
+  super.initState();
+  _loadCountries();
 
-    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
-  }
+  ref.refresh(
+    therapistBalanceProvider(
+      AppPreference().getString(PreferencesKey.userId).toString(),
+    ),
+  );
+
+  _razorpay = Razorpay();
+
+  _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+  _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+  _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+}
 
   @override
   void dispose() {
@@ -757,7 +764,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
         debugPrint("SUCCESS: API response success = 1");
         ref.refresh(
           therapistBalanceProvider(
-            AppPreference().getString(PreferencesKey.userId),
+            AppPreference().getString(PreferencesKey.userId).toString(),
           ),
         );
 
@@ -814,6 +821,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final  userId =  AppPreference().getString(PreferencesKey.userId).toString();
     return WillPopScope(
       onWillPop: () async {
         return await showDialog<bool>(
@@ -882,7 +890,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
       },
       child: Scaffold(
         backgroundColor: Color(0xFFFDF3DD),
-        appBar: CommonAppBar(title: "Add a Patient", showBalance: true),
+        appBar: CommonAppBar(title: "Add a Patient", showBalance: true,userId: userId,),
 
         body: Stack(
           children: [

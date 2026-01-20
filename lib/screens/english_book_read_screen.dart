@@ -16,13 +16,13 @@ class EnglishBookScreen extends StatefulWidget {
 class _EnglishBookScreenState extends State<EnglishBookScreen> {
   int pageIndex = 1;
   int lastPage = 201;
-  
+
   // For page caching
   final Map<int, ImageProvider> _pageCache = {};
-  
+
   bool loading = false;
   ImageProvider? _currentPageImage;
-  
+
   final TextEditingController searchController = TextEditingController();
   final Dio _dio = Dio(); // Reuse Dio instance
 
@@ -65,7 +65,7 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
       if (jsonBody["success"] == 1) {
         final String base64img = jsonBody["data"][0]["image"];
         final bytes = base64Decode(base64img);
-        
+
         // Save to cache
         _pageCache[pageNo] = MemoryImage(bytes);
       }
@@ -110,10 +110,10 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
         final String base64img = jsonBody["data"][0]["image"];
         final bytes = base64Decode(base64img);
         final image = MemoryImage(bytes);
-        
+
         // Save to cache
         _pageCache[pageNo] = image;
-        
+
         setState(() {
           _currentPageImage = image;
         });
@@ -131,10 +131,7 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
 
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -145,13 +142,13 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
     } else {
       pageIndex++;
     }
-    
+
     // Update URL parameter
     setState(() {});
-    
+
     _fetchPage(pageIndex);
     _preloadNextPage();
-    
+
     // Also preload previous page
     if (pageIndex > 1 && !_pageCache.containsKey(pageIndex - 1)) {
       _fetchPageForCache(pageIndex - 1);
@@ -164,12 +161,12 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
       _showErrorSnackbar("You are on the first page");
       return;
     }
-    
+
     pageIndex--;
-    
+
     // Update URL parameter
     setState(() {});
-    
+
     _fetchPage(pageIndex);
   }
 
@@ -177,9 +174,9 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
   void gotoPage() {
     final text = searchController.text.trim();
     if (text.isEmpty) return;
-    
+
     int? page = int.tryParse(text);
-    
+
     if (page == null || page < 1 || page > lastPage) {
       _showErrorSnackbar("This book has only $lastPage pages");
       searchController.clear();
@@ -187,13 +184,13 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
     }
 
     pageIndex = page;
-    
+
     // Update URL parameter
     setState(() {});
-    
+
     _fetchPage(pageIndex);
     searchController.clear();
-    
+
     // Remove focus
     FocusScope.of(context).unfocus();
   }
@@ -203,7 +200,6 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
     return Scaffold(
       backgroundColor: const Color(0xfff5f5f5),
       appBar: CommonAppBar(title: "${widget.name} - Page $pageIndex/$lastPage"),
-      
       body: Column(
         children: [
           // Controls Bar
@@ -224,7 +220,9 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
                     onSubmitted: (_) => gotoPage(),
                     decoration: InputDecoration(
                       hintText: "Enter page number",
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                      ),
                       filled: true,
                       fillColor: Colors.grey.shade100,
                       border: OutlineInputBorder(
@@ -250,13 +248,15 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
                 // Image viewer
                 if (_currentPageImage != null)
                   PhotoView(
-                    backgroundDecoration:
-                        const BoxDecoration(color: Colors.white),
+                    backgroundDecoration: const BoxDecoration(
+                      color: Colors.white,
+                    ),
                     imageProvider: _currentPageImage!,
                     minScale: PhotoViewComputedScale.contained,
                     maxScale: PhotoViewComputedScale.covered * 4,
-                    loadingBuilder: (context, event) =>
-                        const Center(child: CircularProgressIndicator()),
+                    loadingBuilder:
+                        (context, event) =>
+                            const Center(child: CircularProgressIndicator()),
                   ),
 
                 // Loading indicator
@@ -287,9 +287,7 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
         child: Text(

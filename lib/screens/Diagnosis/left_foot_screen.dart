@@ -94,7 +94,7 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
       points = jsonList.map((p) => PointData.fromJson(p)).toList();
 
       // load saved local selections first (if any)
-      loadSavedLocal();
+      // loadSavedLocal();
 
       // fetch server states and merge
       await fetchServerStates();
@@ -164,67 +164,81 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
   // --------------------------------------------------
   // FETCH SERVER STATES
   // --------------------------------------------------
-  Future<void> fetchServerStates() async {
-    try {
-      final form = FormData.fromMap({
-        "diagnosisId": widget.diagnosisId,
-        "pid": widget.patientId,
-        "which": "lf",
-      });
+ Future<void> fetchServerStates() async {
+  try {
+    final form = FormData.fromMap({
+      "diagnosisId": widget.diagnosisId,
+      "pid": widget.patientId,
+      "which": "lf",
+    });
 
-      debugPrint("FETCH SERVER STATES -> ${form.fields}");
+    debugPrint("FETCH SERVER STATES -> ${form.fields}");
 
-      final response = await Dio().post(
-        "https://jinreflexology.in/api1/new/get_data.php",
-        data: form,
-        options: Options(responseType: ResponseType.plain),
-      );
+    final response = await Dio().post(
+      "https://jinreflexology.in/api1/new/get_data.php",
+      data: form,
+      options: Options(responseType: ResponseType.plain),
+    );
 
-      final raw = response.data.toString();
+    final raw = response.data.toString();
 
-      // defensive parse: find first { and last } to extract JSON blob
-      final start = raw.indexOf("{");
-      final end = raw.lastIndexOf("}");
-      if (start == -1 || end == -1 || end < start) {
-        debugPrint("Unexpected server response for get_data.php: $raw");
-        return;
-      }
-      final jsonString = raw.substring(start, end + 1);
-
-      final jsonBody = jsonDecode(jsonString);
-
-      if (jsonBody["success"] == 1) {
-        final dataStr = jsonBody["data"] as String;
-        final Map<int, int> serverMap = {};
-
-        for (final item in dataStr.split(";")) {
-          if (item.contains(":")) {
-            final part = item.split(":");
-            final idx = int.tryParse(part[0]);
-            final val = int.tryParse(part[1]);
-            if (idx != null && val != null) serverMap[idx] = val;
-          }
-        }
-
-        for (var p in points) {
-          if (serverMap.containsKey(p.index)) {
-            final v = serverMap[p.index]!;
-            if (v == 1)
-              p.state = 2;
-            else if (v == -1)
-              p.state = 0;
-            else
-              p.state = 1;
-          }
-        }
-      } else {
-        debugPrint("Server returned success!=1 for get_data.php -> $jsonBody");
-      }
-    } catch (e, st) {
-      debugPrint("SERVER ERROR: $e");
-      debugPrint("$st");
+    /// 🔹 Extract pure JSON
+    final start = raw.indexOf("{");
+    final end = raw.lastIndexOf("}");
+    if (start == -1 || end == -1 || end < start) {
+      debugPrint("Invalid server response: $raw");
+      return;
     }
+
+    final jsonBody = jsonDecode(raw.substring(start, end + 1));
+
+    if (jsonBody["success"] != 1) {
+      debugPrint("Server success != 1 → $jsonBody");
+      return;
+    }
+
+    /// 🔹 STEP 1: CLEAN ALL PREVIOUS STATES
+    for (final p in points) {
+      p.state = 1; // default / neutral
+    }
+
+    /// 🔹 STEP 2: PARSE SERVER DATA
+    final String dataStr = jsonBody["data"] as String;
+    final Map<int, int> serverMap = {};
+
+    for (final item in dataStr.split(";")) {
+      if (!item.contains(":")) continue;
+
+      final parts = item.split(":");
+      final idx = int.tryParse(parts[0]);
+      final val = int.tryParse(parts[1]);
+
+      if (idx != null && val != null) {
+        serverMap[idx] = val;
+      }
+    }
+
+    /// 🔹 STEP 3: APPLY NEW SERVER STATES
+    for (final p in points) {
+      final v = serverMap[p.index];
+      if (v == null) continue;
+
+      if (v == 1) {
+        p.state = 2; // active
+      } else if (v == -1) {
+        p.state = 0; // disabled
+      } else {
+        p.state = 1; // neutral
+      }
+    }
+
+    debugPrint("Server states applied successfully");
+  } catch (e, st) {
+    debugPrint("SERVER ERROR: $e");
+    debugPrint("$st");
   }
+}
+
 
   // --------------------------------------------------
   // SAVE TO SERVER (Background call)

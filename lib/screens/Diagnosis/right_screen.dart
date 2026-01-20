@@ -74,7 +74,7 @@ class _rightFootScreenNewState extends State<rightFootScreenNew> {
 
       points = pointList.map((p) => PointData.fromJson(p)).toList();
 
-      loadSavedLocal();
+      // loadSavedLocal();
 
       await fetchServerData();
 

@@ -43,16 +43,10 @@ class _FoodScreenState extends State<FoodScreen> {
       appBar: CommonAppBar(title: "Food"),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : GridView.builder(
+          : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: magnetsList.length,
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.75,
-              ),
+             
               itemBuilder: (context, index) {
                 final item = magnetsList[index];
                 final imageUrl =
@@ -61,24 +55,26 @@ class _FoodScreenState extends State<FoodScreen> {
                         ? item["image_url"][0]
                         : null;
 
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => FoodtDetailsScreen(item: item),
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FoodtDetailsScreen(item: item),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.black12),
                       ),
-                    );
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.black12),
-                    ),
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
                             borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(14),
                             ),
@@ -92,18 +88,18 @@ class _FoodScreenState extends State<FoodScreen> {
                                   )
                                 : const Icon(Icons.image, size: 40),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Text(
-                            item["title"] ?? "",
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text(
+                              item["title"] ?? "",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 );

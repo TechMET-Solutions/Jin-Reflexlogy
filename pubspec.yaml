@@ -47,6 +47,8 @@ dependencies:
   razorpay_flutter: ^1.4.0
   flutter_paypal_payment: ^1.0.8
   paypal_payment: ^1.0.1+1
+  connectivity_plus: ^7.0.0
+  syncfusion_flutter_pdfviewer: ^32.1.23
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +60,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/Diagnosisdetails12Page.pdf
 
     - assets/images/jin_reflexo.png
 

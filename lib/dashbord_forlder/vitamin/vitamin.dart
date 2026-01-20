@@ -28,13 +28,23 @@ class _VitaminsScreenState extends State<VitaminsScreen> {
 
       if (response.statusCode == 200 && response.data["success"] == true) {
         setState(() {
-          vitaminsList = response.data["data"];
+          vitaminsList = response.data["data"] ?? [];
           isLoading = false;
         });
+      } else {
+        setState(() => isLoading = false);
       }
     } catch (e) {
+      debugPrint("Error fetching vitamins: $e");
       setState(() => isLoading = false);
     }
+  }
+
+  String _getImageUrl(Map<String, dynamic> item) {
+    if (item["image_url"] is List && item["image_url"].isNotEmpty) {
+      return item["image_url"][0]?.toString() ?? "";
+    }
+    return "";
   }
 
   @override
@@ -43,65 +53,116 @@ class _VitaminsScreenState extends State<VitaminsScreen> {
       appBar: CommonAppBar(title: "Vitamins"),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : GridView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: vitaminsList.length,
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.75,
-              ),
-              itemBuilder: (context, index) {
-                final item = vitaminsList[index];
+          : vitaminsList.isEmpty
+              ? const Center(
+                  child: Text(
+                    "No vitamins available",
+                    style: TextStyle(fontSize: 16),
+                  ),
+                )
+              : ListView.builder(
+                
+                  padding: const EdgeInsets.all(16),
+                  itemCount: vitaminsList.length,
+                  itemBuilder: (context, index) {
+                    final item = vitaminsList[index];
+                    final title = item["title"]?.toString() ?? "No Title";
+                    final imageUrl = _getImageUrl(item);
 
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => VitaminDetailsScreen(item: item),
+                    return Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => VitaminDetailsScreen(item: item),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.black12),
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(14),
+                                ),
+                                child: imageUrl.isNotEmpty
+                                    ? Image.network(
+                                        imageUrl,
+                                        fit: BoxFit.cover,
+                                       // height: 200,
+                                        loadingBuilder:
+                                            (context, child, loadingProgress) {
+                                          if (loadingProgress == null) {
+                                            return child;
+                                          }
+                                          return Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress
+                                                          .expectedTotalBytes !=
+                                                      null
+                                                  ? loadingProgress
+                                                          .cumulativeBytesLoaded /
+                                                      loadingProgress
+                                                          .expectedTotalBytes!
+                                                  : null,
+                                            ),
+                                          );
+                                        },
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Container(
+                                            color: Colors.grey[200],
+                                            child: Icon(
+                                              Icons.image_not_supported_outlined,
+                                              size: 40,
+                                              color: Colors.grey[400],
+                                            ),
+                                          );
+                                        },
+                                      )
+                                    : Container(
+                                        color: Colors.grey[200],
+                                        child: Icon(
+                                          Icons.image_not_supported_outlined,
+                                          size: 40,
+                                          color: Colors.grey[400],
+                                        ),
+                                      ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Text(
+                                  title,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     );
                   },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.black12),
-                    ),
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(14),
-                            ),
-                            child: Image.network(
-                              item["image_url"]?[0] ?? "",
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.image, size: 40),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Text(
-                            item["title"] ?? "",
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+                ),
     );
   }
 }

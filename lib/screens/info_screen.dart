@@ -114,14 +114,16 @@ class InfoScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 9),
           children: [
-            Container(
-              height: 300,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                //  border: Border.all(color: HexColor("#F7C85A"), width: 3),
-                image: DecorationImage(
-                  fit: BoxFit.fill,
-                  image: AssetImage("assets/images/classification.jpg"),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.4,
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage("assets/images/classification.jpg"),
+                    fit: BoxFit.fill,
+                  ),
                 ),
               ),
             ),

@@ -94,7 +94,7 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
 
       points = jsonList.map((p) => PointData.fromJson(p)).toList();
 
-      loadSavedLocal();
+      // loadSavedLocal();
       await fetchServer();
 
       if (!mounted) return;
@@ -302,7 +302,7 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
                       children: [
                         Positioned.fill(
                           child: Image.asset(
-                            "assets/images/hand2.jpeg",
+                            "assets/images/hand2.jpeg", 
                             fit: BoxFit.fill,
                           ),
                         ),

@@ -251,15 +251,16 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
     final screenSize = MediaQuery.of(context).size;
     final token = AppPreference().getString(PreferencesKey.userId);
     final type = AppPreference().getString(PreferencesKey.type);
-
+print(token);
     return Scaffold(
-      appBar: CommonAppBar(title: "Patient List"),
+      appBar: CommonAppBar(title: "Patient List",showBalance: true,userId:token ,),
       backgroundColor: Color(0xFFFDF3DD),
       body:
           type == "patient" || token.isEmpty
               ? JinLoginScreen(
                 text: "MemberListScreen",
                 type: "therapist",
+                
                 onTab: () {
                   Navigator.push(
                     context,
