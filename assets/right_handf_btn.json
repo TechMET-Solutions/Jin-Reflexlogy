@@ -1,0 +1,52 @@
+{
+  "RightHand": [
+    {
+      "id": "btn_rhA",
+      "x": 114.78,
+      "y": 38.95,
+      "index": 850,
+      "tag": "Ovares Gland",
+      "group": "endocrine"
+    },
+    {
+      "id": "btn_rhB",
+      "x": 199.48,
+      "y": 38.67,
+      "index": 851,
+      "tag": "Ovares Gland",
+      "group": "endocrine"
+    },
+    {
+      "id": "btn_rhC",
+      "x": 115.91,
+      "y": 68.74,
+      "index": 852,
+      "tag": "Uterus",
+      "group": "endocrine"
+    },
+    {
+      "id": "btn_rhD",
+      "x": 197.66,
+      "y": 73.15,
+      "index": 853,
+      "tag": "Uterus",
+      "group": "endocrine"
+    },
+    {
+      "id": "btn_rhE",
+      "x": 115.70,
+      "y": 101.73,
+      "index": 854,
+      "tag": "Vagina",
+      "group": "endocrine"
+    },
+    {
+      "id": "btn_rhF",
+      "x": 197.20,
+      "y": 101.80,
+      "index": 855,
+      "tag": "Vagina",
+      "group": "endocrine"
+    }
+  ]
+}

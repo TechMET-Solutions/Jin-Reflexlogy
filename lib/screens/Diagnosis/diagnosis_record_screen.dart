@@ -16,7 +16,6 @@ import 'package:jin_reflex_new/screens/Diagnosis/left_foot_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/left_hand_sc.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/right_hand_sc.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/right_screen.dart';
-
 import 'package:jin_reflex_new/screens/right_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:path_provider/path_provider.dart';
@@ -27,12 +26,14 @@ class DiagnosisScreen extends StatefulWidget {
     this.patient_id,
     this.name,
     this.diagnosis_id,
+    this.gender,
   });
 
   // keep dynamic for flexibility (int or String)
   final dynamic patient_id;
   final dynamic name;
   final dynamic diagnosis_id;
+  final String? gender;
 
   @override
   State<DiagnosisScreen> createState() => _DiagnosisScreenState();
@@ -72,7 +73,6 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       "screen": LeftFootScreenNew(
         diagnosisId: "", // Will be set dynamically
         patientId: "", // Will be set dynamically
-    
       ),
     },
     {
@@ -361,7 +361,6 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                                 (_) => LeftFootScreenNew(
                                   diagnosisId: widget.diagnosis_id.toString(),
                                   patientId: widget.patient_id.toString(),
-                                 
                                 ),
                           ),
                         );
@@ -384,6 +383,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                                 (_) => RightHandScreen(
                                   pid: widget.patient_id.toString(),
                                   diagnosisId: widget.diagnosis_id.toString(),
+                                  gender: widget.gender,
                                 ),
                           ),
                         );
@@ -395,6 +395,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                                 (_) => LeftHandScreen(
                                   pid: widget.patient_id.toString(),
                                   diagnosisId: widget.diagnosis_id.toString(),
+                                  gender: widget.gender,
                                 ),
                           ),
                         );
@@ -822,8 +823,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       FormData formData = FormData.fromMap({
         "lf_data": lfData ?? "",
         "lf_img":
-            lfImg64 ??
-            (lfImg64 ?? ""), // जर compress fail झालं तर original
+            lfImg64 ?? (lfImg64 ?? ""), // जर compress fail झालं तर original
         "lf_result": lfResult ?? "",
         "rf_data": rfData ?? "",
         "rf_img": rfImg ?? (rfImg ?? ""),

@@ -76,6 +76,8 @@ flutter:
     - assets/right_foot.json
     - assets/right_hand_btn.json
     - assets/left_hand_btn.json
+    - assets/right_handf_btn.json
+    - assets/left_hand_btnf.json
 
     - assets/my-app.css
     - assets/my-app.js

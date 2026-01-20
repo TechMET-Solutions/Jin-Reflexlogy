@@ -77,45 +77,41 @@ class _HomeScreenState extends State<HomeScreen> {
     Future.delayed(const Duration(seconds: 2), _autoSlide);
   }
 
-Future<void> _checkDocumentsAndShowPopup() async {
-  try {
-    final userId =
-        AppPreference().getString(PreferencesKey.userId);
+  Future<void> _checkDocumentsAndShowPopup() async {
+    try {
+      final userId = AppPreference().getString(PreferencesKey.userId);
 
-    if (userId == null || userId.isEmpty) return;
+      if (userId == null || userId.isEmpty) return;
 
-    final response = await http.get(
-      Uri.parse(
-        'https://jinreflexology.in/api1/new/check_documents.php?id=$userId',
-      ),
-    );
+      final response = await http.get(
+        Uri.parse(
+          'https://jinreflexology.in/api1/new/check_documents.php?id=$userId',
+        ),
+      );
 
-    if (response.statusCode != 200) return;
+      if (response.statusCode != 200) return;
 
-    final data = jsonDecode(response.body);
+      final data = jsonDecode(response.body);
 
-    /// ✅ If status true → all good
-    if (data["status"] == true) {
-      return;
+      /// ✅ If status true → all good
+      if (data["status"] == true) {
+        return;
+      }
+
+      /// ❗ document_uploaded false असेल तर popup
+      final bool documentUploaded = data['document_uploaded'] == true;
+
+      debugPrint("📄 Document Uploaded: $documentUploaded");
+
+      if (!documentUploaded) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showUploadPopup();
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Document check error: $e');
     }
-
-    /// ❗ document_uploaded false असेल तर popup
-    final bool documentUploaded =
-        data['document_uploaded'] == true;
-
-    debugPrint(
-        "📄 Document Uploaded: $documentUploaded");
-
-    if (!documentUploaded) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showUploadPopup();
-      });
-    }
-  } catch (e) {
-    debugPrint('❌ Document check error: $e');
   }
-}
-
 
   void _showUploadPopup() {
     showDialog(
@@ -592,7 +588,7 @@ Future<void> _checkDocumentsAndShowPopup() async {
           MaterialPageRoute(builder: (_) => HealthyTipsScreen()),
         );
       },
-    ), 
+    ),
     CampaignItem(
       title: 'Health Meter',
       img: 'assets/jinImages/22.png',

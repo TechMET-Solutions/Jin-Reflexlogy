@@ -64,23 +64,23 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
   String savedAmount = "0";
   bool showValidation = false;
 
-@override
-void initState() {
-  super.initState();
-  _loadCountries();
+  @override
+  void initState() {
+    super.initState();
+    _loadCountries();
 
-  ref.refresh(
-    therapistBalanceProvider(
-      AppPreference().getString(PreferencesKey.userId).toString(),
-    ),
-  );
+    ref.refresh(
+      therapistBalanceProvider(
+        AppPreference().getString(PreferencesKey.userId).toString(),
+      ),
+    );
 
-  _razorpay = Razorpay();
+    _razorpay = Razorpay();
 
-  _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
-  _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
-  _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
-}
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
 
   @override
   void dispose() {
@@ -821,7 +821,7 @@ void initState() {
 
   @override
   Widget build(BuildContext context) {
-    final  userId =  AppPreference().getString(PreferencesKey.userId).toString();
+    final userId = AppPreference().getString(PreferencesKey.userId).toString();
     return WillPopScope(
       onWillPop: () async {
         return await showDialog<bool>(
@@ -890,7 +890,11 @@ void initState() {
       },
       child: Scaffold(
         backgroundColor: Color(0xFFFDF3DD),
-        appBar: CommonAppBar(title: "Add a Patient", showBalance: true,userId: userId,),
+        appBar: CommonAppBar(
+          title: "Add a Patient",
+          showBalance: true,
+          userId: userId,
+        ),
 
         body: Stack(
           children: [
