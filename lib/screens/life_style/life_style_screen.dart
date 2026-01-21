@@ -185,7 +185,7 @@ void _initPlatformSettings() {
           );
         },
       ),
-      body: type == "therapist" || type == "prouser"|| token.isEmpty
+      body: type == "therapist" || type == "prouser"|| type == "user"|| token.isEmpty
           ? JinLoginScreen(
               text: "LifestyleScreen",
               type: "patient",

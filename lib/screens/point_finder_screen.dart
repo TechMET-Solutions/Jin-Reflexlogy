@@ -94,7 +94,7 @@ class _PointFinderScreenState extends State<PointFinderScreen> {
 
     return Scaffold(
       body:
-          type == "prouser"|| type == "prouser" || token.isEmpty
+          type == "prouser"|| type == "prouser" ||type == "user"|| token.isEmpty
               ? JinLoginScreen(
                 text: "PointFinderScreen",
                 type: "therapist",

@@ -260,7 +260,7 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
       ),
       backgroundColor: Color(0xFFFDF3DD),
       body:
-          type == "patient" || token.isEmpty
+          type == "patient"|| type == "user"|| type == "prouser"|| token.isEmpty
               ? JinLoginScreen(
                 text: "MemberListScreen",
                 type: "therapist",
