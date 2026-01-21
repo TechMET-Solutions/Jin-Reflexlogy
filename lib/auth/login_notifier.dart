@@ -28,21 +28,26 @@ String safe(dynamic value) {
     return value == null ? "" : value.toString();
   }
 
- Future<void> login(
+Future<void> login(
   BuildContext context,
   VoidCallback onTab,
   String text,
-  String type, // "therapist" | "prouser"
-  id,
-  passworld, {
-  DeliveryType,
+  String type, // "therapist" | "prouser" | ""
+  dynamic id,
+  dynamic password, {
+  dynamic DeliveryType,
 }) async {
   state = const AsyncValue.loading();
 
   try {
-    // 🔹 TYPE CONFLICT CHECK
+    // ===============================
+    // 🔁 TYPE CONFLICT CHECK
+    // (फक्त UI type non-empty असेल तेव्हाच)
+    // ===============================
     final oldType = AppPreference().getString(PreferencesKey.type);
-    if (oldType.isNotEmpty && oldType != type) {
+    if (type.trim().isNotEmpty &&
+        oldType.isNotEmpty &&
+        oldType != type) {
       state = const AsyncValue.data(null);
 
       _showTypeConflictDialog(
@@ -52,12 +57,23 @@ String safe(dynamic value) {
         onConfirm: () async {
           await AppPreference().clearSharedPreferences();
           Navigator.pop(context);
-          login(context, onTab, text, type, id, passworld);
+          login(
+            context,
+            onTab,
+            text,
+            type,
+            id,
+            password,
+            DeliveryType: DeliveryType,
+          );
         },
       );
       return;
     }
 
+    // ===============================
+    // 🌐 API CALL
+    // ===============================
     final dio = Dio(
       BaseOptions(
         responseType: ResponseType.plain,
@@ -69,17 +85,19 @@ String safe(dynamic value) {
       "https://jinreflexology.in/api1/new/login.php",
       data: FormData.fromMap({
         "id": id,
-        "password": passworld,
-        "type": type, // backend ignore करतो तरी चालेल
+        "password": password,
+        "type": type, // empty असू शकतो
       }),
     );
 
-    // 🔥 DEBUG PRINTS (IMPORTANT)
-    print("===== LOGIN DEBUG START =====");
-    print("TYPE SENT: $type");
-    print("STATUS: ${response.statusCode}");
-    print("RAW RESPONSE: ${response.data}");
-    print("===== LOGIN DEBUG END =====");
+    // ===============================
+    // 🧪 DEBUG LOGS
+    // ===============================
+    debugPrint("===== LOGIN DEBUG START =====");
+    debugPrint("TYPE FROM UI: $type");
+    debugPrint("STATUS: ${response.statusCode}");
+    debugPrint("RAW RESPONSE: ${response.data}");
+    debugPrint("===== LOGIN DEBUG END =====");
 
     if (response.statusCode != 200 || response.data == null) {
       state = AsyncValue.error(
@@ -89,7 +107,8 @@ String safe(dynamic value) {
       return;
     }
 
-    final jsonData = jsonDecode(response.data.toString());
+    final Map<String, dynamic> jsonData =
+        jsonDecode(response.data.toString());
 
     if (jsonData['success'] != 1) {
       state = AsyncValue.error("Invalid credentials", StackTrace.current);
@@ -97,71 +116,82 @@ String safe(dynamic value) {
     }
 
     // ===============================
-    // ✅ SAVE DATA (TYPE BASED)
+    // 🧠 HANDLE BOTH RESPONSE TYPES
     // ===============================
+    final Map<String, dynamic>? userData =
+        jsonData['user_data'] is Map ? jsonData['user_data'] : null;
 
-    if (type == "therapist") {
-      await AppPreference().setString(
-        PreferencesKey.token,
-        safe(jsonData['user_data']?['token']),
-      );
-      await AppPreference().setString(
-        PreferencesKey.contactNumber,
-        safe(jsonData['user_data']?['t_mobile']),
-      );
-      await AppPreference().setString(
-        PreferencesKey.name,
-        safe(jsonData['user_data']?['t_name']),
-      );
-      await AppPreference().setString(
-        PreferencesKey.userId,
-        safe(jsonData['user_data']?['id']),
-      );
-      await AppPreference().setString(
-        PreferencesKey.email,
-        safe(jsonData['user_data']?['t_email']),
-      );
-    } else {
-      // 🔹 PROUSER / PATIENT
-      await AppPreference().setString(
-        PreferencesKey.token,
-        safe(jsonData['token']),
-      );
-      await AppPreference().setString(
-        PreferencesKey.contactNumber,
-        safe(jsonData['user_data']?['p_number']),
-      );
-      await AppPreference().setString(
-        PreferencesKey.name,
-        safe(jsonData['user_data']?['name']),
-      );
-      await AppPreference().setString(
-        PreferencesKey.userId,
-        safe(jsonData['user_data']?['id']),
-      );
-      await AppPreference().setString(
-        PreferencesKey.email,
-        safe(jsonData['user_data']?['email']),
-      );
+    final userId = userData?['id'] ?? jsonData['id'];
+    final token  = userData?['token'] ?? jsonData['token'] ?? "";
+    final name   =
+        userData?['t_name'] ??
+        userData?['name'] ??
+        "";
+    final email  =
+        userData?['t_email'] ??
+        userData?['email'] ??
+        "";
+    final mobile =
+        userData?['t_mobile'] ??
+        userData?['p_number'] ??
+        "";
+
+    if (userId == null || userId.toString().isEmpty) {
+      state = AsyncValue.error("User ID missing", StackTrace.current);
+      return;
     }
 
-    // ✅ TYPE ALWAYS FROM UI (FINAL FIX)
-    await AppPreference().setString(PreferencesKey.type, type);
+    // ===============================
+    // 🔥 FINAL TYPE DECISION
+    // ===============================
+    final String finalType =
+        type.trim().isNotEmpty
+            ? type
+            : (jsonData['type']?.toString() ?? "");
 
-    // 🔥 VERIFY STORED DATA
-    print("===== STORED PREFS =====");
-    print("TOKEN: ${AppPreference().getString(PreferencesKey.token)}");
-    print("USER ID: ${AppPreference().getString(PreferencesKey.userId)}");
-    print("TYPE: ${AppPreference().getString(PreferencesKey.type)}");
-    print("NAME: ${AppPreference().getString(PreferencesKey.name)}");
-    print("========================");
+    // ===============================
+    // 💾 SAVE TO SHARED PREFS
+    // ===============================
+    await AppPreference().setString(
+      PreferencesKey.userId,
+      userId.toString(),
+    );
+    await AppPreference().setString(
+      PreferencesKey.token,
+      token.toString(),
+    );
+    await AppPreference().setString(
+      PreferencesKey.name,
+      name.toString(),
+    );
+    await AppPreference().setString(
+      PreferencesKey.email,
+      email.toString(),
+    );
+    await AppPreference().setString(
+      PreferencesKey.contactNumber,
+      mobile.toString(),
+    );
+    await AppPreference().setString(
+      PreferencesKey.type,
+      finalType,
+    );
 
+    // ===============================
+    // 🧪 VERIFY STORED DATA
+    // ===============================
+    debugPrint("===== STORED PREFS =====");
+    debugPrint("USER ID: ${AppPreference().getString(PreferencesKey.userId)}");
+    debugPrint("TYPE: ${AppPreference().getString(PreferencesKey.type)}");
+    debugPrint("TOKEN: ${AppPreference().getString(PreferencesKey.token)}");
+    debugPrint("========================");
+
+    AppPreference().initialAppPreference();
     state = const AsyncValue.data(null);
 
     // ===============================
-    // ✅ NAVIGATION
+    // 🚀 NAVIGATION
     // ===============================
-
     if (text == "MemberListScreen") {
       Navigator.pushReplacement(
         context,
@@ -198,12 +228,11 @@ String safe(dynamic value) {
       );
     }
   } catch (e, st) {
-    print("LOGIN ERROR: $e");
+    debugPrint("LOGIN ERROR: $e");
     state = AsyncValue.error(e, st);
   }
 }
 
-}
 
 void _showTypeConflictDialog(
   BuildContext context, {
@@ -237,6 +266,7 @@ void _showTypeConflictDialog(
       );
     },
   );
+}
 }
 
 class ApiService {

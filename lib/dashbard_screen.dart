@@ -712,43 +712,83 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'JIN Day 2015',
       img: 'assets/jinImages/26.png',
       onTap: () {
-          Navigator.push(
+        Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) =>  CommonWebView(url:"https://jinreflexology.in/wrw-event/wrw-2015/",title:"JIN Day 2015" ,)),
+          MaterialPageRoute(
+            builder:
+                (context) => CommonWebView(
+                  url: "https://jinreflexology.in/wrw-event/wrw-2015/",
+                  title: "JIN Day 2015",
+                ),
+          ),
         );
-        
       },
     ),
     CampaignItem(
       title: 'JIN Day 2016',
       img: 'assets/jinImages/26.png',
       onTap: () {
-           Navigator.push(
+        Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) =>  CommonWebView(url:"https://jinreflexology.in/wrw-event/wrw-2016/",title:"JIN Day 2016" ,)),
+          MaterialPageRoute(
+            builder:
+                (context) => CommonWebView(
+                  url: "https://jinreflexology.in/wrw-event/wrw-2016/",
+                  title: "JIN Day 2016",
+                ),
+          ),
         );
       },
     ),
-     CampaignItem(title: '2017', img: 'assets/jinImages/31.png', onTap: () {
+    CampaignItem(
+      title: '2017',
+      img: 'assets/jinImages/31.png',
+      onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) =>  CommonWebView(url:"https://jinreflexology.in/wrw-event/wrw-2017/",title:"JIN Day 2017" ,)),
+          MaterialPageRoute(
+            builder:
+                (context) => CommonWebView(
+                  url: "https://jinreflexology.in/wrw-event/wrw-2017/",
+                  title: "JIN Day 2017",
+                ),
+          ),
         );
-     }),
-    CampaignItem(title: '2018', img: 'assets/jinImages/31.png', onTap: () {
-       Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) =>  CommonWebView(url:"https://jinreflexology.in/wrw-event/wrw-2018/",title:"JIN Day 2018" ,)),
-        );
-    }),
-    CampaignItem(title: '2019', img: 'assets/jinImages/31.png', onTap: () {
+      },
+    ),
+    CampaignItem(
+      title: '2018',
+      img: 'assets/jinImages/31.png',
+      onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) =>  CommonWebView(url:"https://jinreflexology.in/wrw-event/wrw-2019/",title:"JIN Day 2019" ,)),
+          MaterialPageRoute(
+            builder:
+                (context) => CommonWebView(
+                  url: "https://jinreflexology.in/wrw-event/wrw-2018/",
+                  title: "JIN Day 2018",
+                ),
+          ),
         );
-
-    }),
-      CampaignItem(
+      },
+    ),
+    CampaignItem(
+      title: '2019',
+      img: 'assets/jinImages/31.png',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => CommonWebView(
+                  url: "https://jinreflexology.in/wrw-event/wrw-2019/",
+                  title: "JIN Day 2019",
+                ),
+          ),
+        );
+      },
+    ),
+    CampaignItem(
       title: 'JIN Day 2020',
       img: 'assets/jinImages/30.png',
       onTap: () {
@@ -764,7 +804,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     ),
-        CampaignItem(
+    CampaignItem(
       title: 'JIN Day 2021',
       img: 'assets/jinImages/29.png',
       onTap: () {
@@ -780,8 +820,8 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     ),
-  
-      CampaignItem(
+
+    CampaignItem(
       title: 'JIN Day 2022',
       img: 'assets/jinImages/28.png',
       onTap: () {
@@ -813,11 +853,10 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     ),
-  
 
     // CampaignItem(title: '2019', img: 'assets/jinImages/31.png', onTap: () {}),
     // CampaignItem(title: '2018', img: 'assets/jinImages/31.png', onTap: () {}),
-   
+
     // CampaignItem(
     //   title: '1989 to 2014',
     //   img: 'assets/jinImages/31.png',

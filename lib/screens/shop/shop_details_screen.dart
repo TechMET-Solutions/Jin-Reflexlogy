@@ -138,7 +138,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   Widget build(BuildContext context) {
     final token = AppPreference().getString(PreferencesKey.token);
     final type = AppPreference().getString(PreferencesKey.type);
-
+print("ddddddddddddddddddddddddddddddddddddddddddddd${type}");
+print("ddddddddddddddddddddddddddddddddddddddddddddd${token}");
     final imgCount = imageCount(p.image);
 
     return Scaffold(

@@ -61,7 +61,7 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
   // ================= FETCH CART ITEMS =================
   Future<void> fetchCartItems() async {
     final prefs = AppPreference();
-    final token = prefs.getString(PreferencesKey.token);
+    final token = prefs.getString(PreferencesKey.userId);
 
     final String country = widget.deliveryType == "india" ? "in" : "us";
     final String url =
