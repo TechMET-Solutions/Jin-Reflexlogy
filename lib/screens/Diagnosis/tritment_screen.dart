@@ -33,6 +33,7 @@ class DiagnosisListScreen extends StatefulWidget {
   final String patientId;
   final String pid;
   final String diagnosisId;
+  final String? gender;
 
   const DiagnosisListScreen({
     super.key,
@@ -40,6 +41,7 @@ class DiagnosisListScreen extends StatefulWidget {
     required this.patientId,
     required this.pid,
     required this.diagnosisId,
+    this.gender,
   });
 
   @override
@@ -52,22 +54,23 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
   bool isLoading = true;
   bool _isSubscribed = false;
 
-  // -------------------------------------------------------
-  // INIT
-  // -------------------------------------------------------
+  /// -------------------------------------------------------
+  /// INIT
+  /// -------------------------------------------------------
   @override
   void initState() {
     super.initState();
-    fetchDiagnosisList(); // first load
+    debugPrint("👤 DiagnosisListScreen OPENED");
+    debugPrint("👤 Gender received => ${widget.gender}");
+    fetchDiagnosisList();
   }
 
-  // -------------------------------------------------------
-  // ROUTE OBSERVER
-  // -------------------------------------------------------
+  /// -------------------------------------------------------
+  /// ROUTE OBSERVER
+  /// -------------------------------------------------------
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     final route = ModalRoute.of(context);
     if (route is PageRoute && !_isSubscribed) {
       routeObserver.subscribe(this, route);
@@ -75,17 +78,9 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
     }
   }
 
-  /// Jab kisi page se BACK aaoge
   @override
   void didPopNext() {
-    debugPrint("🔁 Returned to DiagnosisListScreen → refreshing API");
-    fetchDiagnosisList();
-  }
-
-  /// Jab ye page push hota hai
-  @override
-  void didPush() {
-    debugPrint("📌 DiagnosisListScreen opened");
+    fetchDiagnosisList(); // refresh on back
   }
 
   @override
@@ -96,9 +91,9 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
     super.dispose();
   }
 
-  // -------------------------------------------------------
-  // API CALL
-  // -------------------------------------------------------
+  /// -------------------------------------------------------
+  /// API CALL
+  /// -------------------------------------------------------
   Future<void> fetchDiagnosisList() async {
     setState(() => isLoading = true);
 
@@ -113,38 +108,33 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
         formData,
       );
 
-      dynamic jsonBody;
-
-      if (response?.data is String) {
-        jsonBody = jsonDecode(response!.data);
-      } else {
-        jsonBody = response?.data;
-      }
+      dynamic jsonBody =
+          response?.data is String
+              ? jsonDecode(response!.data)
+              : response?.data;
 
       if (jsonBody != null && jsonBody["success"] == 1) {
-        final raw = jsonBody["data"] as List;
-
-        setState(() {
-          diagnosisList = raw.map((e) => DiagnosisData.fromJson(e)).toList();
-        });
+        final List raw = jsonBody["data"];
+        diagnosisList = raw.map((e) => DiagnosisData.fromJson(e)).toList();
       } else {
-        setState(() => diagnosisList = []);
+        diagnosisList = [];
       }
     } catch (e) {
-      debugPrint("❌ Diagnosis API Error: $e");
-      setState(() => diagnosisList = []);
+      diagnosisList = [];
     }
 
     setState(() => isLoading = false);
   }
 
-  // -------------------------------------------------------
-  // UI
-  // -------------------------------------------------------
+  /// -------------------------------------------------------
+  /// UI
+  /// -------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CommonAppBar(title: "Treatment"),
+
+      /// ---------------- FAB ----------------
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
@@ -155,6 +145,7 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
                     patient_id: widget.patientId,
                     name: widget.patientName,
                     diagnosis_id: widget.diagnosisId,
+                    gender: widget.gender,
                   ),
             ),
           );
@@ -170,13 +161,16 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       ),
+
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       backgroundColor: const Color(0xFFFDF3DD),
+
+      /// ---------------- BODY ----------------
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ---------------- Patient Name ----------------
+            /// Patient Name
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -194,21 +188,15 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
               ),
             ),
 
-            // ---------------- IDs ----------------
+            /// Patient ID
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  pill("Patient ID : ${widget.patientId}"),
-                  const SizedBox(width: 10),
-                  // pill("Diagnosis ID : ${widget.diagnosisId}"),
-                ],
-              ),
+              child: pill("Patient ID : ${widget.patientId}"),
             ),
 
             const SizedBox(height: 20),
 
-            // ---------------- LIST ----------------
+            /// Diagnosis List
             isLoading
                 ? const Center(
                   child: CircularProgressIndicator(color: Colors.orange),
@@ -218,13 +206,12 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
                     itemCount: diagnosisList.length,
                     itemBuilder: (context, index) {
                       final item = diagnosisList[index];
+                      final parts = item.timestamp.split(" ");
+                      final date = parts[0];
+                      final time = parts.length > 1 ? parts[1] : "";
 
                       return InkWell(
                         onTap: () {
-                          final parts = item.timestamp.split(" ");
-                          final date = parts[0];
-                          final time = parts.length > 1 ? parts[1] : "";
-
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -254,8 +241,7 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                "${item.id}   ",
-                                //Day: ${index + 1}
+                                item.id,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -281,9 +267,9 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
     );
   }
 
-  // -------------------------------------------------------
-  // PILL UI
-  // -------------------------------------------------------
+  /// -------------------------------------------------------
+  /// PILL
+  /// -------------------------------------------------------
   Widget pill(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),

@@ -8,9 +8,9 @@ import 'package:dio/dio.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
-// --------------------------------------------------
-// MODEL
-// --------------------------------------------------
+/// --------------------------------------------------
+/// MODEL
+/// --------------------------------------------------
 class PointData {
   final String id;
   double x;
@@ -32,25 +32,30 @@ class PointData {
 
   factory PointData.fromJson(Map<String, dynamic> json) {
     return PointData(
-      id: json["id"],
-      x: json["x"].toDouble(),
-      y: json["y"].toDouble(),
-      tag: json["tag"],
+      id: json["id"].toString(),
+      x: (json["x"] as num).toDouble(),
+      y: (json["y"] as num).toDouble(),
+      tag: json["tag"] ?? "",
       index: json["index"],
-      group: json["group"],
+      group: json["group"] ?? "",
       state: 0,
     );
   }
 }
 
+/// --------------------------------------------------
+/// SCREEN
+/// --------------------------------------------------
 class RightHandScreen extends StatefulWidget {
   final String diagnosisId;
   final String pid;
+  final String? gender;
 
   const RightHandScreen({
+    Key? key,
     required this.diagnosisId,
     required this.pid,
-    Key? key,
+    this.gender,
   }) : super(key: key);
 
   @override
@@ -69,16 +74,22 @@ class _RightHandScreenState extends State<RightHandScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint("👤 RH Gender: ${widget.gender}");
     loadPoints();
   }
 
-  // --------------------------------------------------
-  // LOAD JSON + LOCAL + SERVER
+  /// --------------------------------------------------
+  /// LOAD POINTS BASED ON GENDER
   Future<void> loadPoints() async {
     try {
-      final jsonString = await rootBundle.loadString(
-        "assets/right_hand_btn.json",
-      );
+      final jsonPath =
+          widget.gender?.toLowerCase() == "female"
+              ? "assets/right_handf_btn.json"
+              : "assets/right_hand_btn.json";
+
+      debugPrint("📄 Loading RH JSON: $jsonPath");
+
+      final jsonString = await rootBundle.loadString(jsonPath);
       final jsonMap = jsonDecode(jsonString);
 
       points =
@@ -91,12 +102,13 @@ class _RightHandScreenState extends State<RightHandScreen> {
 
       setState(() => isLoading = false);
     } catch (e) {
-      debugPrint("RH LOAD ERROR: $e");
+      debugPrint("❌ RH LOAD ERROR: $e");
+      setState(() => isLoading = false);
     }
   }
 
-  // --------------------------------------------------
-  // LOAD ONLY STATE FROM LOCAL
+  /// --------------------------------------------------
+  /// LOAD SAVED STATE (LOCAL)
   void loadSavedState() {
     final key = "RH_DATA_${widget.diagnosisId}_${widget.pid}";
     final raw = AppPreference().getString(key);
@@ -110,8 +122,8 @@ class _RightHandScreenState extends State<RightHandScreen> {
     });
   }
 
-  // --------------------------------------------------
-  // FAST LOCAL SAVE
+  /// --------------------------------------------------
+  /// SAVE FAST LOCAL
   Future<void> saveAllPointsFast() async {
     Map<String, String> data = {};
     for (var p in points) {
@@ -123,6 +135,8 @@ class _RightHandScreenState extends State<RightHandScreen> {
     );
   }
 
+  /// --------------------------------------------------
+  /// FETCH SERVER DATA
   Future<void> fetchServer() async {
     try {
       final res = await Dio().post(
@@ -158,12 +172,12 @@ class _RightHandScreenState extends State<RightHandScreen> {
                 : 1;
       }
     } catch (e) {
-      debugPrint("RH SERVER ERROR: $e");
+      debugPrint("❌ RH SERVER ERROR: $e");
     }
   }
 
-  // --------------------------------------------------
-  // ENCODE RH DATA
+  /// --------------------------------------------------
+  /// ENCODE DATA
   String encodeRhData() {
     StringBuffer sb = StringBuffer();
     for (var p in points) {
@@ -173,102 +187,61 @@ class _RightHandScreenState extends State<RightHandScreen> {
     return sb.toString();
   }
 
-  // --------------------------------------------------
-  // ENCODE RH RESULT
   String encodeRhResult() {
     final Set<String> tags = {};
     for (var p in points) {
-      if (p.state != 0 && p.tag.isNotEmpty) {
-        tags.add(p.tag);
-      }
+      if (p.state != 0 && p.tag.isNotEmpty) tags.add(p.tag);
     }
     return tags.join("|");
   }
 
-  // --------------------------------------------------
-  // 🔥 FIXED SCREENSHOT (IMPORTANT)
+  /// --------------------------------------------------
+  /// SCREENSHOT
   Future<String?> captureScreenshot() async {
     try {
       await Future.delayed(const Duration(milliseconds: 100));
-      await WidgetsBinding.instance.endOfFrame;
-
       final boundary =
           screenshotKey.currentContext?.findRenderObject()
               as RenderRepaintBoundary?;
-
-      if (boundary == null) {
-        debugPrint("❌ RH boundary null");
-        return null;
-      }
+      if (boundary == null) return null;
 
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-
       if (byteData == null) return null;
 
       return base64Encode(byteData.buffer.asUint8List());
     } catch (e) {
-      debugPrint("RH Screenshot error: $e");
+      debugPrint("❌ RH Screenshot error: $e");
       return null;
     }
   }
 
-  // --------------------------------------------------
-  // SAVE & EXIT
+  /// --------------------------------------------------
+  /// SAVE & EXIT
   Future<void> _saveAndExit() async {
-    final encodedRhData = encodeRhData();
-    final encodedRhResult = encodeRhResult();
-
     await saveAllPointsFast();
 
     final base64 = await captureScreenshot();
 
-    debugPrint("=== RH COMPLETE DATA ===");
-    debugPrint("rh_data   : $encodedRhData");
-    debugPrint("rh_result : $encodedRhResult");
-    debugPrint("rh_img len: ${base64?.length}");
-    debugPrint("========================");
-
     Navigator.pop(context, {
-      "rh_data": encodedRhData,
-      "rh_result": encodedRhResult,
+      "rh_data": encodeRhData(),
+      "rh_result": encodeRhResult(),
       "rh_img": base64,
     });
   }
 
-  // --------------------------------------------------
-  // DOT UI
-  Widget _buildDot(PointData p, double scaleX, double scaleY) {
+  /// --------------------------------------------------
+  /// DOT UI
+  Widget _buildDot(PointData p) {
     Color color =
         p.state == 1
-            ? Color(0xFF8B0000)
+            ? const Color(0xFF8B0000)
             : p.state == 2
             ? Colors.green
             : Colors.white;
 
     return GestureDetector(
-      onTap: () {
-        setState(() => p.state = (p.state + 1) % 3);
-
-        // 🔥 TAP PE COORDINATES PRINT
-        debugPrint(
-          "DOT ${p.index} -> x: ${p.x.toStringAsFixed(2)}, y: ${p.y.toStringAsFixed(2)}",
-        );
-      },
-
-      // onPanUpdate: (details) {
-      //   setState(() {
-      //     p.x += details.delta.dx / scaleX;
-      //     p.y += details.delta.dy / scaleY;
-
-      //     p.x = p.x.clamp(0, baseWidth);
-      //     p.y = p.y.clamp(0, baseHeight);
-      //   });
-
-      //   debugPrint(
-      //     "MOVING ${p.index} -> x: ${p.x.toStringAsFixed(2)}, y: ${p.y.toStringAsFixed(2)}",
-      //   );
-      // },
+      onTap: () => setState(() => p.state = (p.state + 1) % 3),
       child: Container(
         width: 20,
         height: 20,
@@ -281,8 +254,8 @@ class _RightHandScreenState extends State<RightHandScreen> {
     );
   }
 
-  // --------------------------------------------------
-  // UI
+  /// --------------------------------------------------
+  /// UI
   @override
   Widget build(BuildContext context) {
     double desiredAspect = baseWidth / baseHeight;
@@ -297,10 +270,6 @@ class _RightHandScreenState extends State<RightHandScreen> {
 
     return Scaffold(
       appBar: CommonAppBar(title: "Right Hand"),
-      // appBar: AppBar(
-      //   title: const Text("Right Hand Editor"),
-      //   backgroundColor: Colors.green,b
-      // ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _saveAndExit,
         label: const Text("Save", style: TextStyle(color: Colors.white)),
@@ -327,7 +296,7 @@ class _RightHandScreenState extends State<RightHandScreen> {
                           (p) => Positioned(
                             left: p.x * scaleX,
                             top: p.y * scaleY,
-                            child: _buildDot(p, scaleX, scaleY),
+                            child: _buildDot(p),
                           ),
                         ),
                       ],

@@ -8,9 +8,9 @@ import 'package:dio/dio.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
-// --------------------------------------------------
-// MODEL
-// --------------------------------------------------
+/// --------------------------------------------------
+/// MODEL
+/// --------------------------------------------------
 class PointData {
   final String id;
   double x;
@@ -18,10 +18,6 @@ class PointData {
   final String tag;
   final int index;
   final String group;
-
-  /// 0 = white
-  /// 1 = red
-  /// 2 = green
   int state;
 
   PointData({
@@ -36,29 +32,31 @@ class PointData {
 
   factory PointData.fromJson(Map<String, dynamic> json) {
     return PointData(
-      id: json["id"],
-      x: json["x"].toDouble(),
-      y: json["y"].toDouble(),
-      tag: json["tag"],
+      id: json["id"].toString(),
+      x: (json["x"] as num).toDouble(),
+      y: (json["y"] as num).toDouble(),
+      tag: json["tag"] ?? "",
       index: json["index"],
-      group: json["group"],
+      group: json["group"] ?? "",
       state: 0,
     );
   }
 }
 
-// --------------------------------------------------
-// SCREEN
-// --------------------------------------------------
+/// --------------------------------------------------
+/// SCREEN
+/// --------------------------------------------------
 class LeftHandScreen extends StatefulWidget {
   final String diagnosisId;
   final String pid;
+  final String? gender;
 
   const LeftHandScreen({
+    Key? key,
     required this.diagnosisId,
     required this.pid,
-    super.key,
-  });
+    this.gender,
+  }) : super(key: key);
 
   @override
   State<LeftHandScreen> createState() => _LeftHandScreenState();
@@ -76,36 +74,71 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint("👤 LH Gender: ${widget.gender}");
     loadPoints();
   }
 
-  // --------------------------------------------------
-  // LOAD POINTS
+  /// --------------------------------------------------
+  /// LOAD POINTS BASED ON GENDER
   Future<void> loadPoints() async {
     try {
-      final jsonString = await rootBundle.loadString(
-        "assets/left_hand_btn.json",
-      );
+      final jsonPath =
+          widget.gender?.toLowerCase() == "female"
+              ? "assets/left_hand_btnf.json"
+              : "assets/left_hand_btn.json";
 
-      if (!mounted) return;
+      debugPrint("📄 Loading LH JSON: $jsonPath");
 
-      final Map<String, dynamic> jsonMap = json.decode(jsonString);
-      final List<dynamic> jsonList = jsonMap["LeftHand"];
+      final jsonString = await rootBundle.loadString(jsonPath);
+      final jsonMap = jsonDecode(jsonString);
 
-      points = jsonList.map((p) => PointData.fromJson(p)).toList();
+      points =
+          (jsonMap["LeftHand"] as List)
+              .map((e) => PointData.fromJson(e))
+              .toList();
 
-      // loadSavedLocal();
+      loadSavedLocal();
       await fetchServer();
 
       if (!mounted) return;
       setState(() => isLoading = false);
     } catch (e) {
-      debugPrint("JSON ERROR: $e");
+      debugPrint("❌ LH LOAD ERROR: $e");
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
-  // --------------------------------------------------
-  // FETCH SERVER DATA
+  /// --------------------------------------------------
+  /// LOAD SAVED LOCAL
+  void loadSavedLocal() {
+    final key = "LH_DATA_${widget.diagnosisId}_${widget.pid}";
+    final raw = AppPreference().getString(key);
+    if (raw.isEmpty) return;
+
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+    decoded.forEach((idx, val) {
+      final parts = val.split(",");
+      final p = points.firstWhere((e) => e.index.toString() == idx);
+      p.state = int.parse(parts[2]);
+    });
+  }
+
+  /// --------------------------------------------------
+  /// SAVE LOCAL FAST
+  Future<void> saveAllPointsFast() async {
+    Map<String, String> data = {};
+    for (var p in points) {
+      data[p.index.toString()] = "${p.x},${p.y},${p.state}";
+    }
+
+    await AppPreference().setString(
+      "LH_DATA_${widget.diagnosisId}_${widget.pid}",
+      jsonEncode(data),
+    );
+  }
+
+  /// --------------------------------------------------
+  /// FETCH SERVER DATA
   Future<void> fetchServer() async {
     try {
       final res = await Dio().post(
@@ -115,13 +148,8 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
           "pid": widget.pid,
           "which": "lh",
         }),
-        options: Options(
-          responseType: ResponseType.plain,
-          validateStatus: (status) => status != null && status < 500,
-        ),
+        options: Options(responseType: ResponseType.plain),
       );
-
-      if (res.statusCode != 200) return;
 
       final raw = res.data.toString();
       final start = raw.indexOf("{");
@@ -141,44 +169,12 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
         p.state = val == 1 ? 2 : (val == -1 ? 0 : 1);
       }
     } catch (e) {
-      debugPrint("LH SERVER ERROR: $e");
+      debugPrint("❌ LH SERVER ERROR: $e");
     }
   }
 
-  // --------------------------------------------------
-  // LOAD FROM LOCAL
-  void loadSavedLocal() {
-    final key = "LH_DATA_${widget.diagnosisId}_${widget.pid}";
-    final raw = AppPreference().getString(key);
-
-    if (raw.isEmpty) return;
-
-    final decoded = jsonDecode(raw) as Map<String, dynamic>;
-
-    decoded.forEach((idx, val) {
-      final parts = val.split(",");
-      final p = points.firstWhere((e) => e.index.toString() == idx);
-      p.x = double.parse(parts[0]);
-      p.y = double.parse(parts[1]);
-      p.state = int.parse(parts[2]);
-    });
-  }
-
-  // --------------------------------------------------
-  // SAVE LOCAL
-  Future<void> saveAllPointsFast() async {
-    Map<String, String> data = {};
-    for (var p in points) {
-      data[p.index.toString()] = "${p.x},${p.y},${p.state}";
-    }
-
-    await AppPreference().setString(
-      "LH_DATA_${widget.diagnosisId}_${widget.pid}",
-      jsonEncode(data),
-    );
-  }
-
-  // --------------------------------------------------
+  /// --------------------------------------------------
+  /// ENCODE DATA
   String encodeLhData() {
     StringBuffer sb = StringBuffer();
     for (var p in points) {
@@ -191,72 +187,57 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
   String encodeLhResult() {
     final Set<String> tags = {};
     for (var p in points) {
-      if (p.state != 0 && p.tag.isNotEmpty) {
-        tags.add(p.tag);
-      }
+      if (p.state != 0 && p.tag.isNotEmpty) tags.add(p.tag);
     }
     return tags.join("|");
   }
 
-  // --------------------------------------------------
-  // SAVE & EXIT
-  Future<void> _saveAndExit() async {
-    final encodedLhData = encodeLhData();
-    final encodedLhResult = encodeLhResult();
-
-    await saveAllPointsFast();
-    final base64 = await captureScreenshot();
-
-    Navigator.pop(context, {
-      "lh_data": encodedLhData,
-      "lh_result": encodedLhResult,
-      "lh_img": base64,
-    });
-  }
-
-  // --------------------------------------------------
-  // SCREENSHOT
+  /// --------------------------------------------------
+  /// SCREENSHOT
   Future<String?> captureScreenshot() async {
     try {
-      if (!mounted) return null;
-
       await Future.delayed(const Duration(milliseconds: 120));
-      await WidgetsBinding.instance.endOfFrame;
-
-      if (!mounted) return null;
-
       final boundary =
           screenshotKey.currentContext?.findRenderObject()
               as RenderRepaintBoundary?;
-
       if (boundary == null) return null;
 
       final image = await boundary.toImage(pixelRatio: 2.5);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-
       if (byteData == null) return null;
 
       return base64Encode(byteData.buffer.asUint8List());
     } catch (e) {
-      debugPrint("Screenshot error: $e");
+      debugPrint("❌ LH Screenshot error: $e");
       return null;
     }
   }
 
-  // --------------------------------------------------
-  // FIXED DOT (NO MOVE, NO COORDS)
+  /// --------------------------------------------------
+  /// SAVE & EXIT
+  Future<void> _saveAndExit() async {
+    await saveAllPointsFast();
+    final base64 = await captureScreenshot();
+
+    Navigator.pop(context, {
+      "lh_data": encodeLhData(),
+      "lh_result": encodeLhResult(),
+      "lh_img": base64,
+    });
+  }
+
+  /// --------------------------------------------------
+  /// DOT UI
   Widget _buildDot(PointData p) {
     Color color =
         p.state == 1
-            ? Color(0xFF8B0000)
+            ? const Color(0xFF8B0000)
             : p.state == 2
             ? Colors.green
             : Colors.white;
 
     return GestureDetector(
-      onTap: () {
-        setState(() => p.state = (p.state + 1) % 3);
-      },
+      onTap: () => setState(() => p.state = (p.state + 1) % 3),
       child: Container(
         width: 20,
         height: 20,
@@ -269,7 +250,8 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
     );
   }
 
-  // --------------------------------------------------
+  /// --------------------------------------------------
+  /// UI
   @override
   Widget build(BuildContext context) {
     double desiredAspect = baseWidth / baseHeight;
@@ -302,7 +284,7 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
                       children: [
                         Positioned.fill(
                           child: Image.asset(
-                            "assets/images/hand2.jpeg", 
+                            "assets/images/hand2.jpeg", // same bg
                             fit: BoxFit.fill,
                           ),
                         ),
