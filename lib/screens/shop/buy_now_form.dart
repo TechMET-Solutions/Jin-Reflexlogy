@@ -330,13 +330,15 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
     setState(() => isApplyingCoupon = true);
 
     const String url = "https://admin.jinreflexology.in/api/cart/apply-coupon";
-    const userId = 2; // Get from auth state
+    // const userId = 2; // Get from auth state
     final country = selectedCountry?.name == "India" ? "in" : "us";
+    final type = AppPreference().getString(PreferencesKey.type);
 
     final Map<String, dynamic> body = {
-      "user_id": userId.toString(),
+      "user_id": AppPreference().getString(PreferencesKey.userId),
       "country": country,
       "coupon_code": couponController.text.trim(),
+      "type": type,
     };
 
     print("=== APPLY COUPON REQUEST ===");
@@ -393,6 +395,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
     if (appliedCouponCode == null) {
       return;
     }
+    final type = AppPreference().getString(PreferencesKey.type);
 
     setState(() => isApplyingCoupon = true);
 
@@ -406,6 +409,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
     final Map<String, dynamic> body = {
       "user_id": userId.toString(),
       "country": country,
+      "type": type,
     };
 
     print("=== REMOVE COUPON REQUEST ===");
@@ -652,8 +656,14 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
       ),
       child: Column(
         children: [
-          _priceRow("Subtotal", "${widget.delveryType == "india" ? "₹" : "\$"} ${currentSubtotal.toStringAsFixed(2)}"),
-          _priceRow("Discount", "- ${widget.delveryType == "india" ? "₹" : "\$"} ${currentDiscount.toStringAsFixed(2)}"),
+          _priceRow(
+            "Subtotal",
+            "${widget.delveryType == "india" ? "₹" : "\$"} ${currentSubtotal.toStringAsFixed(2)}",
+          ),
+          _priceRow(
+            "Discount",
+            "- ${widget.delveryType == "india" ? "₹" : "\$"} ${currentDiscount.toStringAsFixed(2)}",
+          ),
           const Divider(),
           _priceRow(
             "Total Amount",
