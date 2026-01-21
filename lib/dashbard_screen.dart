@@ -713,14 +713,93 @@ Future<void> _checkDocumentsAndShowPopup() async {
       },
     ),
     CampaignItem(
-      title: 'JIN Day 2025',
+      title: 'JIN Day 2015',
       img: 'assets/jinImages/26.png',
-      onTap: () {},
+      onTap: () {
+          Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>  CommonWebView(url:"https://jinreflexology.in/wrw-event/wrw-2015/",title:"JIN Day 2015" ,)),
+        );
+        
+      },
     ),
     CampaignItem(
-      title: 'JIN Day 2024',
+      title: 'JIN Day 2016',
       img: 'assets/jinImages/26.png',
-      onTap: () {},
+      onTap: () {
+           Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>  CommonWebView(url:"https://jinreflexology.in/wrw-event/wrw-2016/",title:"JIN Day 2016" ,)),
+        );
+      },
+    ),
+     CampaignItem(title: '2017', img: 'assets/jinImages/31.png', onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>  CommonWebView(url:"https://jinreflexology.in/wrw-event/wrw-2017/",title:"JIN Day 2017" ,)),
+        );
+     }),
+    CampaignItem(title: '2018', img: 'assets/jinImages/31.png', onTap: () {
+       Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>  CommonWebView(url:"https://jinreflexology.in/wrw-event/wrw-2018/",title:"JIN Day 2018" ,)),
+        );
+    }),
+    CampaignItem(title: '2019', img: 'assets/jinImages/31.png', onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>  CommonWebView(url:"https://jinreflexology.in/wrw-event/wrw-2019/",title:"JIN Day 2019" ,)),
+        );
+
+    }),
+      CampaignItem(
+      title: 'JIN Day 2020',
+      img: 'assets/jinImages/30.png',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => CommonWebView(
+                  url: "https://jinreflexology.in/jin-day-2020/",
+                  title: "JIN Day 2020",
+                ),
+          ),
+        );
+      },
+    ),
+        CampaignItem(
+      title: 'JIN Day 2021',
+      img: 'assets/jinImages/29.png',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => CommonWebView(
+                  url: "https://jinreflexology.in/jin2021/",
+                  title: "JIN Day 2021",
+                ),
+          ),
+        );
+      },
+    ),
+  
+      CampaignItem(
+      title: 'JIN Day 2022',
+      img: 'assets/jinImages/28.png',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => CommonWebView(
+                  url: "https://jinreflexology.in/jinday22/",
+                  title: "JIN Day 2022",
+                ),
+          ),
+        );
+      },
     ),
     CampaignItem(
       title: 'JIN Day 2023',
@@ -738,64 +817,16 @@ Future<void> _checkDocumentsAndShowPopup() async {
         );
       },
     ),
-    CampaignItem(
-      title: 'JIN Day 2022',
-      img: 'assets/jinImages/28.png',
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => CommonWebView(
-                  url: "https://jinreflexology.in/jinday22/",
-                  title: "JIN Day 2022",
-                ),
-          ),
-        );
-      },
-    ),
-    CampaignItem(
-      title: 'JIN Day 2021',
-      img: 'assets/jinImages/29.png',
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => CommonWebView(
-                  url: "https://jinreflexology.in/jin2021/",
-                  title: "JIN Day 2021",
-                ),
-          ),
-        );
-      },
-    ),
-    CampaignItem(
-      title: 'JIN Day 2020',
-      img: 'assets/jinImages/30.png',
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => CommonWebView(
-                  url: "https://jinreflexology.in/jin-day-2020/",
-                  title: "JIN Day 2020",
-                ),
-          ),
-        );
-      },
-    ),
-    CampaignItem(title: '2019', img: 'assets/jinImages/31.png', onTap: () {}),
-    CampaignItem(title: '2018', img: 'assets/jinImages/31.png', onTap: () {}),
-    CampaignItem(title: '2017', img: 'assets/jinImages/31.png', onTap: () {}),
-    CampaignItem(title: '2016', img: 'assets/jinImages/31.png', onTap: () {}),
-    CampaignItem(title: '2015', img: 'assets/jinImages/31.png', onTap: () {}),
-    CampaignItem(
-      title: '1989 to 2014',
-      img: 'assets/jinImages/31.png',
-      onTap: () {},
-    ),
+  
+
+    // CampaignItem(title: '2019', img: 'assets/jinImages/31.png', onTap: () {}),
+    // CampaignItem(title: '2018', img: 'assets/jinImages/31.png', onTap: () {}),
+   
+    // CampaignItem(
+    //   title: '1989 to 2014',
+    //   img: 'assets/jinImages/31.png',
+    //   onTap: () {},
+    // ),
   ];
 
   List<CampaignItem> campaignItems5() => [

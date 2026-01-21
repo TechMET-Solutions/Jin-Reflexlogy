@@ -740,59 +740,7 @@ class _EbookJinLoginScreenState extends ConsumerState<EbookJinLoginScreen> {
                           ),
                         ],
                       ),
-
-                      /// 🔹 Remember Me & Forgot Password
                       const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Checkbox(
-                                value: _rememberMe,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _rememberMe = value!;
-                                  });
-                                },
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                activeColor: const Color.fromARGB(
-                                  255,
-                                  19,
-                                  4,
-                                  66,
-                                ),
-                              ),
-                              Text(
-                                "Remember me",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                            ],
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              // Add forgot password functionality
-                            },
-                            child: Text(
-                              "Forgot Password?",
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: const Color.fromARGB(255, 19, 4, 66),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      /// 🔹 Login Button
                       SizedBox(
                         width: double.infinity,
                         height: 48,
@@ -818,14 +766,14 @@ class _EbookJinLoginScreenState extends ConsumerState<EbookJinLoginScreen> {
                                       );
                                       return;
                                     }
-
+                                    print("dsdsdsds");
                                     await ref
                                         .read(loginProvider.notifier)
                                         .login(
                                           context,
                                           widget.onTab,
                                           widget.text,
-                                          widget.type,
+                                          "prouser",
                                           _idController.text,
                                           _passwordController.text,
                                           DeliveryType: widget.deliveryType,
@@ -870,68 +818,8 @@ class _EbookJinLoginScreenState extends ConsumerState<EbookJinLoginScreen> {
                       const SizedBox(height: 16),
 
                       /// 🔹 Divider with OR
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Divider(
-                              color: Colors.grey[300],
-                              thickness: 1,
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: Text(
-                              "OR",
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[500],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Divider(
-                              color: Colors.grey[300],
-                              thickness: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
 
                       /// 🔹 Sign Up Link
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Don't have an account? ",
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SignUpScreen(),
-                                ),
-                              );
-                            },
-                            child: Text(
-                              "Sign Up",
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: const Color.fromARGB(255, 19, 4, 66),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
                       const SizedBox(height: 10),
                     ],
                   ),

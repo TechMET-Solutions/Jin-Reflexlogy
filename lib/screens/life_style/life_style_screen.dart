@@ -185,10 +185,11 @@ void _initPlatformSettings() {
           );
         },
       ),
-      body: type == "therapist" || token.isEmpty
+      body: type == "therapist" || type == "prouser"|| token.isEmpty
           ? JinLoginScreen(
               text: "LifestyleScreen",
               type: "patient",
+              registershow: true,
               onTab: () {
                 Navigator.push(
                   context,

@@ -24,157 +24,185 @@ final loginProvider = StateNotifierProvider<LoginNotifier, AsyncValue<void>>((
 
 class LoginNotifier extends StateNotifier<AsyncValue<void>> {
   LoginNotifier() : super(const AsyncValue.data(null));
+String safe(dynamic value) {
+    return value == null ? "" : value.toString();
+  }
 
-  Future<void> login(
-    BuildContext context,
-    VoidCallback onTab,
-    String text,
-    String type,
-    id,
-    passworld, {
-    DeliveryType,
-  }) async {
-    print("object");
-    state = const AsyncValue.loading();
+ Future<void> login(
+  BuildContext context,
+  VoidCallback onTab,
+  String text,
+  String type, // "therapist" | "prouser"
+  id,
+  passworld, {
+  DeliveryType,
+}) async {
+  state = const AsyncValue.loading();
 
-    try {
-      final oldType = AppPreference().getString(PreferencesKey.type);
-      if (oldType.isNotEmpty && oldType != type) {
-        state = const AsyncValue.data(null);
+  try {
+    // 🔹 TYPE CONFLICT CHECK
+    final oldType = AppPreference().getString(PreferencesKey.type);
+    if (oldType.isNotEmpty && oldType != type) {
+      state = const AsyncValue.data(null);
 
-        _showTypeConflictDialog(
-          context,
-          oldType: oldType,
-          newType: type,
-          onConfirm: () async {
-            await AppPreference().clearSharedPreferences();
-            Navigator.pop(context); // close dialog
+      _showTypeConflictDialog(
+        context,
+        oldType: oldType,
+        newType: type,
+        onConfirm: () async {
+          await AppPreference().clearSharedPreferences();
+          Navigator.pop(context);
+          login(context, onTab, text, type, id, passworld);
+        },
+      );
+      return;
+    }
 
-            // 🔁 retry login
-            login(context, onTab, text, type, id, passworld);
-          },
-        );
-        return;
-      }
+    final dio = Dio(
+      BaseOptions(
+        responseType: ResponseType.plain,
+        validateStatus: (_) => true,
+      ),
+    );
 
-      final dio = Dio(
-        BaseOptions(
-          responseType: ResponseType.plain,
-          validateStatus: (status) => true,
+    final response = await dio.post(
+      "https://jinreflexology.in/api1/new/login.php",
+      data: FormData.fromMap({
+        "id": id,
+        "password": passworld,
+        "type": type, // backend ignore करतो तरी चालेल
+      }),
+    );
+
+    // 🔥 DEBUG PRINTS (IMPORTANT)
+    print("===== LOGIN DEBUG START =====");
+    print("TYPE SENT: $type");
+    print("STATUS: ${response.statusCode}");
+    print("RAW RESPONSE: ${response.data}");
+    print("===== LOGIN DEBUG END =====");
+
+    if (response.statusCode != 200 || response.data == null) {
+      state = AsyncValue.error(
+        "Server error ${response.statusCode}",
+        StackTrace.current,
+      );
+      return;
+    }
+
+    final jsonData = jsonDecode(response.data.toString());
+
+    if (jsonData['success'] != 1) {
+      state = AsyncValue.error("Invalid credentials", StackTrace.current);
+      return;
+    }
+
+    // ===============================
+    // ✅ SAVE DATA (TYPE BASED)
+    // ===============================
+
+    if (type == "therapist") {
+      await AppPreference().setString(
+        PreferencesKey.token,
+        safe(jsonData['user_data']?['token']),
+      );
+      await AppPreference().setString(
+        PreferencesKey.contactNumber,
+        safe(jsonData['user_data']?['t_mobile']),
+      );
+      await AppPreference().setString(
+        PreferencesKey.name,
+        safe(jsonData['user_data']?['t_name']),
+      );
+      await AppPreference().setString(
+        PreferencesKey.userId,
+        safe(jsonData['user_data']?['id']),
+      );
+      await AppPreference().setString(
+        PreferencesKey.email,
+        safe(jsonData['user_data']?['t_email']),
+      );
+    } else {
+      // 🔹 PROUSER / PATIENT
+      await AppPreference().setString(
+        PreferencesKey.token,
+        safe(jsonData['token']),
+      );
+      await AppPreference().setString(
+        PreferencesKey.contactNumber,
+        safe(jsonData['user_data']?['p_number']),
+      );
+      await AppPreference().setString(
+        PreferencesKey.name,
+        safe(jsonData['user_data']?['name']),
+      );
+      await AppPreference().setString(
+        PreferencesKey.userId,
+        safe(jsonData['user_data']?['id']),
+      );
+      await AppPreference().setString(
+        PreferencesKey.email,
+        safe(jsonData['user_data']?['email']),
+      );
+    }
+
+    // ✅ TYPE ALWAYS FROM UI (FINAL FIX)
+    await AppPreference().setString(PreferencesKey.type, type);
+
+    // 🔥 VERIFY STORED DATA
+    print("===== STORED PREFS =====");
+    print("TOKEN: ${AppPreference().getString(PreferencesKey.token)}");
+    print("USER ID: ${AppPreference().getString(PreferencesKey.userId)}");
+    print("TYPE: ${AppPreference().getString(PreferencesKey.type)}");
+    print("NAME: ${AppPreference().getString(PreferencesKey.name)}");
+    print("========================");
+
+    state = const AsyncValue.data(null);
+
+    // ===============================
+    // ✅ NAVIGATION
+    // ===============================
+
+    if (text == "MemberListScreen") {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => MemberListScreen()),
+      );
+    } else if (text == "LifestyleScreen") {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => LifestyleScreen()),
+      );
+    } else if (text == "EbookScreen") {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => EbookScreen()),
+      );
+    } else if (text == "PointFinderScreen") {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => PointFinderScreen()),
+      );
+    } else if (text == "CourseScreen") {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CourseScreen(deliveryType: DeliveryType),
         ),
       );
-
-      final response = await dio.post(
-        "https://jinreflexology.in/api1/new/login.php",
-        data: FormData.fromMap({'id': id, 'password': passworld, 'type': type}),
+    } else if (text == "ShopScreen") {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ShopScreen(deliveryType: DeliveryType),
+        ),
       );
-      print(type);
-      if (response.statusCode == 200 && response.data != null) {
-        final jsonData = jsonDecode(response.data.toString());
-
-        if (jsonData['success'] == 1) {
-          if (type == "therapist") {
-            print("ssssssssssssssssssssssssssssssssssssssssssss");
-            await AppPreference().setString(
-              PreferencesKey.token,
-              jsonData['user_data']['token'],
-            );
-            await AppPreference().setString(
-              PreferencesKey.contactNumber,
-              jsonData['user_data']['t_mobile'],
-            );
-            await AppPreference().setString(
-              PreferencesKey.name,
-              jsonData['user_data']['t_name'],
-            );
-            await AppPreference().setString(
-              PreferencesKey.userId,
-              jsonData['user_data']['id'].toString(),
-            );
-            await AppPreference().setString(
-              PreferencesKey.email,
-              jsonData['user_data']['t_email'].toString(),
-            );
-          } else {
-            await AppPreference().setString(
-              PreferencesKey.token,
-              jsonData['token'],
-            );
-            await AppPreference().setString(
-              PreferencesKey.contactNumber,
-              jsonData['user_data']['p_mobile'],
-            );
-            await AppPreference().setString(
-              PreferencesKey.name,
-              jsonData['user_data']['name'],
-            );
-            await AppPreference().setString(
-              PreferencesKey.userId,
-              jsonData['user_data']['id'].toString(),
-            );
-            await AppPreference().setString(
-              PreferencesKey.email,
-              jsonData['user_data']['p_email'].toString(),
-            );
-          }
-
-          await AppPreference().setString(PreferencesKey.type, type);
-
-          state = const AsyncValue.data(null);
-
-          if (text == "MemberListScreen") {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => MemberListScreen()),
-            );
-          } else if (text == "LifestyleScreen") {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => LifestyleScreen()),
-            );
-          } else if (text == "EbookScreen") {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => EbookScreen()),
-            );
-          } else if (text == "PointFinderScreen") {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => PointFinderScreen()),
-            );
-          } else if (text == "CourseScreen") {
-            print("sssssssssssssssssssss${DeliveryType}aaaaaa");
-
-            
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CourseScreen(deliveryType: DeliveryType),
-              ),
-            );
-            
-          } else if (text == "Treatment") {
-          } else if (text == "ShopScreen") {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ShopScreen(deliveryType: DeliveryType),
-              ),
-            );
-          }
-        } else {
-          state = AsyncValue.error("Invalid credentials", StackTrace.current);
-        }
-      } else {
-        state = AsyncValue.error(
-          "Server error ${response.statusCode}",
-          StackTrace.current,
-        );
-      }
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
     }
+  } catch (e, st) {
+    print("LOGIN ERROR: $e");
+    state = AsyncValue.error(e, st);
   }
+}
+
 }
 
 void _showTypeConflictDialog(
@@ -211,8 +239,6 @@ void _showTypeConflictDialog(
   );
 }
 
-
-
 class ApiService {
   ApiService._privateConstructor();
   static final ApiService instance = ApiService._privateConstructor();
@@ -223,24 +249,16 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse(_baseUrl + endpoint),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        return {
-          "success": 0,
-          "message": "Server Error ${response.statusCode}"
-        };
+        return {"success": 0, "message": "Server Error ${response.statusCode}"};
       }
     } catch (e) {
-      return {
-        "success": 0,
-        "message": e.toString(),
-      };
+      return {"success": 0, "message": e.toString()};
     }
   }
 }

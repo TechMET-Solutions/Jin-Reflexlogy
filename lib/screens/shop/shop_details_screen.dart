@@ -257,15 +257,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                 isAddingToCart
                                     ? null
                                     : () {
-                                      if (type == "therapist" ||
-                                          token.isEmpty) {
+                                      if (token.isEmpty) {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
                                             builder:
                                                 (context) => JinLoginScreen(
                                                   text: "ShopScreen",
-                                                  type: "user",
+                                                  type: "",
                                                   diliveryType:
                                                       widget.deliveryType,
                                                   onTab: () {

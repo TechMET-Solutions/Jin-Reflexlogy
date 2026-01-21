@@ -10,12 +10,15 @@ class JinLoginScreen extends ConsumerStatefulWidget {
     required this.text,
     this.diliveryType,
     this.type,
+    this.registershow = false,
+    
   });
 
   final VoidCallback onTab;
   final text;
   final type;
   final diliveryType;
+  final registershow;
 
   @override
   ConsumerState<JinLoginScreen> createState() => _JinLoginScreenState();
@@ -340,6 +343,8 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                       const SizedBox(height: 20),
 
                       /// 🔹 Sign Up Link
+                      /// 
+                      if(widget.registershow == true)
                       Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,

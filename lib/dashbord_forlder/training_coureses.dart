@@ -282,7 +282,7 @@ class _CourseScreenState extends State<CourseScreen> {
     }
 
     // 🔐 USER NOT LOGGED IN → LOGIN / REGISTER SCREEN
-    if (token.isEmpty || userId.isEmpty || type != "patient") {
+    if (token.isEmpty || userId.isEmpty || type != "patient"|| type == "prouser") {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -291,6 +291,7 @@ class _CourseScreenState extends State<CourseScreen> {
                 text: "CourseScreen",
                 type: "therapist",
                 diliveryType: widget.deliveryType,
+                registershow: true,
                 onTab: () {
                   Navigator.pushReplacement(
                     context,
