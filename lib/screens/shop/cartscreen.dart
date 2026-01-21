@@ -62,10 +62,11 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
   Future<void> fetchCartItems() async {
     final prefs = AppPreference();
     final token = prefs.getString(PreferencesKey.userId);
+    final type = prefs.getString(PreferencesKey.type);
 
     final String country = widget.deliveryType == "india" ? "in" : "us";
     final String url =
-        "https://admin.jinreflexology.in/api/cart?user_id=$userId&country=$country";
+        "https://admin.jinreflexology.in/api/cart?user_id=$userId&country=$country&type=$type";
 
     debugPrint("➡️ CART URL: $url");
 
@@ -522,6 +523,7 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
                                         subtotal: subtotal,
                                         discount: discount,
                                         total: total,
+                                        delveryType: widget.deliveryType,
                                       ),
                                 ),
                               ).then((_) {

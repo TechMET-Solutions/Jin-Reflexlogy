@@ -61,6 +61,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
     final prefs = AppPreference();
     final token = prefs.getString(PreferencesKey.token);
+    final type = prefs.getString(PreferencesKey.type);
 
     final String country = widget.deliveryType == "india" ? "in" : "us";
 
@@ -85,6 +86,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           "product_id": p.id.toString(),
           "quantity": quantity.toString(),
           "country": country,
+          "type":type
         },
       );
 

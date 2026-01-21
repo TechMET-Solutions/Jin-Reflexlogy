@@ -23,6 +23,7 @@ class BuyNowFormScreen extends StatefulWidget {
   final double subtotal;
   final double discount;
   final double total;
+  final delveryType;
 
   const BuyNowFormScreen({
     super.key,
@@ -30,6 +31,7 @@ class BuyNowFormScreen extends StatefulWidget {
     required this.subtotal,
     required this.discount,
     required this.total,
+    required this.delveryType,
   });
 
   @override
@@ -625,7 +627,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "₹ ${item.price} × ${item.quantity} = ₹ ${item.price * item.quantity}",
+                        "${widget.delveryType == "india" ? "₹" : "\$"} ${item.price} × ${item.quantity} = ${widget.delveryType == "india" ? "₹" : "\$"} ${item.price * item.quantity}",
                       ),
                     ],
                   ),
@@ -650,12 +652,12 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
       ),
       child: Column(
         children: [
-          _priceRow("Subtotal", "₹ ${currentSubtotal.toStringAsFixed(2)}"),
-          _priceRow("Discount", "- ₹ ${currentDiscount.toStringAsFixed(2)}"),
+          _priceRow("Subtotal", "${widget.delveryType == "india" ? "₹" : "\$"} ${currentSubtotal.toStringAsFixed(2)}"),
+          _priceRow("Discount", "- ${widget.delveryType == "india" ? "₹" : "\$"} ${currentDiscount.toStringAsFixed(2)}"),
           const Divider(),
           _priceRow(
             "Total Amount",
-            "₹ ${currentTotal.toStringAsFixed(2)}",
+            "${widget.delveryType == "india" ? "₹" : "\$"} ${currentTotal.toStringAsFixed(2)}",
             bold: true,
             color: const Color.fromARGB(255, 19, 4, 66),
           ),
@@ -761,7 +763,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
                         ),
                       ),
                       Text(
-                        "You saved ₹${currentDiscount.toStringAsFixed(2)}",
+                        "You saved ${widget.delveryType == "india" ? "₹" : "\$"}${currentDiscount.toStringAsFixed(2)}",
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.green,
