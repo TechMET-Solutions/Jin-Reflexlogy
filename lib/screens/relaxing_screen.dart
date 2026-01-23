@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:url_launcher/url_launcher.dart';
+String getYoutubeThumbnail(String videoUrl) {
+    // Extract video ID from URL
+    final videoId = videoUrl.split('/').last;
+    // Return high quality thumbnail URL
+    return 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
+  }
 
 class FootRelaxingScreen extends StatelessWidget {
   const FootRelaxingScreen({super.key});
