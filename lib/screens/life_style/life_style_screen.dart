@@ -189,7 +189,7 @@ void _initPlatformSettings() {
           ? JinLoginScreen(
               text: "LifestyleScreen",
               type: "patient",
-              registershow: true,
+              // registershow: true,
               onTab: () {
                 Navigator.push(
                   context,

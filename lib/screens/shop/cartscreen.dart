@@ -78,7 +78,6 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
           "Accept": "application/json",
         },
       );
-
       debugPrint("STATUS: ${response.statusCode}");
       debugPrint("BODY: ${response.body}");
 
@@ -114,7 +113,8 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
     setState(() {
       isUpdating = true;
     });
-
+    final prefs = AppPreference();
+    final type = prefs.getString(PreferencesKey.type);
     final String url =
         "https://admin.jinreflexology.in/api/cart/update-quantity";
     final String country = widget.deliveryType == "india" ? "in" : "us";
@@ -123,6 +123,7 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
       "cart_id": cartId,
       "quantity": newQuantity,
       "country": country,
+      "type": type,
     };
 
     debugPrint("➡️ UPDATE QUANTITY REQUEST:");

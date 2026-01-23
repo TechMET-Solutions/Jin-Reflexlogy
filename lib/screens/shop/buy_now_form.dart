@@ -66,6 +66,10 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
   double currentTotal = 0;
   late Razorpay _razorpay;
   // TextEditingController amountController = TextEditingController();
+  late double baseSubtotal;
+  late double baseDiscount;
+  late double baseTotal;
+
   @override
   void initState() {
     super.initState();
@@ -74,6 +78,9 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
     currentDiscount = widget.discount;
     currentTotal = widget.total;
     _razorpay = Razorpay();
+    baseSubtotal = widget.subtotal;
+    baseDiscount = widget.discount;
+    baseTotal = widget.total;
 
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
@@ -99,7 +106,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
       status: "success",
       paymentId: response.paymentId,
       orderId: response.orderId,
-      amount: currentSubtotal.toInt(),
+      amount: currentTotal.toInt(),
     );
     placeOrder();
   }
@@ -115,7 +122,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
     await sendPaymentToBackend(
       status: "failed",
       reason: response.message,
-      amount: currentSubtotal.toInt(),
+      amount: currentTotal.toInt(),
     );
   }
 
@@ -136,11 +143,12 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
   /// ===============================================================
   Future<void> _fetchProductIdMapping() async {
     try {
-      const userId = 2; // Replace with actual user ID from auth
+      final userId = AppPreference().getString(PreferencesKey.userId);
+      final type = AppPreference().getString(PreferencesKey.type);
 
       final response = await http.get(
         Uri.parse(
-          "https://admin.jinreflexology.in/api/cart?user_id=$userId&country=in",
+          "https://admin.jinreflexology.in/api/cart?user_id=$userId&country=in&type=$type",
         ),
       );
 
@@ -176,7 +184,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
       /// 🇮🇳 RAZORPAY
       var options = {
         'key': razorpayKey,
-        'amount': currentSubtotal * 100, // paisa
+        'amount': (currentTotal * 100).toInt(),
         'name': AppPreference().getString(PreferencesKey.name),
         'description': 'Order Payment',
         'prefill': {
@@ -209,7 +217,10 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
               /// ✅ ONLY AMOUNT – NO PRODUCT
               transactions: [
                 {
-                  "amount": {"total": currentSubtotal, "currency": "USD"},
+                  "amount": {
+                    "total": currentTotal.toStringAsFixed(2),
+                    "currency": "USD",
+                  },
                   "description": "Wallet / Service Payment",
                 },
               ],
@@ -231,7 +242,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
                   status: "success",
                   paymentId: paypalPaymentId,
                   orderId: null,
-                  amount: currentSubtotal.toInt(),
+                  amount: currentTotal.toInt(),
                 );
                 placeOrder();
 
@@ -243,7 +254,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
                     backgroundColor: Colors.green,
                   ),
                 );
-                Navigator.pop(context); // close popup
+                // Navigator.pop(context); // close popup
 
                 Navigator.pop(context); // close PayPal screen
               },
@@ -252,11 +263,11 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
                 await sendPaymentToBackend(
                   status: "failed",
                   reason: error.toString(),
-                  amount: currentSubtotal.toInt(),
+                  amount: currentTotal.toInt(),
                 );
                 debugPrint("❌ PayPal Error: $error");
 
-                Navigator.pop(context);
+                // Navigator.pop(context);
               },
 
               onCancel: () async {
@@ -286,7 +297,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
         "user_id": AppPreference().getString(PreferencesKey.userId),
         "payment_id": paymentId,
         "orderid": orderId,
-        "amount": currentSubtotal,
+        "amount": currentTotal,
         "status": status,
         "email": AppPreference().getString(PreferencesKey.email),
         "name": AppPreference().getString(PreferencesKey.name),
@@ -331,7 +342,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
 
     const String url = "https://admin.jinreflexology.in/api/cart/apply-coupon";
     // const userId = 2; // Get from auth state
-    final country = selectedCountry?.name == "India" ? "in" : "us";
+    final country = widget.delveryType == "India" ? "in" : "us";
     final type = AppPreference().getString(PreferencesKey.type);
 
     final Map<String, dynamic> body = {
@@ -352,6 +363,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
           "Content-Type": "application/json",
           "Accept": "application/json",
         },
+
         body: jsonEncode(body),
       );
 
@@ -362,6 +374,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
         final decoded = jsonDecode(response.body);
 
         if (decoded["success"] == true) {
+          await _fetchProductIdMapping();
           final totals = decoded["totals"] ?? {};
 
           setState(() {
@@ -392,22 +405,24 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
   /// REMOVE COUPON API
   /// ===============================================================
   Future<void> removeCoupon() async {
-    if (appliedCouponCode == null) {
-      return;
-    }
+    await _fetchProductIdMapping();
+    // if (appliedCouponCode == null) {
+    //   return;
+    // }
     final type = AppPreference().getString(PreferencesKey.type);
+    final userId = AppPreference().getString(PreferencesKey.userId);
 
     setState(() => isApplyingCoupon = true);
 
     const String url = "https://admin.jinreflexology.in/api/cart/remove-coupon";
-    const userId = 2; // Get from auth state
-    final country = selectedCountry?.name == "India" ? "in" : "us";
+
+    final country = widget.delveryType == "india" ? "in" : "us";
     setState(() {
-      isLoading = true;
+      // isLoading = true;
       _canGoBack = false; // 🚫 BACK DISABLE
     });
     final Map<String, dynamic> body = {
-      "user_id": userId.toString(),
+      "user_id": int.parse(userId),
       "country": country,
       "type": type,
     };
@@ -430,11 +445,12 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
       print("Response body: ${response.body}");
 
       if (response.statusCode == 200) {
+        await _fetchProductIdMapping();
         final decoded = jsonDecode(response.body);
 
         if (decoded["success"] == true) {
           final totals = decoded["totals"] ?? {};
-
+          await _fetchProductIdMapping();
           setState(() {
             appliedCouponCode = null;
             couponController.clear();
@@ -443,10 +459,10 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
             currentTotal = double.tryParse(totals["total"] ?? "0") ?? 0;
           });
           setState(() {
-            _canGoBack = true; // ✅ BACK ENABLE AFTER SUCCESS
+            _canGoBack = true;
           });
 
-          _showSuccess("Coupon removed successfully!");
+          // _showSuccess("Coupon removed successfully!");
         } else {
           _canGoBack = true;
           _showError(decoded["message"] ?? "Failed to remove coupon");
@@ -499,7 +515,8 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
 
     // Prepare request body according to API
     final Map<String, dynamic> body = {
-      "user_id": 2, // Get from auth state
+      "user_id": AppPreference().getString(PreferencesKey.userId),
+      // Get from auth state
       "address": addressController.text.trim(),
       "city": selectedCity?.name ?? "",
       "state": selectedState?.name ?? "",
@@ -530,7 +547,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
 
           if (decoded["success"] == true) {
             _showSuccessPopup(decoded);
-            removeCoupon();
+            // removeCoupon();
           } else {
             _showError(decoded["message"] ?? "Something went wrong");
           }
@@ -555,15 +572,33 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
+        await removeCoupon();
         if (!_canGoBack) {
           _showError("Please wait, placing your order...");
           return false;
         }
+
         return true;
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF6F6F6),
-        appBar: CommonAppBar(title: "Place Order"),
+        appBar: AppBar(
+          leading: InkWell(
+            onTap: () async {
+              await removeCoupon();
+              Navigator.pop(context);
+              // if (_canGoBack) {
+              //   Navigator.pop(context);
+              // } else {
+              //   _showError("Please wait, placing your order...");
+              // }
+            },
+            child: Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          ),
+          title: const Text("Buy Now"),
+          backgroundColor: const Color.fromARGB(255, 19, 4, 66),
+          foregroundColor: Colors.white,
+        ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Form(
@@ -1260,8 +1295,9 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
             actions: [
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(context); // Go back to cart/previous screen
+                  removeCoupon();
+                  Navigator.pop(context);
+                  Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 19, 4, 66),
