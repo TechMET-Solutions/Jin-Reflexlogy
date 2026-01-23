@@ -31,17 +31,18 @@ class _VisitUsScreenState extends ConsumerState<VisitUsScreen> {
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
-            _locationCard(
-              title: "Jain Chumbak",
-              address:
-                  "A-302, Blue Bell, Near Prozone Mall, Chikalthana, Aurangabad – 431006, Maharashtra, India.",
-              phone: "91-7620616269, 91-9569616269",
-              footer: "Aurangabad Address",
-            ),
+         _locationCard(
+  title: "Jain Chumbak",
+  address:
+      "JIN Health Care, Behind Tapdiya INOX, Near Eiffel Tower, "
+      "N-1, CIDCO, Chhatrapati Sambhajinagar – 431003, Maharashtra, India.",
+  phone: "91-9325616269, 91-9595616269",
+  footer: "Aurangabad Address",
+),
 
             SizedBox(height: 10),
 
-            // Map Image / Google Map Static Image
+            // Map Image / Google Map Static Image_locationCard
             InkWell(
               onTap: () {
                 openLocation();
@@ -59,13 +60,14 @@ class _VisitUsScreenState extends ConsumerState<VisitUsScreen> {
 
             SizedBox(height: 20),
 
-            _locationCard(
-              title: "Jain Chumbak",
-              address:
-                  "Vandita Mini Tower, Chandi Hall, Jodhpur, Rajasthan, India.",
-              phone: "0291-2616269",
-              footer: "Rajasthan Address (Main)",
-            ),
+         _locationCard(
+  title: "Jain Chumbak",
+  address:
+      "Vandita Mini Tower, Chandi Hall, Jodhpur, Rajasthan, India.",
+  phone: "0291-2616269",
+  footer: "Rajasthan Address",
+),
+
           ],
         ),
       ),

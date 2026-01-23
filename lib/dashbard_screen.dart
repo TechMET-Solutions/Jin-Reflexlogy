@@ -887,7 +887,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ),
     CampaignItem(
-      title: 'Location',
+      title: 'Contact Us',
       img: 'assets/jinImages/39.png',
       onTap: () {
         Navigator.push(
