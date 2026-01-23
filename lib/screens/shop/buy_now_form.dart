@@ -45,7 +45,8 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
-  final TextEditingController addressController = TextEditingController();
+  final TextEditingController address1Controller = TextEditingController();
+  final TextEditingController address2Controller = TextEditingController();
   final TextEditingController cityController = TextEditingController();
   final TextEditingController stateController = TextEditingController();
   final TextEditingController pincodeController = TextEditingController();
@@ -342,7 +343,9 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
 
     const String url = "https://admin.jinreflexology.in/api/cart/apply-coupon";
     // const userId = 2; // Get from auth state
-    final country = widget.delveryType == "India" ? "in" : "us";
+    final country =
+        widget.delveryType.toString().toLowerCase() == "india" ? "in" : "us";
+
     final type = AppPreference().getString(PreferencesKey.type);
 
     final Map<String, dynamic> body = {
@@ -517,7 +520,9 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
     final Map<String, dynamic> body = {
       "user_id": AppPreference().getString(PreferencesKey.userId),
       // Get from auth state
-      "address": addressController.text.trim(),
+      "address":
+          "${address1Controller.text.trim()} ${address2Controller.text.trim()}"
+              .trim(),
       "city": selectedCity?.name ?? "",
       "state": selectedState?.name ?? "",
       "country": selectedCountry?.name ?? "India",
@@ -897,11 +902,13 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
 
         // Country, State, City, Pincode, Address fields
         DropdownSearch<csc.Country>(
-          popupProps: const PopupProps.menu(
+          popupProps: PopupProps.menu(
             showSearchBox: true,
+            searchDelay: Duration.zero, // 👈 instant search
             searchFieldProps: TextFieldProps(
-              decoration: InputDecoration(
-                hintText: "Search country...",
+              autofocus: true, // 👈 cursor auto active
+              decoration: const InputDecoration(
+                hintText: "Type country name...",
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 12,
@@ -909,6 +916,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
               ),
             ),
           ),
+
           asyncItems: (String filter) => csc.getAllCountries(),
           itemAsString: (csc.Country c) => c.name,
           onChanged: (csc.Country? c) {
@@ -936,18 +944,15 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
         const SizedBox(height: 12),
 
         DropdownSearch<csc.State>(
-          popupProps: const PopupProps.menu(
+          popupProps: PopupProps.menu(
             showSearchBox: true,
+            searchDelay: Duration.zero,
             searchFieldProps: TextFieldProps(
-              decoration: InputDecoration(
-                hintText: "Search state...",
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-              ),
+              autofocus: true,
+              decoration: const InputDecoration(hintText: "Type state name..."),
             ),
           ),
+
           asyncItems:
               (String filter) =>
                   selectedCountry != null
@@ -977,18 +982,15 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
         const SizedBox(height: 12),
 
         DropdownSearch<csc.City>(
-          popupProps: const PopupProps.menu(
+          popupProps: PopupProps.menu(
             showSearchBox: true,
+            searchDelay: Duration.zero,
             searchFieldProps: TextFieldProps(
-              decoration: InputDecoration(
-                hintText: "Search city...",
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-              ),
+              autofocus: true,
+              decoration: const InputDecoration(hintText: "Type city name..."),
             ),
           ),
+
           asyncItems:
               (String filter) =>
                   selectedState != null
@@ -1036,15 +1038,22 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
         ),
 
         _input(
-          addressController,
-          "Address",
+          address1Controller,
+          "Address 1",
           maxLines: 3,
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
-              return 'Address is required';
+              return 'Address 1 is required';
             }
             return null;
           },
+        ),
+
+        _input(
+          address2Controller,
+          "Address 2 (Optional)",
+          maxLines: 3,
+          validator: (value) => null, // Optional field
         ),
       ],
     );
@@ -1058,38 +1067,38 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Expanded(
-            flex: 6,
-            child: InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const PaymentOptionsScreen(),
-                  ),
-                );
-              },
-              child: Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade400),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.payment, size: 20),
-                    SizedBox(width: 6),
-                    Text(
-                      "Payment Options",
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          // Expanded(
+          //   flex: 6,
+          //   child: InkWell(
+          //     onTap: () {
+          //       Navigator.push(
+          //         context,
+          //         MaterialPageRoute(
+          //           builder: (_) => const PaymentOptionsScreen(),
+          //         ),
+          //       );
+          //     },
+          //     child: Container(
+          //       height: 48,
+          //       decoration: BoxDecoration(
+          //         color: Colors.white,
+          //         borderRadius: BorderRadius.circular(12),
+          //         border: Border.all(color: Colors.grey.shade400),
+          //       ),
+          //       child: const Row(
+          //         mainAxisAlignment: MainAxisAlignment.center,
+          //         children: [
+          //           Icon(Icons.payment, size: 20),
+          //           SizedBox(width: 6),
+          //           Text(
+          //             "Payment Options",
+          //             style: TextStyle(fontWeight: FontWeight.w600),
+          //           ),
+          //         ],
+          //       ),
+          //     ),
+          //   ),
+          // ),
           const SizedBox(width: 10),
           Expanded(
             flex: 7,

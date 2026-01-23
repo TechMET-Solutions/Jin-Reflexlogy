@@ -488,7 +488,11 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
           child: DropdownSearch<csc.Country>(
             items: countries,
             selectedItem: selectedCountry,
-            popupProps: PopupProps.menu(showSearchBox: true),
+            popupProps: PopupProps.menu(
+              showSearchBox: true,
+              searchDelay: Duration.zero,
+              searchFieldProps: TextFieldProps(autofocus: true),
+            ),
             itemAsString: (csc.Country country) => country.name,
             dropdownDecoratorProps: DropDownDecoratorProps(
               dropdownSearchDecoration: InputDecoration(
@@ -537,7 +541,11 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
           child: DropdownSearch<csc.State>(
             items: states,
             selectedItem: selectedState,
-            popupProps: PopupProps.menu(showSearchBox: true),
+            popupProps: PopupProps.menu(
+              showSearchBox: true,
+              searchDelay: Duration.zero,
+              searchFieldProps: TextFieldProps(autofocus: true),
+            ),
             itemAsString: (csc.State state) => state.name,
             dropdownDecoratorProps: DropDownDecoratorProps(
               dropdownSearchDecoration: InputDecoration(
@@ -583,7 +591,11 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
           child: DropdownSearch<csc.City>(
             items: cities,
             selectedItem: selectedCity,
-            popupProps: PopupProps.menu(showSearchBox: true),
+            popupProps: PopupProps.menu(
+              showSearchBox: true,
+              searchDelay: Duration.zero,
+              searchFieldProps: TextFieldProps(autofocus: true),
+            ),
             itemAsString: (csc.City city) => city.name,
             dropdownDecoratorProps: DropDownDecoratorProps(
               dropdownSearchDecoration: InputDecoration(

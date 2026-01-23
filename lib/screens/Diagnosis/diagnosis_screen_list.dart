@@ -256,7 +256,7 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
       appBar: CommonAppBar(
         title: "Patient List",
         showBalance: true,
-        
+
         userId: token,
       ),
       backgroundColor: Color(0xFFFDF3DD),
@@ -268,7 +268,7 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
               ? JinLoginScreen(
                 text: "MemberListScreen",
                 type: "therapist",
-registershow: true,
+                registershow: true,
                 onTab: () {
                   Navigator.push(
                     context,
