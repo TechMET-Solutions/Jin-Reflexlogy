@@ -334,52 +334,32 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
   // --------------------------------------------------
   // DOT UI
   // --------------------------------------------------
- Widget _buildDot(PointData p, double scale) {
-  Color color;
-  if (p.state == 1) {
-    color = const Color.fromARGB(255, 161, 27, 15);
-  } else if (p.state == 2) {
-    color = Colors.green;
-  } else {
-    color = Colors.transparent;
-  }
+  Widget _buildDot(PointData p, double scale) {
+    Color color;
+    if (p.state == 1)
+      color = const Color.fromARGB(255, 161, 27, 15);
+    else if (p.state == 2)
+      color = Colors.green;
+    else
+      color = Colors.transparent;
 
-  return GestureDetector(
-    onTap: () {
-      setState(() {
-        p.state = (p.state + 1) % 3;
-      });
-    },
-
-    /// 👉 DOT MOVE (DRAG)
-    onPanUpdate: (details) {
-      setState(() {
-        p.x += details.delta.dx / scale;
-        p.y += details.delta.dy / scale;
-
-        // boundary
-        p.x = p.x.clamp(0.0, baseWidth);
-        p.y = p.y.clamp(0.0, baseHeight);
-
-        /// ✅ CONSOLE PRINT ONLY
-        debugPrint(
-          "DOT MOVE => id:${p.index}, x:${p.x.toStringAsFixed(2)}, y:${p.y.toStringAsFixed(2)}",
-        );
-      });
-    },
-
-    child: Container(
-      width: 16 * scale,
-      height: 16 * scale,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.black, width: 2),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          p.state = (p.state + 1) % 3;
+        });
+      },
+      child: Container(
+        width: 16 * scale,
+        height: 16 * scale,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.transparent, width: 2),
+        ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   // --------------------------------------------------
   // SAVE TAGS TO SERVER (Additional API call if needed)
