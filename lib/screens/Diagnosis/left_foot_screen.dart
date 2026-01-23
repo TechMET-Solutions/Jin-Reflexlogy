@@ -337,11 +337,11 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
   Widget _buildDot(PointData p, double scale) {
     Color color;
     if (p.state == 1)
-      color = Colors.red;
+      color = const Color.fromARGB(255, 161, 27, 15);
     else if (p.state == 2)
       color = Colors.green;
     else
-      color = Colors.white;
+      color = Colors.transparent;
 
     return GestureDetector(
       onTap: () {
@@ -350,12 +350,12 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
         });
       },
       child: Container(
-        width: 18 * scale,
-        height: 18 * scale,
+        width: 16 * scale,
+        height: 16 * scale,
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.black, width: 2),
+          border: Border.all(color: Colors.transparent, width: 2),
         ),
       ),
     );

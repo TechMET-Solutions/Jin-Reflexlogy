@@ -75,37 +75,39 @@ class _RightHandScreenState extends State<RightHandScreen> {
   void initState() {
     super.initState();
     debugPrint("👤 RH Gender: ${widget.gender}");
-    loadPoints();
+     loadPoints();
   }
 
   /// --------------------------------------------------
   /// LOAD POINTS BASED ON GENDER
-  Future<void> loadPoints() async {
-    try {
-      final jsonPath =
-          widget.gender?.toLowerCase() == "female"
-              ? "assets/right_handf_btn.json"
-              : "assets/right_hand_btn.json";
+ bool _loadedOnce = false;
 
-      debugPrint("📄 Loading RH JSON: $jsonPath");
+Future<void> loadPoints() async {
+  if (_loadedOnce) return; // ✅ HOT RELOAD SAFE
+  _loadedOnce = true;
 
-      final jsonString = await rootBundle.loadString(jsonPath);
-      final jsonMap = jsonDecode(jsonString);
+  try {
+    final jsonPath =
+        widget.gender?.toLowerCase() == "female"
+            ? "assets/right_handf_btn.json"
+            : "assets/right_hand_btn.json";
 
-      points =
-          (jsonMap["RightHand"] as List)
-              .map((e) => PointData.fromJson(e))
-              .toList();
+    final jsonString = await rootBundle.loadString(jsonPath);
+    final jsonMap = jsonDecode(jsonString);
 
-      loadSavedState();
-      await fetchServer();
+    points = (jsonMap["RightHand"] as List)
+        .map((e) => PointData.fromJson(e))
+        .toList();
 
-      setState(() => isLoading = false);
-    } catch (e) {
-      debugPrint("❌ RH LOAD ERROR: $e");
-      setState(() => isLoading = false);
-    }
+    loadSavedState();
+    await fetchServer();
+
+    setState(() => isLoading = false);
+  } catch (e) {
+    debugPrint("❌ RH LOAD ERROR: $e");
+    setState(() => isLoading = false);
   }
+}
 
   /// --------------------------------------------------
   /// LOAD SAVED STATE (LOCAL)
@@ -115,11 +117,14 @@ class _RightHandScreenState extends State<RightHandScreen> {
     if (raw.isEmpty) return;
 
     final decoded = jsonDecode(raw) as Map<String, dynamic>;
-    decoded.forEach((idx, val) {
-      final parts = val.split(",");
-      final p = points.firstWhere((e) => e.index.toString() == idx);
-      p.state = int.parse(parts[2]);
-    });
+  decoded.forEach((idx, val) {
+  final parts = val.split(",");
+  final p = points.firstWhere((e) => e.index.toString() == idx);
+
+  p.x = double.parse(parts[0]); // ✅ restore X
+  p.y = double.parse(parts[1]); // ✅ restore Y
+  p.state = int.parse(parts[2]);
+});
   }
 
   /// --------------------------------------------------
@@ -135,7 +140,7 @@ class _RightHandScreenState extends State<RightHandScreen> {
     );
   }
 
-  /// --------------------------------------------------
+  /// --------------------------------------------------_buildDot
   /// FETCH SERVER DATA
   Future<void> fetchServer() async {
     try {
@@ -232,7 +237,7 @@ class _RightHandScreenState extends State<RightHandScreen> {
 
   /// --------------------------------------------------
   /// DOT UI
-  Widget _buildDot(PointData p) {
+  Widget _buildDot(PointData p, double scaleX, double scaleY) {
     Color color =
         p.state == 1
             ? const Color(0xFF8B0000)
@@ -241,10 +246,28 @@ class _RightHandScreenState extends State<RightHandScreen> {
             : Colors.white;
 
     return GestureDetector(
-      onTap: () => setState(() => p.state = (p.state + 1) % 3),
+      onTap: () {
+        setState(() {
+          p.state = (p.state + 1) % 3;
+        });
+      },
+
+      /// 👉 DOT MOVE (DRAG)
+      onPanUpdate: (details) {
+        setState(() {
+          p.x += details.delta.dx / scaleX;
+          p.y += details.delta.dy / scaleY;
+
+          // / Optional: boundary check
+          p.x = p.x.clamp(0.0, baseWidth - 25);
+          p.y = p.y.clamp(0.0, baseHeight - 25);
+          debugPrint("DOT => id:${p.index}, x:${p.x}, y:${p.y}");
+        });
+      },
+
       child: Container(
-        width: 20,
-        height: 20,
+        width: 25,
+        height: 25,
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
@@ -259,8 +282,9 @@ class _RightHandScreenState extends State<RightHandScreen> {
   @override
   Widget build(BuildContext context) {
     double desiredAspect = baseWidth / baseHeight;
-    double screenW = MediaQuery.of(context).size.width * 0.95;
-    double screenH = MediaQuery.of(context).size.height * 0.30;
+    double screenW = MediaQuery.of(context).size.width * 0.90;
+   double screenH = MediaQuery.of(context).size.height * 0.9;
+
 
     double containerW = math.min(screenW, screenH * desiredAspect);
     double containerH = containerW / desiredAspect;
@@ -279,27 +303,31 @@ class _RightHandScreenState extends State<RightHandScreen> {
           isLoading
               ? const Center(child: CircularProgressIndicator())
               : Center(
-                child: SizedBox(
-                  width: containerW,
-                  height: containerH,
-                  child: RepaintBoundary(
-                    key: screenshotKey,
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: Image.asset(
-                            "assets/images/hand.jpeg",
-                            fit: BoxFit.fill,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: SizedBox(
+                    width: containerW,
+                    height: containerH,
+                    child: RepaintBoundary(
+                      key: screenshotKey,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Image.asset(
+                              "assets/images/hand.jpeg",
+                              fit: BoxFit.fill,
+                            ),
                           ),
-                        ),
-                        ...points.map(
-                          (p) => Positioned(
-                            left: p.x * scaleX,
-                            top: p.y * scaleY,
-                            child: _buildDot(p),
+                          ...points.map(
+                            (p) => Positioned(
+                              left: (p.x * scaleX) - 12.5,
+                              top: (p.y * scaleY) - 5.5,
+
+                              child: _buildDot(p, scaleX, scaleY),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

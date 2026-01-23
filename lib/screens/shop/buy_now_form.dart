@@ -109,7 +109,6 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
       orderId: response.orderId,
       amount: currentTotal.toInt(),
     );
-    placeOrder();
   }
 
   void _handlePaymentError(PaymentFailureResponse response) async {
@@ -320,6 +319,11 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
       );
 
       debugPrint("✅ Payment sent to backend: ${response.data}");
+      if (response.data["success"] == true) {
+        log("Payment Success");
+        await placeOrder();
+        Navigator.pop(context);
+      } else {}
     } catch (e) {
       debugPrint("❌ Backend API error: $e");
     }
@@ -577,7 +581,10 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        await removeCoupon();
+        if (isApplyingCoupon) {
+          await removeCoupon();
+        }
+
         if (!_canGoBack) {
           _showError("Please wait, placing your order...");
           return false;
@@ -590,7 +597,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
         appBar: AppBar(
           leading: InkWell(
             onTap: () async {
-              await removeCoupon();
+              if (isApplyingCoupon) await removeCoupon();
               Navigator.pop(context);
               // if (_canGoBack) {
               //   Navigator.pop(context);

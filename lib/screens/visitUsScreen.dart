@@ -31,14 +31,14 @@ class _VisitUsScreenState extends ConsumerState<VisitUsScreen> {
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
-         _locationCard(
-  title: "Jain Chumbak",
-  address:
-      "JIN Health Care, Behind Tapdiya INOX, Near Eiffel Tower, "
-      "N-1, CIDCO, Chhatrapati Sambhajinagar – 431003, Maharashtra, India.",
-  phone: "91-9325616269, 91-9595616269",
-  footer: "Aurangabad Address",
-),
+            _locationCard(
+              title: "Jain Chumbak",
+              address:
+                  "JIN Health Care, Behind Tapdiya INOX, Near Eiffel Tower, "
+                  "N-1, CIDCO, Chhatrapati Sambhajinagar – 431003, Maharashtra, India.",
+              phone: "91-9325616269, 91-9595616269",
+              footer: "Aurangabad Address",
+            ),
 
             SizedBox(height: 10),
 
@@ -60,14 +60,13 @@ class _VisitUsScreenState extends ConsumerState<VisitUsScreen> {
 
             SizedBox(height: 20),
 
-         _locationCard(
-  title: "Jain Chumbak",
-  address:
-      "Vandita Mini Tower, Chandi Hall, Jodhpur, Rajasthan, India.",
-  phone: "0291-2616269",
-  footer: "Rajasthan Address",
-),
-
+            _locationCard(
+              title: "Jain Chumbak",
+              address:
+                  "Vandita Mini Tower, Chandi Hall, Jodhpur, Rajasthan, India.",
+              phone: "0291-2616269",
+              footer: "Rajasthan Address",
+            ),
           ],
         ),
       ),

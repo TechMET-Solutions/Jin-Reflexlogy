@@ -119,7 +119,11 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
     decoded.forEach((idx, val) {
       final parts = val.split(",");
       final p = points.firstWhere((e) => e.index.toString() == idx);
-      p.state = int.parse(parts[2]);
+      // p.state = int.parse(parts[2]);
+      p.x = double.parse(parts[0]);   // ✅ restore X
+p.y = double.parse(parts[1]);   // ✅ restore Y
+p.state = int.parse(parts[2]);  // ✅ restore state
+
     });
   }
 
@@ -228,27 +232,46 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
 
   /// --------------------------------------------------
   /// DOT UI
-  Widget _buildDot(PointData p) {
-    Color color =
-        p.state == 1
-            ? const Color(0xFF8B0000)
-            : p.state == 2
-            ? Colors.green
-            : Colors.white;
+Widget _buildDot(PointData p, double scaleX, double scaleY) {
+  Color color =
+      p.state == 1
+          ? const Color(0xFF8B0000)
+          : p.state == 2
+              ? Colors.green
+              : Colors.white;
 
-    return GestureDetector(
-      onTap: () => setState(() => p.state = (p.state + 1) % 3),
-      child: Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.black, width: 2),
-        ),
+  return GestureDetector(
+    onTap: () {
+      setState(() {
+        p.state = (p.state + 1) % 3;
+      });
+    },
+
+    /// 👉 DRAG MOVE
+    onPanUpdate: (details) {
+      // setState(() {
+      //   p.x += details.delta.dx / scaleX;
+      //   p.y += details.delta.dy / scaleY;
+
+      //   // boundary
+      //   // p.x = p.x.clamp(0.0, baseWidth - 20);
+      //   // p.y = p.y.clamp(0.0, baseHeight - 20);
+
+      //   debugPrint("LH DOT => id:${p.index}, x:${p.x}, y:${p.y}");
+      // });
+    },
+
+    child: Container(
+      width: 25,
+      height: 25,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.black, width: 2),
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// --------------------------------------------------
   /// UI
@@ -274,28 +297,32 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
       body:
           isLoading
               ? const Center(child: CircularProgressIndicator())
-              : Center(
-                child: SizedBox(
-                  width: containerW,
-                  height: containerH,
-                  child: RepaintBoundary(
-                    key: screenshotKey,
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: Image.asset(
-                            "assets/images/hand2.jpeg", // same bg
-                            fit: BoxFit.fill,
+              : Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Center(
+                  child: SizedBox(
+                    width: containerW,
+                    height: containerH,
+                    child: RepaintBoundary(
+                      key: screenshotKey,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Image.asset(
+                              "assets/images/hand2.jpeg", // same bg
+                              fit: BoxFit.fill,
+                            ),
                           ),
-                        ),
-                        ...points.map(
-                          (p) => Positioned(
-                            left: p.x * scaleX,
-                            top: p.y * scaleY,
-                            child: _buildDot(p),
+                          ...points.map(
+                            (p) => Positioned(
+                left: (p.x * scaleX) - 10,
+                top: (p.y * scaleY) - 10,
+                child: _buildDot(p, scaleX, scaleY),
+                          
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
