@@ -49,6 +49,8 @@ dependencies:
   paypal_payment: ^1.0.1+1
   connectivity_plus: ^7.0.0
   syncfusion_flutter_pdfviewer: ^32.1.23
+  share_plus: ^12.0.1
+  permission_handler: ^12.0.1
 
 dev_dependencies:
   flutter_test:

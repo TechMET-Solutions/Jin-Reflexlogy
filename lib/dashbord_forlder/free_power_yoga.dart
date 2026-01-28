@@ -50,7 +50,12 @@ class YogaVideo {
   final String image;
   final String image_url;
 
-  YogaVideo({required this.title, required this.youtubeLink,required this.image,required this.image_url});
+  YogaVideo({
+    required this.title,
+    required this.youtubeLink,
+    required this.image,
+    required this.image_url,
+  });
 
   factory YogaVideo.fromJson(Map<String, dynamic> json) {
     return YogaVideo(
@@ -141,7 +146,7 @@ class _PowerYogaScreenState extends State<PowerYogaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:CommonAppBar(title:"Power Yoga"),
+      appBar: CommonAppBar(title: "Power Yoga"),
       body:
           isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -203,7 +208,7 @@ class _PowerYogaScreenState extends State<PowerYogaScreen> {
                                       alignment: Alignment.center,
                                       children: [
                                         Image.network(
-                                            "${video.image_url}",
+                                          "${video.image_url}",
                                           height: 200,
                                           width: double.infinity,
                                           fit: BoxFit.cover,

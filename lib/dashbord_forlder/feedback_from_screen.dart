@@ -1,16 +1,10 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:pdf/pdf.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
-import 'package:dio/dio.dart';
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
-
-/* ============================================================
-   MAIN SCREEN
-============================================================ */
+import 'package:screenshot/screenshot.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:http/http.dart' as http;
 
 class FeedBackFormNew extends StatefulWidget {
   const FeedBackFormNew({super.key});
@@ -20,20 +14,16 @@ class FeedBackFormNew extends StatefulWidget {
 }
 
 class _FeedBackFormNewState extends State<FeedBackFormNew> {
-  String? selectedCellId;
+  List<String> selectedCellIds = [];
   final Map<String, String?> _answers = {};
+
+  // Screenshot controller
+  final ScreenshotController _screenshotController = ScreenshotController();
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController mobileController = TextEditingController();
   DateTime selectedDate = DateTime.now();
-
   final double imageAspectRatio = 768 / 1536;
-
-  void _onSelect(String key, String value) {
-    setState(() {
-      _answers[key] = value;
-    });
-  }
 
   void _pickDate() async {
     final picked = await showDatePicker(
@@ -42,60 +32,11 @@ class _FeedBackFormNewState extends State<FeedBackFormNew> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-
     if (picked != null) {
       setState(() => selectedDate = picked);
     }
   }
 
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.red,
-        ),
-      ),
-    );
-  }
-
-  Widget _symptomRow(String label) {
-    final value = _answers[label];
-
-    return Row(
-      children: [
-        Expanded(child: Text(label)),
-        Checkbox(
-          value: value == 'FD',
-          onChanged: (_) => _onSelect(label, 'FD'),
-        ),
-        const Text('FD'),
-        Checkbox(
-          value: value == 'LD',
-          onChanged: (_) => _onSelect(label, 'LD'),
-        ),
-        const Text('LD'),
-      ],
-    );
-  }
-
-  // =================== NEW HELPER FUNCTIONS ===================
-
-  // Get cell position description
-  String _getCellPosition(String cellId) {
-    try {
-      final cell = bodyCells.firstWhere((c) => c.id == cellId);
-      return 'X: ${(cell.x * 100).toStringAsFixed(1)}%, '
-          'Y: ${(cell.y * 100).toStringAsFixed(1)}%';
-    } catch (e) {
-      return 'Position not available';
-    }
-  }
-
-  // Get cell description
   String _getCellDescription(String cellId) {
     final Map<String, String> descriptions = {
       'A1': 'Left Shoulder/Upper Arm',
@@ -149,453 +90,349 @@ class _FeedBackFormNewState extends State<FeedBackFormNew> {
     return descriptions[cellId] ?? 'Body Area $cellId';
   }
 
-  // Count selected symptoms
-  int _countSelectedSymptoms() {
-    return _answers.values
-        .where((value) => value != null && value!.isNotEmpty)
-        .length;
-  }
-
-  // Build symptoms list for PDF
-  List<pw.Widget> _buildPDFSymptomsList() {
-    final List<pw.Widget> symptomsWidgets = [];
-
-    // Define sections manually
-    final sections = [
-      'HEAD',
-      'Ears',
-      'Mouth',
-      'Nose',
-      'Neck & Throat',
-      'RESPIRATORY',
-      'EYES',
-      'CARDIOVASCULAR',
-      'ALLERGY/IMMUNO',
-      'GASTROINTESTINAL',
-      'MUSCULOSKELETAL',
-      'SKIN',
-      'ENDOCRINE & METABOLISM',
-      'NEUROLOGICAL & PSYCHOLOGICAL',
-      'GENITOURINARY',
-      'HEMATOLOGICAL',
-      'Miscellaneous',
-      'Women only',
-      'How would you rate your general health?',
-    ];
-
-    // Group symptoms by section
-    final Map<String, List<String>> groupedSymptoms = {};
-
-    // Initialize all sections
-    for (final section in sections) {
-      groupedSymptoms[section] = [];
-    }
-
-    // Manually check each symptom
-    for (final entry in _answers.entries) {
-      if (entry.value != null && entry.value!.isNotEmpty) {
-        // Find which section this symptom belongs to
-        String? symptomSection;
-
-        // Check which section this symptom belongs to
-        if (entry.key == 'None' ||
-            entry.key == 'Frequent Headaches' ||
-            entry.key == 'Dizziness' ||
-            entry.key == 'Severe Headaches' ||
-            entry.key == 'Loss of consciousness' ||
-            entry.key == 'Light Headedness') {
-          symptomSection = 'HEAD';
-        } else if (entry.key == 'Pain' && _answers.keys.contains('Pain')) {
-          // Check context for Pain symptom
-          // This is simplified - you'll need to adjust based on your actual symptom structure
-          symptomSection = 'Ears';
-        }
-        // Add more conditions for other symptoms...
-
-        if (symptomSection != null &&
-            groupedSymptoms.containsKey(symptomSection)) {
-          groupedSymptoms[symptomSection]!.add('${entry.key}: ${entry.value}');
-        } else {
-          // If not found in specific sections, add to miscellaneous
-          if (groupedSymptoms.containsKey('Miscellaneous')) {
-            groupedSymptoms['Miscellaneous']!.add(
-              '${entry.key}: ${entry.value}',
-            );
-          }
-        }
-      }
-    }
-
-    // Add each section to PDF
-    groupedSymptoms.forEach((section, symptoms) {
-      if (symptoms.isNotEmpty) {
-        symptomsWidgets.addAll([
-          pw.SizedBox(height: 8),
-          pw.Text(
-            section,
-            style: pw.TextStyle(
-              fontSize: 14,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColors.blue800,
-            ),
-          ),
-          pw.Divider(color: PdfColors.grey400, thickness: 0.5),
-          ...symptoms.map((symptom) {
-            return pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(vertical: 2),
-              child: pw.Text('• $symptom'),
-            );
-          }).toList(),
-        ]);
-      }
-    });
-
-    if (symptomsWidgets.isEmpty) {
-      symptomsWidgets.add(
-        pw.Text(
-          'No symptoms selected',
-          style: pw.TextStyle(color: PdfColors.grey),
-        ),
-      );
-    }
-
-    return symptomsWidgets;
-  }
-
-  // Clear form after submission
   void _clearForm() {
     setState(() {
       nameController.clear();
       mobileController.clear();
       selectedDate = DateTime.now();
-      selectedCellId = null;
+      selectedCellIds.clear();
       _answers.clear();
     });
   }
 
-  Future<void> _uploadPDF(Uint8List pdfBytes, String formId) async {
-    final dio = Dio(
-      BaseOptions(
-        followRedirects: true,
-        validateStatus: (status) => status != null && status < 500,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'multipart/form-data',
-        },
-      ),
-    );
-
-    dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true));
-
-    final formData = FormData.fromMap({
-      'patientName': nameController.text.trim(),
-      'form': MultipartFile.fromBytes(
-        pdfBytes,
-        filename: 'patient_feedback_$formId.pdf',
-        contentType: DioMediaType('application', 'pdf'),
-      ),
+  void _toggleCellSelection(String cellId) {
+    setState(() {
+      if (selectedCellIds.contains(cellId)) {
+        selectedCellIds.remove(cellId);
+      } else {
+        selectedCellIds.add(cellId);
+      }
     });
-
-    final response = await dio.post(
-      'https://admin.jinreflexology.in/api/patientFeedbackForm',
-      data: formData,
-    );
-
-    debugPrint('STATUS: ${response.statusCode}');
-    debugPrint('RESPONSE: ${response.data}');
   }
 
-  Future<void> _generateAndUploadPDF() async {
+  void _clearSelectedCells() {
+    setState(() {
+      selectedCellIds.clear();
+    });
+  }
+
+  // स्क्रीनशॉट घेण्याची method
+  Future<void> _captureAndShowScreenshot() async {
     try {
-      final pdfDoc = pw.Document();
-      final timestamp = DateTime.now();
-      final formId = 'FBF${timestamp.millisecondsSinceEpoch}';
-      pdfDoc.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(20),
-          build: (pw.Context context) {
-            return pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (context) => const AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Capturing screenshot...'),
+                ],
+              ),
+            ),
+      );
+
+      // Screenshot capture करा
+      final Uint8List? imageBytes = await _screenshotController.capture(
+        pixelRatio: 2.0, // High resolution
+        delay: const Duration(milliseconds: 200),
+      );
+
+      // Close loading
+      if (Navigator.canPop(context)) Navigator.pop(context);
+
+      if (imageBytes == null) {
+        throw Exception('Failed to capture screenshot');
+      }
+
+      // Preview dialog मध्ये दाखवा
+      _showScreenshotPreview(imageBytes);
+    } catch (e) {
+      // Close loading if still showing
+      if (Navigator.canPop(context)) Navigator.pop(context);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  // Preview dialog दाखवा
+  void _showScreenshotPreview(Uint8List imageBytes) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Row(
               children: [
-                // Header
-                pw.Center(
-                  child: pw.Text(
-                    'PATIENT FEEDBACK FORM',
-                    style: pw.TextStyle(
-                      fontSize: 24,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.blue800,
-                    ),
-                  ),
-                ),
-                pw.SizedBox(height: 10),
-                pw.Divider(thickness: 2, color: PdfColors.black),
-                pw.SizedBox(height: 15),
-
-                // Form ID and Timestamp
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text('Form ID: $formId'),
-                    pw.Text(
-                      'Date: ${DateFormat('dd-MM-yyyy HH:mm').format(timestamp)}',
-                    ),
-                  ],
-                ),
-                pw.SizedBox(height: 20),
-
-                // Personal Details Section
-                pw.Container(
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.blue, width: 1),
-                    borderRadius: pw.BorderRadius.circular(5),
-                  ),
-                  padding: const pw.EdgeInsets.all(12),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'PERSONAL DETAILS',
-                        style: pw.TextStyle(
-                          fontSize: 16,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.blue,
-                        ),
-                      ),
-                      pw.SizedBox(height: 10),
-                      pw.Row(
-                        children: [
-                          pw.Text(
-                            'Name: ',
-                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                          ),
-                          pw.Text(
-                            nameController.text.isNotEmpty
-                                ? nameController.text
-                                : 'Not provided',
-                          ),
-                        ],
-                      ),
-                      pw.SizedBox(height: 5),
-                      pw.Row(
-                        children: [
-                          pw.Text(
-                            'Mobile: ',
-                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                          ),
-                          pw.Text(
-                            mobileController.text.isNotEmpty
-                                ? mobileController.text
-                                : 'Not provided',
-                          ),
-                        ],
-                      ),
-                      pw.SizedBox(height: 5),
-                      pw.Row(
-                        children: [
-                          pw.Text(
-                            'Date of Visit: ',
-                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                          ),
-                          pw.Text(
-                            DateFormat('dd-MM-yyyy').format(selectedDate),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                pw.SizedBox(height: 20),
-
-                // Body Map Section
-                pw.Container(
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.green, width: 1),
-                    borderRadius: pw.BorderRadius.circular(5),
-                  ),
-                  padding: const pw.EdgeInsets.all(12),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'BODY MAP SELECTION',
-                        style: pw.TextStyle(
-                          fontSize: 16,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.green,
-                        ),
-                      ),
-                      pw.SizedBox(height: 10),
-                      if (selectedCellId != null)
-                        pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
-                          children: [
-                            pw.Row(
-                              children: [
-                                pw.Text(
-                                  'Selected Body Cell: ',
-                                  style: pw.TextStyle(
-                                    fontWeight: pw.FontWeight.bold,
-                                  ),
-                                ),
-                                pw.Text(selectedCellId!),
-                              ],
-                            ),
-                            pw.SizedBox(height: 5),
-                            pw.Text(
-                              'Body Area: ${_getCellDescription(selectedCellId!)}',
-                            ),
-                            pw.SizedBox(height: 5),
-                            pw.Text(
-                              'Coordinates: ${_getCellPosition(selectedCellId!)}',
-                            ),
-                          ],
-                        )
-                      else
-                        pw.Text(
-                          'No body area selected',
-                          style: pw.TextStyle(color: PdfColors.red),
-                        ),
-                    ],
-                  ),
-                ),
-                pw.SizedBox(height: 20),
-
-                // Symptoms Review Section
-                pw.Container(
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.red, width: 1),
-                    borderRadius: pw.BorderRadius.circular(5),
-                  ),
-                  padding: const pw.EdgeInsets.all(12),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'SYMPTOMS REVIEW',
-                        style: pw.TextStyle(
-                          fontSize: 16,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.red,
-                        ),
-                      ),
-                      pw.SizedBox(height: 10),
-                      ..._buildPDFSymptomsList(),
-                    ],
-                  ),
-                ),
-                pw.SizedBox(height: 20),
-
-                // Summary
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(10),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColors.grey100,
-                    borderRadius: pw.BorderRadius.circular(5),
-                  ),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'SUMMARY',
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      pw.SizedBox(height: 5),
-                      pw.Text(
-                        'Total Symptoms Selected: ${_countSelectedSymptoms()}',
-                      ),
-                      if (selectedCellId != null)
-                        pw.Text(
-                          'Body Area of Concern: ${_getCellDescription(selectedCellId!)}',
-                        ),
-                    ],
-                  ),
-                ),
+                Icon(Icons.camera_alt, color: Colors.green),
+                SizedBox(width: 8),
+                Text('Form Screenshot Preview'),
               ],
-            );
-          },
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.memory(imageBytes),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Patient Name:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(nameController.text),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Mobile:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(mobileController.text),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Date:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(DateFormat('dd-MM-yyyy').format(selectedDate)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Selected Areas:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text('${selectedCellIds.length} areas'),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              // ElevatedButton.icon(
+              //   onPressed: () => _saveToGallery(imageBytes),
+              //   icon: const Icon(Icons.save, size: 18),
+              //   label: const Text('Save'),
+              //   style: ElevatedButton.styleFrom(
+              //     backgroundColor: Colors.blue.shade100,
+              //     foregroundColor: Colors.blue.shade800,
+              //   ),
+              // ),
+              ElevatedButton.icon(
+                onPressed: () => _submitForm(imageBytes),
+                icon: const Icon(Icons.send, size: 18),
+                label: const Text('Submit'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // // Gallery मध्ये save करा
+  // Future<void> _saveToGallery(Uint8List imageBytes) async {
+  //   try {
+  //     // Permission check
+  //     var status = await Permission.storage.status;
+  //     if (!status.isGranted) {
+  //       status = await Permission.storage.request();
+  //     }
+
+  //     if (status.isGranted) {
+  //       // Show saving indicator
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         const SnackBar(
+  //           content: Row(
+  //             children: [
+  //               CircularProgressIndicator(color: Colors.white),
+  //               SizedBox(width: 16),
+  //               Text('Saving to gallery...'),
+  //             ],
+  //           ),
+  //           duration: Duration(seconds: 2),
+  //         ),
+  //       );
+
+  //       final result = await ImageGallerySaver.saveImage(imageBytes);
+
+  //       if (result['isSuccess'] == true) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           const SnackBar(
+  //             content: Row(
+  //               children: [
+  //                 Icon(Icons.check_circle, color: Colors.white),
+  //                 SizedBox(width: 8),
+  //                 Text('Screenshot saved to gallery!'),
+  //               ],
+  //             ),
+  //             backgroundColor: Colors.green,
+  //           ),
+  //         );
+  //       } else {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text('Failed to save: ${result['errorMessage']}'),
+  //             backgroundColor: Colors.red,
+  //           ),
+  //         );
+  //       }
+  //     } else {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         const SnackBar(
+  //           content: Text('Storage permission required'),
+  //           backgroundColor: Colors.orange,
+  //         ),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('Error saving: $e'),
+  //         backgroundColor: Colors.red,
+  //       ),
+  //     );
+  //   }
+  // }
+
+  // Form submit करा
+  Future<void> _submitForm(Uint8List screenshotBytes) async {
+    try {
+      // Close preview dialog
+      Navigator.pop(context);
+
+      // Show submitting indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (context) => const AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Submitting form...'),
+                ],
+              ),
+            ),
+      );
+
+      // Convert to base64
+      String base64Image = base64Encode(screenshotBytes);
+
+      // Prepare form data
+      Map<String, dynamic> formData = {
+        'patient_name': nameController.text,
+        'mobile_number': mobileController.text,
+        'visit_date': DateFormat('dd-MM-yyyy').format(selectedDate),
+        'selected_areas': selectedCellIds,
+        'screenshot_image': base64Image,
+        'areas_details':
+            selectedCellIds
+                .map(
+                  (id) => {'area_id': id, 'area_name': _getCellDescription(id)},
+                )
+                .toList(),
+        'submitted_at': DateTime.now().toIso8601String(),
+      };
+
+      // TODO: Replace with your server URL
+      const String serverUrl = 'YOUR_SERVER_API_ENDPOINT_HERE';
+
+      // Send to server (mock for now - uncomment when you have server)
+      await Future.delayed(
+        const Duration(seconds: 2),
+      ); // Simulate network delay
+
+      // Uncomment this for actual server call:
+      /*
+        final response = await http.post(
+          Uri.parse(serverUrl),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(formData),
+        ).timeout(const Duration(seconds: 30));
+        
+        if (response.statusCode != 200) {
+          throw Exception('Server error: ${response.statusCode}');
+        }
+        */
+
+      // Close loading
+      if (Navigator.canPop(context)) Navigator.pop(context);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Form submitted successfully!'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
         ),
       );
 
-      // Generate PDF bytes
-      final Uint8List pdfBytes = await pdfDoc.save();
-      debugPrint('PDF Generated: ${pdfBytes.length} bytes');
-
-      // Upload to server
-      await _uploadPDF(pdfBytes, formId);
+      // Clear form after successful submission
+      _clearForm();
     } catch (e) {
-      debugPrint('PDF Generation Error: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error generating PDF: $e')));
-      }
-    }
-  }
+      // Close loading if still showing
+      if (Navigator.canPop(context)) Navigator.pop(context);
 
-  void _submit() async {
-    // Validation
-    if (nameController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter your name')));
-      return;
-    }
-
-    if (mobileController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter mobile number')),
+        SnackBar(
+          content: Text('Submission failed: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
       );
-      return;
-    }
-
-    if (selectedCellId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a body area on the map')),
-      );
-      return;
-    }
-
-    if (_countSelectedSymptoms() == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one symptom')),
-      );
-      return;
-    }
-
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => const AlertDialog(
-            content: Row(
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 20),
-                Text('Generating PDF...'),
-              ],
-            ),
-          ),
-    );
-
-    try {
-      await _generateAndUploadPDF();
-
-      if (context.mounted) {
-        Navigator.of(context).pop(); // Close loading dialog
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
     }
   }
 
@@ -603,423 +440,203 @@ class _FeedBackFormNewState extends State<FeedBackFormNew> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Body Map + Review'),
+        title: const Text('Body Map Feedback Form'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        elevation: 2,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear_all),
+            onPressed: _clearForm,
+            tooltip: 'Clear form',
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            /* ================= PERSONAL DETAILS ================= */
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Personal Details',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
+      body: Screenshot(
+        controller: _screenshotController,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              /*
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.white,
+                  child: Column(
+                    children: [
+                      // Add your personal details form here
+                    ],
                   ),
-                  const SizedBox(height: 8),
+                ),
+                */
 
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  TextField(
-                    controller: mobileController,
-                    decoration: const InputDecoration(
-                      labelText: 'Mobile Number',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  InkWell(
-                    onTap: _pickDate,
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Date',
-                        border: OutlineInputBorder(),
-                      ),
-                      child: Text(
-                        DateFormat('dd-MM-yyyy').format(selectedDate),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // const Divider(),
-
-            /* ================= BODY MAP ================= */
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final double width = constraints.maxWidth;
-                final double height = width / imageAspectRatio;
-
-                return GestureDetector(
-                  onTapDown: (details) {
-                    final dx = details.localPosition.dx / width;
-                    final dy = details.localPosition.dy / height;
-
-                    for (final cell in bodyCells) {
-                      if (cell.contains(dx, dy)) {
-                        setState(() {
-                          selectedCellId = cell.id;
-                        });
-                        break;
-                      }
-                    }
-                  },
-                  child: SizedBox(
-                    width: width,
-                    height: height,
-                    child: Stack(
+              // Body Map Section
+              Container(
+                padding: const EdgeInsets.all(16),
+                color: Colors.white,
+                child: Column(
+                  children: [
+                    const Row(
                       children: [
-                        Image.asset(
-                          'assets/images/fedback.jpeg',
-                          width: width,
-                          height: height,
-                          fit: BoxFit.contain,
-                        ),
-                        CustomPaint(
-                          size: Size(width, height),
-                          painter: BodyHighlightPainter(
-                            selectedCellId: selectedCellId,
+                        Icon(Icons.medical_services, color: Colors.green),
+                        SizedBox(width: 8),
+                        Text(
+                          'Body Areas Selection',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                );
-              },
+                    const SizedBox(height: 8),
+
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Selected Areas: ${selectedCellIds.length}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                'Tap on body map to select/deselect',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (selectedCellIds.isNotEmpty)
+                            ElevatedButton.icon(
+                              onPressed: _clearSelectedCells,
+                              icon: const Icon(Icons.clear, size: 16),
+                              label: const Text('Clear All'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red.shade50,
+                                foregroundColor: Colors.red,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Body Map Image - FIXED LAYOUT
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: LayoutBuilder(
+  builder: (context, constraints) {
+    final width = constraints.maxWidth;
+
+    return AspectRatio(
+      aspectRatio: imageAspectRatio, // correct ratio
+      child: GestureDetector(
+        onTapDown: (details) {
+          final box = context.findRenderObject() as RenderBox;
+          final local = box.globalToLocal(details.globalPosition);
+
+          final dx = local.dx / box.size.width;
+          final dy = local.dy / box.size.height;
+
+          for (final cell in bodyCells) {
+            if (cell.contains(dx, dy)) {
+              _toggleCellSelection(cell.id);
+              break;
+            }
+          }
+        },
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              'assets/images/fedback.jpeg',
+              fit: BoxFit.contain, // ✅ No stretch
             ),
 
-            if (selectedCellId != null)
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: Text(
-                  'Selected Body Cell: $selectedCellId',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-
-            // const Divider(),
-
-            /* ================= REVIEW SYSTEM ================= */
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _sectionTitle('HEAD'),
-                  _symptomRow('None'),
-                  _symptomRow('Frequent Headaches'),
-                  _symptomRow('Dizziness'),
-                  _symptomRow('Severe Headaches'),
-                  _symptomRow('Loss of consciousness'),
-                  _symptomRow('Light Headedness'),
-
-                  _sectionTitle('Ears'),
-                  _symptomRow('Pain'),
-                  _symptomRow('Discharge'),
-                  _symptomRow('Hearing Problems'),
-                  _symptomRow('Ringing'),
-                  _symptomRow('Infections'),
-                  _symptomRow('Hearing Aid'),
-
-                  _sectionTitle('Mouth'),
-                  _symptomRow('Pain'),
-                  _symptomRow('Ulcers/cold sores'),
-                  _symptomRow('Change in Taste'),
-                  _symptomRow('Dentures'),
-                  _symptomRow('Dry Mouth'),
-                  _symptomRow('Periodontal Disease'),
-                  _symptomRow('Partial Plates'),
-                  _symptomRow('Tongue: Sore, Enlarged'),
-                  _symptomRow('Teeth Problem'),
-
-                  _sectionTitle('Nose'),
-                  _symptomRow('Sinus Problems'),
-                  _symptomRow('Change in Smell'),
-                  _symptomRow('Nose Bleeds'),
-                  _symptomRow('Nasal Obstruction'),
-
-                  _sectionTitle('Neck & Throat'),
-                  _symptomRow('Hoarseness'),
-                  _symptomRow('Change in Voice'),
-                  _symptomRow('Difficulty swallowing'),
-                  _symptomRow('Large thyroid/goiter'),
-                  _symptomRow('Overactive thyroid'),
-                  _symptomRow('Underactive thyroid'),
-                  _symptomRow('Enlarged lymph glands'),
-
-                  _sectionTitle('RESPIRATORY'),
-                  _symptomRow('Chest Pain or tightness'),
-                  _symptomRow('Fever'),
-                  _symptomRow('Coughing'),
-                  _symptomRow('Coughing Blood'),
-                  _symptomRow('Chills'),
-                  _symptomRow('Shortness of Breath'),
-                  _symptomRow('Wheezing'),
-                  _symptomRow('Night Sweats'),
-                  _symptomRow('Stridor'),
-
-                  _sectionTitle('EYES'),
-                  _symptomRow('Glasses'),
-                  _symptomRow('Dry Eyes'),
-                  _symptomRow('Color Blindness'),
-                  _symptomRow('Contacts'),
-                  _symptomRow('Tearing'),
-                  _symptomRow('Vision: Blurred/Double'),
-                  _symptomRow('Pain'),
-                  _symptomRow('Shimmering Spots'),
-                  _symptomRow('Blind Spots, Blindness'),
-                  _symptomRow('Eye itching'),
-                  _symptomRow('Eye redness'),
-                  _symptomRow('Photophobia'),
-                  _symptomRow('Congestion'),
-                  _symptomRow('Dental problem'),
-                  _symptomRow('Facial swelling'),
-                  _symptomRow('Rhinorrhea'),
-                  _symptomRow('Sneezing'),
-                  _symptomRow('Sore throat'),
-                  _symptomRow('Tinnitus'),
-                  _symptomRow('Apnea'),
-                  _symptomRow('Choking'),
-
-                  _sectionTitle('CARDIOVASCULAR'),
-                  _symptomRow('Pain: Jaw, Neck, Chest, Mid-Back'),
-                  _symptomRow('Leg Cramps / Leg swelling'),
-                  _symptomRow('Varicose Veins or Phlebitis'),
-                  _symptomRow('Swollen Feet or Ankles'),
-                  _symptomRow('Chest tightness'),
-                  _symptomRow('Angina'),
-                  _symptomRow('Abnormal Cardiogram (EKG)'),
-                  _symptomRow('Shortness of Breath'),
-                  _symptomRow('Rapid Heart Beat'),
-                  _symptomRow('Irregular Heart Beat (Palpitations)'),
-                  _symptomRow('Heart murmur'),
-                  _symptomRow('Snoring'),
-
-                  _sectionTitle('ALLERGY/IMMUNO'),
-                  _symptomRow('Environmental allergies'),
-                  _symptomRow('Food allergies'),
-                  _symptomRow('Immunocompromised'),
-
-                  _sectionTitle('GASTROINTESTINAL'),
-                  _symptomRow('Poor Appetite'),
-                  _symptomRow('Abdominal Pain'),
-                  _symptomRow('Food Intolerance or Allergy'),
-                  _symptomRow('Nausea'),
-                  _symptomRow('Vomiting'),
-                  _symptomRow('Vomiting Blood'),
-                  _symptomRow('Diarrhea'),
-                  _symptomRow('Laxative Use'),
-                  _symptomRow('Belching'),
-                  _symptomRow('Rectal Bleeding'),
-                  _symptomRow('Bloating'),
-                  _symptomRow('Change in Stool Size'),
-                  _symptomRow('Jaundice'),
-                  _symptomRow('Constipation'),
-                  _symptomRow('Black, White, Bloody Stool'),
-                  _symptomRow('Heartburn'),
-                  _symptomRow('Trouble Chewing'),
-                  _symptomRow('Hemorrhoids'),
-                  _symptomRow('Trouble Swallowing'),
-                  _symptomRow('Gallbladder Problems'),
-                  _symptomRow('Diverticulitis'),
-                  _symptomRow('Recent change in bowels'),
-                  _symptomRow('Dark black/\"tarry\" stools'),
-                  _symptomRow('Colitis/enteritis'),
-                  _symptomRow('Abdominal distention'),
-                  _symptomRow('Anal bleeding'),
-                  _symptomRow('Rectal pain'),
-
-                  _sectionTitle('MUSCULOSKELETAL'),
-                  _symptomRow('Bone Pain'),
-                  _symptomRow('Muscle Pain'),
-                  _symptomRow('Back Pain'),
-                  _symptomRow('Arthralgias'),
-                  _symptomRow('Gait problems'),
-                  _symptomRow('Myalgias'),
-                  _symptomRow('Neck stiffness'),
-                  _symptomRow('Joint: Stiffness'),
-                  _symptomRow('Joint: Swelling'),
-                  _symptomRow('Joint: Pain'),
-                  _symptomRow('Joint: Redness'),
-
-                  _sectionTitle('SKIN'),
-                  _symptomRow('Rash'),
-                  _symptomRow('Dryness'),
-                  _symptomRow('Sore which does not heal'),
-                  _symptomRow('Itch'),
-                  _symptomRow('Burning'),
-                  _symptomRow('Skin disorders'),
-                  _symptomRow('Changing skin spots'),
-                  _symptomRow('Persistent skin pain'),
-                  _symptomRow('Recent change in skin'),
-                  _symptomRow('Easy bruising'),
-                  _symptomRow('Color change'),
-                  _symptomRow('Pallor'),
-                  _symptomRow('Birthmarks'),
-                  _symptomRow('Change in: Hair'),
-                  _symptomRow('Change in: Nails'),
-                  _symptomRow('Change in: moles'),
-
-                  _sectionTitle('ENDOCRINE & METABOLISM'),
-                  _symptomRow('Poor Energy'),
-                  _symptomRow('Increased Thirst'),
-                  _symptomRow('Appetite Change'),
-                  _symptomRow('Cold intolerance'),
-                  _symptomRow('Heat intolerance'),
-                  _symptomRow('Polyuria'),
-                  _symptomRow('Polyphagia'),
-                  _symptomRow('Polydipsia'),
-                  _symptomRow('Recent Weight Gain'),
-                  _symptomRow('Recent Weight Loss'),
-                  _symptomRow('Feel Too Hot'),
-                  _symptomRow('Feel Too Cold'),
-
-                  _sectionTitle('NEUROLOGICAL & PSYCHOLOGICAL'),
-                  _symptomRow('Fainting'),
-                  _symptomRow('Dizziness'),
-                  _symptomRow('Loneliness'),
-                  _symptomRow('Tingling'),
-                  _symptomRow('Numbness'),
-                  _symptomRow('Depression'),
-                  _symptomRow('Personality Change'),
-                  _symptomRow('Nervousness'),
-                  _symptomRow('Worry'),
-                  _symptomRow('Incoordination'),
-                  _symptomRow('Paralysis'),
-                  _symptomRow('Weakness'),
-                  _symptomRow('Unconsciousness'),
-                  _symptomRow('Irritability'),
-                  _symptomRow('Thick Speech'),
-                  _symptomRow('Suicidal Thoughts'),
-                  _symptomRow('Seizures'),
-                  _symptomRow('Convulsions'),
-                  _symptomRow('Daydreaming'),
-                  _symptomRow('Loss of Temper'),
-                  _symptomRow('Fatigue'),
-                  _symptomRow('Difficulty Walking in the Dark'),
-                  _symptomRow('Emotional'),
-                  _symptomRow('Bipolar illness'),
-                  _symptomRow('Sleeping problems'),
-                  _symptomRow('Receiving psychiatric care'),
-                  _symptomRow('Excessive worrying'),
-                  _symptomRow('Fears/phobias'),
-                  _symptomRow('Crying spells'),
-                  _symptomRow('Feelings of hopelessness'),
-                  _symptomRow('Stroke/weakness of limbs'),
-                  _symptomRow('Epilepsy'),
-                  _symptomRow('Loss of sensation in limbs'),
-                  _symptomRow('Loss of sensation in body'),
-                  _symptomRow('Facial asymmetry'),
-                  _symptomRow('Headaches'),
-                  _symptomRow('Light-headedness'),
-                  _symptomRow('Syncope'),
-                  _symptomRow('Tremors'),
-
-                  _sectionTitle('GENITOURINARY'),
-                  _symptomRow('Pain with Urination or Intercourse'),
-                  _symptomRow('Urinate Frequently Day'),
-                  _symptomRow('Urinate Frequently Night'),
-                  _symptomRow('Incontinence'),
-                  _symptomRow('Dark or Red Urine'),
-                  _symptomRow('Are you sexually active?'),
-                  _symptomRow('Dysuria'),
-                  _symptomRow('Enuresis'),
-                  _symptomRow('Flank pain'),
-                  _symptomRow('Genital sore'),
-                  _symptomRow('Hematuria'),
-                  _symptomRow('Penile discharge'),
-                  _symptomRow('Penile pain'),
-                  _symptomRow('Penile swelling'),
-                  _symptomRow('Scrotal swelling'),
-                  _symptomRow('Testicular pain'),
-                  _symptomRow('Urgency'),
-                  _symptomRow('Kidney stones/colic'),
-                  _symptomRow('Urine/kidney infection'),
-                  _symptomRow('Protein/albumin in urine'),
-                  _symptomRow('Damaged kidneys'),
-                  _symptomRow('History of dialysis'),
-
-                  _sectionTitle('HEMATOLOGICAL'),
-                  _symptomRow('Easy Bruising or Bleeding'),
-                  _symptomRow('Swollen Lymph Nodes: Neck, Groin, Under Arms'),
-                  _symptomRow('Adenopathy'),
-
-                  _sectionTitle('Miscellaneous'),
-                  _symptomRow('Bleeding from dental treatments'),
-                  _symptomRow('Increased or excessive thirst'),
-                  _symptomRow('Frequently too hot or cold'),
-                  _symptomRow('Smoke cigarettes:'),
-                  _symptomRow('Drink alcohol:'),
-                  _symptomRow('Prostate infection:'),
-                  _symptomRow('Difficulty urinating:'),
-                  _symptomRow('Mass in testicles:'),
-                  _symptomRow('Pain in testicles:'),
-                  _symptomRow('Venereal diseases (VD):'),
-
-                  _sectionTitle('Women only'),
-                  _symptomRow('Pregnant:'),
-                  _symptomRow('Venereal diseases (VD):'),
-                  _symptomRow('Sexual problems:'),
-                  _symptomRow('Fertility treatments:'),
-                  _symptomRow('Hormones used:'),
-                  _symptomRow('Menstrual periods regular:'),
-                  _symptomRow('Menses: Irregular'),
-                  _symptomRow('Menses: Heavy'),
-                  _symptomRow('Menses: Painful'),
-                  _symptomRow('Menses: Abnormal Bleeding'),
-                  _symptomRow('Menses: Discharge'),
-                  _symptomRow('Use any contraception:'),
-                  _symptomRow('Breast: Lump'),
-                  _symptomRow('Breast: Discharge'),
-                  _symptomRow('Breast: Pain'),
-                  _symptomRow('Breast: Swelling'),
-
-                  _sectionTitle('How would you rate your general health?'),
-                  _symptomRow('Excellent'),
-                  _symptomRow('Good'),
-                  _symptomRow('Fair'),
-                  _symptomRow('Poor'),
-
-                  const SizedBox(height: 20),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _submit,
-                      child: const Text('SUBMIT'),
-                    ),
-                  ),
-                ],
+            CustomPaint(
+              painter: BodyHighlightPainter(
+                selectedCellIds: selectedCellIds,
               ),
             ),
           ],
         ),
       ),
     );
+  },
+),
+
+                      ),
+                    ),
+
+                    // Selected Areas List - या भागातील space दुरुस्त केला
+                  ],
+                ),
+              ),
+
+            
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
+                color: Colors.grey.shade50,
+                child: ElevatedButton.icon(
+                  onPressed: _captureAndShowScreenshot,
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  label: const Text(
+                    'CAPTURE & SUBMIT FORM',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 18,
+                    ),
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                    shadowColor: Colors.green.withOpacity(0.3),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
-
-/* ================= BODY CELL ================= */
 
 class BodyCell {
   final String id;
@@ -1038,6 +655,7 @@ class BodyCell {
   }
 }
 
+// Body Cells Data
 const List<BodyCell> bodyCells = [
   // Row A
   BodyCell(id: 'A1', x: 0.06, y: 0.344, w: 0.17, h: 0.05),
@@ -1100,32 +718,56 @@ const List<BodyCell> bodyCells = [
   BodyCell(id: 'E10', x: 0.81, y: 0.5222, w: 0.166, h: 0.14),
 ];
 
-/* ================= PAINTER ================= */
-
+// Body Highlight Painter
 class BodyHighlightPainter extends CustomPainter {
-  final String? selectedCellId;
+  final List<String> selectedCellIds;
 
-  BodyHighlightPainter({this.selectedCellId});
+  BodyHighlightPainter({required this.selectedCellIds});
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (selectedCellId == null) return;
+    if (selectedCellIds.isEmpty) return;
 
-    final cell = bodyCells.firstWhere((e) => e.id == selectedCellId);
+    final colors = [
+      Colors.red.withOpacity(0.5),
+      Colors.red.withOpacity(0.5),
+      Colors.red.withOpacity(0.5),
+      Colors.red.withOpacity(0.5),
+      Colors.red.withOpacity(0.5),
+      Colors.red.withOpacity(0.5),
+    ];
 
-    final paint =
-        Paint()
-          ..color = Colors.yellow.withOpacity(0.45)
-          ..style = PaintingStyle.fill;
+    for (int i = 0; i < selectedCellIds.length; i++) {
+      final cellId = selectedCellIds[i];
+      final cell = bodyCells.firstWhere(
+        (e) => e.id == cellId,
+        orElse: () => BodyCell(id: '', x: 0, y: 0, w: 0, h: 0),
+      );
 
-    final rect = Rect.fromLTWH(
-      cell.x * size.width,
-      cell.y * size.height,
-      cell.w * size.width,
-      cell.h * size.height,
-    );
+      if (cell.id.isEmpty) continue;
 
-    canvas.drawRect(rect, paint);
+      final paint =
+          Paint()
+            ..color = colors[i % colors.length]
+            ..style = PaintingStyle.fill;
+
+      final rect = Rect.fromLTWH(
+        cell.x * size.width,
+        cell.y * size.height,
+        cell.w * size.width,
+        cell.h * size.height,
+      );
+
+      canvas.drawRect(rect, paint);
+
+      final borderPaint =
+          Paint()
+            ..color = Colors.black.withOpacity(0.3)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.0;
+
+      canvas.drawRect(rect, borderPaint);
+    }
   }
 
   @override
