@@ -1215,6 +1215,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     try {
       final uploadFiles = ref.read(uploadProvider.notifier).getFiles();
 
+      // ✅ Check images length
+      if (uploadFiles.length < 4) {
+        debugPrint("Minimum 4 images required");
+        return null;
+      }
+
       final formData = {
         "name":
             "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}",
@@ -1230,30 +1236,55 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         "m_no": _mobileController.text.trim(),
         "pid": "1",
         "education": _educationController.text.trim(),
+
+        // ✅ Safe image convert
         "image1": _fileToBase64(uploadFiles[0]),
         "image2": _fileToBase64(uploadFiles[1]),
         "image3": _fileToBase64(uploadFiles[2]),
         "image4": _fileToBase64(uploadFiles[3]),
+
         "courseId": selectedCourseIds.join(","),
       };
 
       final dio = Dio();
+
       final response = await dio.post(
         therapist,
         data: formData,
         options: Options(
-          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json',
+          },
+          responseType: ResponseType.plain, // ✅ Important
         ),
       );
 
-      final json = response.data;
+      // ✅ Print response for debugging
+      debugPrint("Status: ${response.statusCode}");
+      debugPrint("Body: ${response.data}");
+
+      // ✅ Convert to String
+      final body = response.data.toString();
+
+      // ✅ HTML check
+      if (body.startsWith('<')) {
+        debugPrint("HTML Response received");
+        return null;
+      }
+
+      // ✅ Decode JSON safely
+      final Map<String, dynamic> json = jsonDecode(body);
 
       if (json["success"] == 1) {
-        return json["data"]["id"].toString(); // ✅ USER ID
+        return json["data"]["id"].toString();
+      } else {
+        debugPrint("API Error: ${json["message"]}");
+        return null;
       }
-      return null;
-    } catch (e) {
+    } catch (e, s) {
       debugPrint("Register error: $e");
+      debugPrint("Stack: $s");
       return null;
     }
   }
@@ -1282,7 +1313,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               transactions: [
                 {
                   "amount": {
-                    "total": "${selectedCourseTotal}", 
+                    "total": "${selectedCourseTotal}",
                     "currency": "USD",
                   },
                   "description": "Wallet / Service Payment",
@@ -1375,25 +1406,63 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     String? reason,
     required int amount,
   }) async {
+    final isIndia = await isIndianUser();
+
+final countryCode = isIndia ? "in" : "us";
     try {
+      final data = {
+        "user_id": userId,
+        "payment_id": paymentId,
+        "orderid": orderId,
+        "amount": amount.toString(),
+        "status": status,
+        "email": _emailController.text.trim(),
+        "userType": "therapist",
+        "country":countryCode,
+        "name":
+            "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}",
+        "contact": _mobileController.text.trim(),
+      };
+
+      log("Call Back Data: $data");
+
       final dio = Dio();
 
-      await dio.post(
-        "https://admin.jinreflexology.in/api/payment_callback",
-        data: {
-          "user_id": userId,
-          "payment_id": paymentId,
-          "orderid": orderId,
-          "amount": amount.toString(),
-          "status": status,
-          "email": _emailController.text.trim(),
-          "name":
-              "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}",
-          "contact": _mobileController.text.trim(),
-        },
+      final response = await dio.post(
+        "https://admin.jinreflexology.in/api/process-payment",
+        data: data,
       );
+
+      // ✅ Check Success
+      print(response.data);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final resData = response.data;
+        Navigator.pop(context);
+        // Navigator.pop(context);
+        // Navigator.pop(context);
+        if (resData["status"] == "success") {
+          // ✅ Success → Go to Logi[]
+          // Navigator.pushAndRemoveUntil(
+          //   context,
+          //   MaterialPageRoute(builder: (_) => const ()),
+          //   (route) => false,
+          // );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Payment Successful ✅")));
+        } else {
+          // ❌ API Error
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(resData["message"] ?? "Payment Failed")),
+          );
+        }
+      }
     } catch (e) {
       debugPrint("❌ Callback error: $e");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Server Error. Try again later ❌")),
+      );
     }
   }
 }
@@ -1463,28 +1532,34 @@ class _CourseSelectionScreenState extends State<CourseSelectionScreen> {
   List<Map<String, dynamic>> courses = [];
   bool isLoading = true;
   bool hasError = false;
+  String countryCode = "in";
 
-  // Corrected: Changed return type to Future<String> for country
+  // Get country code from SharedPreferences
   Future<String> getCountryCode() async {
     final prefs = await SharedPreferences.getInstance();
     final deliveryType = prefs.getString("delivery_type");
     return deliveryType == "india" ? "in" : "us";
   }
 
-  // Toggle function removed as it's not being used in the current UI
-  // void toggleCourseSelection(int index) {
-  //   setState(() {
-  //     courses[index].isSelected = !courses[index].isSelected;
-  //   });
-  // }
+  // ✅ Set country code and refresh courses
+  Future<void> setCountryCode(String newCountryCode) async {
+    final prefs = await SharedPreferences.getInstance();
+    final deliveryType = newCountryCode == "in" ? "india" : "outside";
+    await prefs.setString("delivery_type", deliveryType);
+    
+    setState(() {
+      countryCode = newCountryCode;
+      isLoading = true;
+    });
+    
+    await fetchCourses();
+  }
 
   @override
   void initState() {
-    fetchCourses();
-    // TODO: implement initState
     super.initState();
+    fetchCourses();
   }
-  String countryCode = "in";
   Future<void> fetchCourses() async {
     try {
       // Get country code correctly
@@ -1552,7 +1627,6 @@ class _CourseSelectionScreenState extends State<CourseSelectionScreen> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     print(countryCode);
@@ -1561,16 +1635,94 @@ class _CourseSelectionScreenState extends State<CourseSelectionScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Available Courses',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        // ✅ Country Selector with Refresh
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Available Courses',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.blue[200]!),
+              ),
+              child: DropdownButton<String>(
+                value: countryCode,
+                underline: const SizedBox(),
+                isDense: true,
+                icon: Icon(Icons.arrow_drop_down, color: Colors.blue[700]),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blue[700],
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: "in",
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text("🇮🇳", style: TextStyle(fontSize: 16)),
+                        SizedBox(width: 6),
+                        Text("India"),
+                      ],
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: "us",
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text("🌍", style: TextStyle(fontSize: 16)),
+                        SizedBox(width: 6),
+                        Text("International"),
+                      ],
+                    ),
+                  ),
+                ],
+                onChanged: (value) async {
+                  if (value != null && value != countryCode) {
+                    await setCountryCode(value);
+                    
+                    // Show feedback
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            value == "in" 
+                              ? "Switched to India 🇮🇳 - Prices in ₹" 
+                              : "Switched to International 🌍 - Prices in \$",
+                          ),
+                          duration: const Duration(seconds: 2),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 10),
 
         if (isLoading)
           const Center(child: CircularProgressIndicator())
         else if (hasError)
-          const Center(child: Text('Error loading courses'))
+          Column(
+            children: [
+              const Center(child: Text('Error loading courses')),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: fetchCourses,
+                child: const Text('Retry'),
+              ),
+            ],
+          )
         else if (courses.isEmpty)
           const Center(child: Text('No courses available'))
         else

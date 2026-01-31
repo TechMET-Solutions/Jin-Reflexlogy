@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/api_service/urls.dart';
+import 'package:jin_reflex_new/dashbord_forlder/freddback_list.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_history_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_record_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
@@ -51,8 +52,9 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
         "pid": AppPreference().getString(PreferencesKey.userId),
         "diagnosisId": widget.diagnosisId,
       });
-print("ddddddddddddddddddddddddddddddddddddddddddd");
-print("${widget.diagnosisId}");
+      print("ddddddddddddddddddddddddddddddddddddddddddd");
+      print("${widget.diagnosisId}  ${AppPreference().getString(PreferencesKey.userId)} ${diagnosis_images}");
+
       final response = await Dio().post(
         diagnosis_images,
         data: formData,
@@ -92,49 +94,47 @@ print("${widget.diagnosisId}");
     setState(() {});
   }
 
-Widget imageBox(Uint8List? image, String label) {
-  if (image == null) return const SizedBox();
+  Widget imageBox(Uint8List? image, String label) {
+    if (image == null) return const SizedBox();
 
-  return Container(
-    margin: const EdgeInsets.only(bottom: 16),
-    padding: const EdgeInsets.all(10),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: const [
-        BoxShadow(
-          color: Colors.white,
-          blurRadius: 6,
-          offset: Offset(0, 3),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-        ),
-        const SizedBox(height: 10),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Colors.white, blurRadius: 6, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          const SizedBox(height: 10),
 
-       
-        Container(
-          width: double.infinity,
-          color: Colors.white, // 👈 black काढण्यासाठी
-          padding: const EdgeInsets.all(8),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.memory(
-              image,
-              fit: BoxFit.contain, // 👈 IMPORTANT
+          Container(
+            width: double.infinity,
+            color: Colors.white, // 👈 black काढण्यासाठी
+            padding: const EdgeInsets.all(8),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child:Transform.rotate(
+                  angle: 3.14159,
+                child: Image.memory(
+                  image,
+                  fit: BoxFit.contain,
+                ),
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -285,10 +285,34 @@ Widget imageBox(Uint8List? image, String label) {
                       ),
                     );
                   },
-                  child: const Text("UPDATE",style: TextStyle(color:Colors.white),),
+                  child: const Text(
+                    "UPDATE",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
                 ElevatedButton(
-                  
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.pink,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 25,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => BodyPartScreen()),
+                    );
+                  },
+                  child: Text(
+                    "History",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     padding: const EdgeInsets.symmetric(
@@ -312,7 +336,10 @@ Widget imageBox(Uint8List? image, String label) {
                       ),
                     );
                   },
-                  child:  Text("TREATMENT" ,style:TextStyle(color:Colors.white),),
+                  child: Text(
+                    "TREATMENT",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),

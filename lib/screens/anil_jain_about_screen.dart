@@ -1,375 +1,526 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
-class AboutJinReflexologyScreen extends StatefulWidget {
-  const AboutJinReflexologyScreen({super.key});
+class AboutJinReflexologyScreen extends StatelessWidget {
+  AboutJinReflexologyScreen({super.key});
 
-  @override
-  State<AboutJinReflexologyScreen> createState() =>
-      _AboutJinReflexologyScreenState();
-}
+  final List<Map<String, String>> awardsList = [
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Yogi Vivekanand Nisargoupchar Sikshan Kendra – 2025"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Mahavir International, Metro City, Chhatrapati Sambhajinagar – 2025"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Mahavir International, Chhatrapati Sambhajinagar – 2025"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Shri Tulsi Mahapraghya Foundation, Mumbai – 2025"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Bharat Scouts and Guides – 2024"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Jain youth Club, Lions Club of Hyderabad – 2024"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Agarwal Samaj, Telangana – 2024"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Jain Social Group, Vijaypur, Karnataka – 2024"},
+    {"title": "INTERNATIONAL ICON OF REFLEXOLOGY", "desc": "Conferred by Akhil Bhartiya Marvadi – Gujrati Manch – 2024"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Praghya Jain Mahila Mandal, Mumbai – 2023"},
+    {"title": "JIN REFLEXOLOGY RESEARCH AWARD", "desc": "Conferred by International Holistic Medicine, Indore, 2022"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Mahavir International, Main Chhatrapati Sambhaji Nagar – 2022"},
+    {"title": "LIFE TIME ACHIEVEMENT AWARD", "desc": "Conferred by Mahavir International, Metro city, Aurangabad, 2022"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Shri All India Svetambara Sthanakvasi Jain Conference Women Wing – 2020"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Mahavir International, Chennai Metro, Chennai, 2019"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Mahavir International, Metro City, Chhatrapati Sambhajinagar – 2018 October"},
+    {"title": "GEMS OF ACUPRESSURE AWARD", "desc": "Conferred by Bihar Acupressure Yoga College, Patna, Bihar, 2018"},
+    {"title": "CERTIFICATE OF APPRECIATION AWARD", "desc": "Conferred by Heritage Foundation, Vadodara, 2018"},
+    {"title": "CHINMAY CHIKITSA RATNA AWARD", "desc": "Conferred by World Jain Doctors Forum, Shravanbelgola – 2018"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Lokmat Sakhi Manch – 2017"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Lokmat Group of Newspaper – 2017"},
+    {"title": "CERTIFICATE OF APPRECIATION AWARD", "desc": "Conferred by Acupressure Health Care, Jamnagar, Gujrat, 2017"},
+    {"title": "YOUNGE ENTREPRENEUR AWARD OF MAHARASHTRA", "desc": "Conferred by Maharashtra Pradeshik Marwadi Yuva Manch, Mumbai, 2017"},
+    {"title": "YOG MAHRSHI AWARD", "desc": "Conferred by Rural Naturopathy Organization, Chhatrapati Sambhajinagar – 2015"},
+    {"title": "CHINMAY RATNA AWARD", "desc": "Conferred by All India Jain Doctors Association, Aurangabad 2013"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Mahavir International, Chennai Metro, Chennai, 2013"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Bhartiy Jain Sanghatana, Warora, 2013"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Mahatma Gandhi Hindi Vishwavidyalaya, Wardha, 2012"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Mahavir International, Suratgadh, 2012"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Lions Club of Dondaicha, Dondaicha, 2012"},
+    {"title": "GEM OF ALTERNATIVE MEDICINE", "desc": "Conferred by Indian Boards of Alternative Medicines, 2011"},
+    {"title": "SAMTA RATNA PURASKAR", "desc": "Conferred by Maharashtra Equality Welfare Society, 2005"},
+    {"title": "MARATHWADA GOURAV PURASKAR", "desc": "Conferred by Value Education Academy, 2004"},
+    {"title": "APPRECIATION AWARD", "desc": "Conferred by Lions Club of CIDCO, Aurangabad, 2003"},
+  ];
 
-class _AboutJinReflexologyScreenState extends State<AboutJinReflexologyScreen> {
-  Widget sectionHeader(String title) {
+  final List<String> spiritualPlaces = [
+    "Mathaniya (Rajasthan) – 1990",
+    "Coimbatore (Tamilnadu) – 1992",
+    "Chennai (Tamilnadu) – 1993",
+    "Rajnandgaon (Chhattisgarh) – 1994",
+    "Jay pore Jhadi (Orissa) – 1995",
+    "Lasur (Maharashtra) – 1996",
+    "Nanded (Maharashtra) – 1997",
+    "Shrirampur (Maharashtra) – 1998",
+    "Parbhani (Maharashtra) – 1999",
+    "Beed (Maharashtra) – 2000",
+    "Gangapur (Maharashtra) – 2001",
+    "Lasalgaon (Maharashtra) – 2002",
+    "Manmad (Maharashtra) – 2003",
+    "Nandura (Maharashtra) – 2004",
+    "Yeola (Maharashtra) – 2005",
+    "Karanja (Maharashtra) – 2006",
+    "Deola (Maharashtra) – 2007",
+    "Pimpalner (Maharashtra) – 2008",
+    "Manur Takli (Maharashtra) – 2009",
+    "Beed (Maharashtra) – 2010",
+    "Raipur (Chhattisgarh) – 2011",
+    "Kolkata (West Bengal) – 2012",
+    "Bangalore (Karnataka) – 2013",
+    "Mumbai CP Tank (Maharashtra) – 2014",
+    "Choumahla (Rajasthan) – 2015",
+    "Mumbai Bhainder (Maharashtra) – 2016",
+    "Morvan (Madhya Pradesh) – 2017",
+    "Ramganjmandi (Rajasthan) – 2018",
+    "Mumbai – Marol (Maharashtra) – 2019",
+    "Jodhpur (Rajasthan) – 2020 (Corona)",
+    "Udaipur (Rajasthan) – 2021 (Corona)",
+    "Balod (Chhattisgarh) – 2022",
+    "Dhar (Madhya Pradesh) – 2023",
+    "Alwar (Rajasthan) – 2024",
+    "Mumbai - Thane (Maharashtra) – 2025",
+  ];
+
+  Widget _buildSectionHeader(String title) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(top: 16, bottom: 8),
       decoration: BoxDecoration(
         color: const Color(0xff7b001c),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         title.toUpperCase(),
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
         ),
       ),
     );
   }
 
-  Widget contentBox(String text) {
+  Widget _buildContentCard(String text) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      margin: const EdgeInsets.only(top: 6),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(text, style: const TextStyle(fontSize: 14, height: 1.45)),
-    );
-  }
-
-  Widget bullet(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text("• $text", style: const TextStyle(fontSize: 14, height: 1.4)),
-    );
-  }
-
-  final List<Map<String, String>> awardsList = [
-    {
-      "title": "APPRECIATION AWARD",
-      "desc":
-          "Conferred by Yogi Vivekanand Nisargoupchar Sikshan Kendra – 2025",
-    },
-    {
-      "title": "APPRECIATION AWARD",
-      "desc":
-          "Conferred by Mahavir International, Metro City, Chhatrapati Sambhajinagar – 2025",
-    },
-    {
-      "title": "APPRECIATION AWARD",
-      "desc":
-          "Conferred by Mahavir International, Chhatrapati Sambhajinagar – 2025",
-    },
-    {
-      "title": "APPRECIATION AWARD",
-      "desc": "Conferred by Shri Tulsi Mahapraghya Foundation, Mumbai – 2025",
-    },
-    {
-      "title": "APPRECIATION AWARD",
-      "desc": "Conferred by Bharat Scouts and Guides – 2024",
-    },
-    {
-      "title": "INTERNATIONAL ICON OF REFLEXOLOGY",
-      "desc": "Conferred by Akhil Bhartiya Marvadi – Gujarati Manch – 2024",
-    },
-    {
-      "title": "JIN REFLEXOLOGY RESEARCH AWARD",
-      "desc": "Conferred by International Holistic Medicine, Indore – 2022",
-    },
-    {
-      "title": "LIFE TIME ACHIEVEMENT AWARD",
-      "desc":
-          "Conferred by Mahavir International, Metro City, Aurangabad – 2022",
-    },
-    {
-      "title": "GEM OF ALTERNATIVE MEDICINE",
-      "desc": "Conferred by Indian Board of Alternative Medicines – 2011",
-    },
-    {
-      "title": "APPRECIATION AWARD",
-      "desc": "Conferred by Lions Club of CIDCO, Aurangabad – 2003",
-    },
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xfff4f4f4),
-      appBar: CommonAppBar(title: "About JR Anil Jain"),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// PROFILE
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Column(
-                children: const [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundImage: AssetImage("assets/images/anil_jain.png"),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    "JR Anil Suganchand Jain",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    "Inventor of JIN Reflexology\nPresident – International Reflexology JIN Association",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            /// INVENTION
-            sectionHeader("Invention Work – JIN Reflexology"),
-            contentBox(
-              "After research on more than 13,000 people, JIN Reflexology Therapy "
-              "was developed. Among 200+ therapies worldwide, JIN Reflexology uniquely "
-              "diagnoses disease without asking questions to the patient and provides "
-              "accurate treatment through reflex points.",
-            ),
-
-            const SizedBox(height: 16),
-
-            /// INDIA BIGGEST CAMPAIGN
-            sectionHeader("India’s Biggest Health Awareness Campaign"),
-            contentBox(
-              "National & International Conferences conducted continuously "
-              "from 2015 onwards across India.",
-            ),
-            const SizedBox(height: 8),
-            bullet("2015 – Chhatrapati Sambhaji Nagar"),
-            bullet("2016–2017 – Mumbai"),
-            bullet("2018 – Surat"),
-            bullet("2019 – Bengaluru"),
-            bullet("2020–2021 – Online"),
-            bullet("2022–2025 – 21 to 31 Days Campaign across 7 States"),
-
-            const SizedBox(height: 16),
-
-            /// FREE TREATMENT
-            sectionHeader("Free Treatment Service to All"),
-            contentBox(
-              "Free treatment was provided for 2 hours daily for 29 consecutive years "
-              "(1989–2018) as a service to humanity.",
-            ),
-
-            const SizedBox(height: 16),
-
-            /// CAMPS
-            sectionHeader("Organizing Awareness Camps"),
-            contentBox(
-              "More than 125 free training and awareness camps were organized "
-              "across India to make JIN Reflexology accessible to common people.",
-            ),
-
-            const SizedBox(height: 16),
-
-            /// SEMINARS
-            sectionHeader("Health Awareness & Life Changing Seminar"),
-            contentBox(
-              "Till now, more than 165 seminars have been organized nationwide "
-              "under Swasth Bharat Abhiyan to promote disease prevention "
-              "and healthy lifestyle.",
-            ),
-
-            const SizedBox(height: 16),
-
-            /// BOOK
-            sectionHeader("Write JIN Reflexology Book"),
-            contentBox(
-              "JIN Reflexology book has been published in multiple editions "
-              "with Hindi & English versions including DVD and QR codes "
-              "for deeper learning.",
-            ),
-            const SizedBox(height: 8),
-            bullet("1st Edition – Hindi (Award Winning)"),
-            bullet("2nd Edition – English"),
-            bullet("3rd Edition – Hindi with DVD"),
-            bullet("4th Edition – 118 QR Codes (2024)"),
-
-            const SizedBox(height: 16),
-
-            /// AWARDS
-            sectionHeader("Honors & Appreciation Awards"),
-            contentBox(
-              "For the work of research and service, he has been honored with more than 35 national and international awards like International Icon of Reflexology, Yoga Maharishi, Gems of Alternative Therapy, Maharashtra Gaurav, Yuva Gaurav, Samaj Bhushan, Chinmaya Chikitsa etc.",
-            ),
-            const SizedBox(height: 10),
-            ...awardsList.map(
-              (item) => awardCard(item["title"]!, item["desc"]!),
-            ),
-
-            const SizedBox(height: 20),
-            //sectionHeader("Spiritual"),
-            sectionHeader("SPIRITUAL"),
-
-            contentBoxWidget(
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    "For the past 34 years, every year during the 8 days of “Paryushan festival”, "
-                    "I visit places where saints do not observe “Chaturmas”, as a “Swadhyayi” "
-                    "and participate in the worship of my religion and that of all members.",
-                    style: TextStyle(fontSize: 14, height: 1.45),
-                  ),
-
-                  SizedBox(height: 12),
-
-                  Text(
-                    "Places Visited (Year-wise):",
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                  ),
-
-                  SizedBox(height: 8),
-
-                  Text(
-                    "Mathaniya (Rajasthan) – 1990\n"
-                    "Coimbatore (Tamilnadu) – 1992\n"
-                    "Chennai (Tamilnadu) – 1993\n"
-                    "Rajnandgaon (Chhattisgarh) – 1994\n"
-                    "Jay Pore Jhadi (Orissa) – 1995\n"
-                    "Lasur (Maharashtra) – 1996\n"
-                    "Nanded (Maharashtra) – 1997\n"
-                    "Shrirampur (Maharashtra) – 1998\n"
-                    "Parbhani (Maharashtra) – 1999\n"
-                    "Beed (Maharashtra) – 2000\n"
-                    "Gangapur (Maharashtra) – 2001\n"
-                    "Lasalgaon (Maharashtra) – 2002\n"
-                    "Manmad (Maharashtra) – 2003\n"
-                    "Nandura (Maharashtra) – 2004\n"
-                    "Yeola (Maharashtra) – 2005\n"
-                    "Karanja (Maharashtra) – 2006\n"
-                    "Deola (Maharashtra) – 2007\n"
-                    "Pimpalner (Maharashtra) – 2008\n"
-                    "Manur Takli (Maharashtra) – 2009\n"
-                    "Beed (Maharashtra) – 2010\n"
-                    "Raipur (Chhattisgarh) – 2011\n"
-                    "Kolkata (West Bengal) – 2012\n"
-                    "Bangalore (Karnataka) – 2013\n"
-                    "Mumbai CP Tank (Maharashtra) – 2014\n"
-                    "Choumahla (Rajasthan) – 2015\n"
-                    "Mumbai Bhainder (Maharashtra) – 2016\n"
-                    "Morvan (Madhya Pradesh) – 2017\n"
-                    "Ramganjmandi (Rajasthan) – 2018\n"
-                    "Mumbai – Marol (Maharashtra) – 2019\n"
-                    "Jodhpur (Rajasthan) – 2020 (COVID)\n"
-                    "Udaipur (Rajasthan) – 2021 (COVID)\n"
-                    "Balod (Chhattisgarh) – 2022\n"
-                    "Dhar (Madhya Pradesh) – 2023\n"
-                    "Alwar (Rajasthan) – 2024\n"
-                    "Mumbai – Thane (Maharashtra) – 2025",
-                    style: TextStyle(fontSize: 14, height: 1.5),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 8),
-
-            sectionHeader("Social"),
-            contentBox(
-              "Founder President of Mahavir International, Metro City, an organization working on the principle of service to all, love to all, and live and let live. currently working as the Zone Chairman of Mahavir International, Central Maharashtra.Successfully organized five national and one international convention through the International Reflexology JIN Organization.",
-            ),
-            Container(height: 5),
-          Container(
-  width: double.infinity,
-  height: 200, // IMPORTANT: height द्यावी लागते
-  margin: const EdgeInsets.only(top: 6),
-  decoration: BoxDecoration(
-    borderRadius: BorderRadius.circular(10),
-    color: Colors.white,
-    image: DecorationImage(
-      image: NetworkImage("assets/images/award.png"),
-      fit: BoxFit.cover, // cover / contain / fill
-    ),
-  ),
-),
-SizedBox(height: 20),
-
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget contentBoxWidget(Widget child) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      margin: const EdgeInsets.only(top: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: child,
-    );
-  }
-
-  Widget awardCard(String title, String desc) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
-            offset: Offset(0, 3),
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 14,
+          height: 1.5,
+          color: Colors.black87,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBulletItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 5, right: 8),
+            child: Icon(
+              Icons.circle,
+              size: 6,
+              color: Colors.black54,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.4,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAwardCard(String title, String description) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // GREEN HEADER
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             decoration: BoxDecoration(
-              color: const Color(0xffe6ffcf),
+              color: const Color(0xffe8f5e8),
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
               ),
             ),
             child: Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-            ),
-          ),
-
-          // CONTENT
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Text(
-              desc,
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              description,
+              style: const TextStyle(
+                fontSize: 13,
                 height: 1.4,
+                color: Colors.black54,
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Size screenSize = MediaQuery.of(context).size;
+    final bool isLargeScreen = screenSize.width > 768;
+    final bool isMediumScreen = screenSize.width > 600;
+    final double horizontalPadding = isLargeScreen
+        ? screenSize.width * 0.1
+        : isMediumScreen
+            ? 24.0
+            : 12.0;
+    final double profileImageSize = isLargeScreen ? 100.0 : 80.0;
+
+    return Scaffold(
+      backgroundColor: const Color(0xfff4f4f4),
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+        ),
+        backgroundColor: const Color(0xff7b001c),
+        title: const Text(
+          'About JR Anil Jain',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: 16,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // PROFILE SECTION
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: profileImageSize / 2,
+                      backgroundImage:
+                          const AssetImage("assets/images/anil_jain.png"),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "JR Anil Suganchand Jain",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Inventor of JIN Reflexology\nPresident - International Reflexology JIN Association",
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.black54,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffe8f5e8),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        "J – Justify   I – Integrated   N – Natural",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // INVENTION WORK
+              _buildSectionHeader("Invention Work - JIN Reflexology"),
+              _buildContentCard(
+                "After doing research work on 13000 people, on the most ancient Therapy, "
+                "it was presented as JIN Reflexology Therapy. There are more than 200 Therapies "
+                "in the world for treatment, but the disease cannot be diagnosed accurately. "
+                "After Ayurveda, the only therapy in the world for diagnosing the disease is "
+                "JIN Reflexology, in which not a single question is asked to the patient, "
+                "and he is told what problem he is suffering from.\n\n"
+                "Creation of world class software in which complete information of the patient "
+                "is stored for research work and to get quick results.",
+              ),
+
+              // INDIA'S BIGGEST HEALTH AWARENESS CAMPAIGN
+              _buildSectionHeader("India's Biggest Health Awareness Campaign"),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildBulletItem("1st National Conference and Award presentation Ceremony – 2015 at Chhatrapati Sambhaji Nagar, Maharashtra, India"),
+                    _buildBulletItem("2nd National Conference and Award presentation Ceremony – 2016 at Mumbai, Maharashtra, India"),
+                    _buildBulletItem("3rd National Conference and Award presentation Ceremony – 2017 at Mumbai, Maharashtra, India"),
+                    _buildBulletItem("4th National Conference and Award presentation Ceremony – 2018 at Surat, Gujrat, India"),
+                    _buildBulletItem("5th National Conference and Award presentation Ceremony – 2019 at Bengaluru, Karnataka, India"),
+                    _buildBulletItem("1st International and 6th National Conference Online – 2020"),
+                    _buildBulletItem("2nd International and 7th National Conference Online – 2021"),
+                    _buildBulletItem("JIN Day Event – 1st June (JIN Reflexology day) to 21st June (International Yoga Day) Health Awareness Campaign – 2020 21 Days Free Online Power Yoga"),
+                    _buildBulletItem("JIN Day Event – 1st June (JIN Reflexology day) to 21st June (International Yoga Day) Health Awareness Campaign – 2021 Free 21 Days Free Online Power Yoga"),
+                    _buildBulletItem("JIN Day Event – 1st June (JIN Reflexology day) to 21st June (International Yoga Day) Health Awareness Campaign – 2022  21 Days 19 City in Maharashtra 25 Health Awareness and Life Changing Seminars"),
+                    _buildBulletItem("JIN Day Event – 1st June (JIN Reflexology day) to 21st June (International Yoga Day) Health Awareness Campaign – 2023  21 Days 19 City (4 States – Madhya Pradesh, Maharashtra, Gujrat, Rajasthan) 21 Health Awareness and Life Changing Seminars"),
+                    _buildBulletItem("JIN Day Event – 1st June (JIN Reflexology day) to 21st June (International Yoga Day) Health Awareness Campaign – 2024  21 Days 21 City (4 States – Madhya Pradesh, Maharashtra, Karnataka, Telangana Rajasthan) 21 Health Awareness and Life Changing Seminars"),
+                    _buildBulletItem("JIN Day Event – 1st June (JIN Reflexology day) to 21st June (International Yoga Day) Health Awareness Campaign – 2025  31 Days 21 City (7 States – Delhi, Madhya Pradesh, Maharashtra, Karnataka, Telangana Rajasthan, Tamil Nadu) 21 Health Awareness and Life Changing Seminars"),
+                  ],
+                ),
+              ),
+
+              // FREE TREATMENT
+              _buildSectionHeader("Free Treatment Serve To All"),
+              _buildContentCard(
+                "A unique act of service to suffering humanity, free treatment was provided "
+                "for 2 hours daily for 29 consecutive years.\n\n"
+                "1989 to 2018",
+              ),
+
+              // ORGANIZING AWARENESS CAMPS
+              _buildSectionHeader("Organizing Awareness Camps"),
+              _buildContentCard(
+                "To make the JIN Reflexology treatment method accessible to the common people, "
+                "more than 125 free training camps were organized with the help of various "
+                "organizations across the country.",
+              ),
+
+              // HEALTH AWARENESS SEMINARS
+              _buildSectionHeader("Health Awareness and Life Changing Seminar"),
+              _buildContentCard(
+                "It is not possible to treat lakhs of people through 'JIN Reflexology', "
+                "but crores of people can be saved from getting sick. 'Swasth Bharat Abhiyan' "
+                "was started with this feeling. To prevent diseases from which 61% of the people "
+                "are dying in the whole of India, seminars on healthy awareness and lifestyle "
+                "change are presented through computerized presentations. Till now 165 seminars "
+                "of this series have been organized in the whole country.",
+              ),
+
+              // JIN REFLEXOLOGY BOOK
+              _buildSectionHeader("Write JIN Reflexology Book"),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "To make the knowledge gained from research and studies accessible to the common people, "
+                      "it was published through the book JIN Reflexology:",
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildBulletItem("1st Edition – Award-Winning Book – JIN Reflexology – (Hindi) (Released by Honorable Rajendra Darda, Education Minister, Maharashtra)."),
+                    _buildBulletItem("2nd Edition – JIN Reflexology (English). (Released by Honorable Gulam Nabi Azad, Union Health & Family Planning Minister. Honorable Vijay Babuji Darda, M. P.)"),
+                    _buildBulletItem("3rd Edition – JIN Reflexology (With DVD) (Hindi). (Released by Honorable Prithaviraj Chavhan, (Chief Minister- Maharashtra), Hon'ble Rajendra Darda (Education Minister)."),
+                    _buildBulletItem("4th Edition – JIN Reflexology – (Hindi) (Released by Honorable Rajendra Darda, Editor in chief – Lokmat Group on 22 June, 2024. This book is becoming popular as a living teacher, because in it, QR codes have been given after each lesson to easily understand the deepest secrets of the medical system. About 118 QR codes have been given."),
+                  ],
+                ),
+              ),
+
+              // HONORS & AWARDS
+              _buildSectionHeader("Honors & Awards"),
+              _buildContentCard(
+                "For the work of research and service, he has been honored with more than 35 "
+                "national and international awards like International Icon of Reflexology, "
+                "Yoga Maharishi, Gems of Alternative Therapy, Maharashtra Gaurav, "
+                "Yuva Gaurav, Samaj Bhushan, Chinmaya Chikitsa etc.",
+              ),
+              ...awardsList.map(
+                (award) => _buildAwardCard(award["title"]!, award["desc"]!),
+              ),
+
+              // SPIRITUAL
+              _buildSectionHeader("Spiritual"),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "For the past 34 years, every year during the 8 days of 'Paryushan festival', "
+                      "I go to those places where the saints do not observe 'Chaturmas', as a 'Swadhyayi' "
+                      "and participate in the worship of my religion and that of all the members of the organization.",
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ...spiritualPlaces.map((place) => _buildBulletItem(place)),
+                  ],
+                ),
+              ),
+
+              // SOCIAL
+              _buildSectionHeader("Social"),
+              _buildContentCard(
+                "Founder President of Mahavir International, Metro City, an organization working "
+                "on the principle of service to all, love to all, and live and let live. "
+                "Currently working as the Zone Chairman of Mahavir International, Central Maharashtra. "
+                "Successfully organized five national and one international convention through "
+                "the International Reflexology JIN Organization.",
+              ),
+
+              // AWARD IMAGE
+              Container(
+                width: double.infinity,
+                height: isLargeScreen ? 250 : 200,
+                margin: const EdgeInsets.only(top: 16, bottom: 30),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    "assets/images/award.png",
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: Icon(
+                            Icons.emoji_events,
+                            size: 50,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

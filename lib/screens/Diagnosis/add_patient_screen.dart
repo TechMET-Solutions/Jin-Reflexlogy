@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 import 'dart:developer';
-import 'package:country_state_city/country_state_city.dart' as csc;
+import 'package:jin_reflex_new/api_service/location_api_service.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +41,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
   final address = TextEditingController();
   final code = TextEditingController();
   final mobile = TextEditingController();
+  final dealerId = TextEditingController(); // New Dealer ID field
   final postalCode = TextEditingController();
 
   String? selectedBloodGroup = "A+";
@@ -49,12 +50,12 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
   bool isLoading = false;
 
   // Location dropdown variables
-  List<csc.Country> countries = [];
-  List<csc.State> states = [];
-  List<csc.City> cities = [];
-  csc.Country? selectedCountry;
-  csc.State? selectedState;
-  csc.City? selectedCity;
+  List<CountryModel> countries = [];
+  List<StateModel> states = [];
+  List<String> cities = [];
+  CountryModel? selectedCountry;
+  StateModel? selectedState;
+  String? selectedCity;
   String countryCode = "+91";
 
   final formKey = GlobalKey<FormState>();
@@ -485,7 +486,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Color(0xffF9CF63), width: 1.5),
           ),
-          child: DropdownSearch<csc.Country>(
+          child: DropdownSearch<CountryModel>(
             items: countries,
             selectedItem: selectedCountry,
             popupProps: PopupProps.menu(
@@ -493,7 +494,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
               searchDelay: Duration.zero,
               searchFieldProps: TextFieldProps(autofocus: true),
             ),
-            itemAsString: (csc.Country country) => country.name,
+            itemAsString: (CountryModel country) => country.name,
             dropdownDecoratorProps: DropDownDecoratorProps(
               dropdownSearchDecoration: InputDecoration(
                 border: InputBorder.none,
@@ -501,12 +502,12 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                 hintText: "Select Country",
               ),
             ),
-            onChanged: (csc.Country? value) {
+            onChanged: (CountryModel? value) {
               setState(() {
                 selectedCountry = value;
                 selectedState = null;
                 selectedCity = null;
-                countryCode = "+" + (value?.phoneCode ?? "91");
+                countryCode = "+91";
                 code.text = countryCode;
               });
               if (value != null) {
@@ -538,7 +539,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Color(0xffF9CF63), width: 1.5),
           ),
-          child: DropdownSearch<csc.State>(
+          child: DropdownSearch<StateModel>(
             items: states,
             selectedItem: selectedState,
             popupProps: PopupProps.menu(
@@ -546,7 +547,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
               searchDelay: Duration.zero,
               searchFieldProps: TextFieldProps(autofocus: true),
             ),
-            itemAsString: (csc.State state) => state.name,
+            itemAsString: (StateModel state) => state.name,
             dropdownDecoratorProps: DropDownDecoratorProps(
               dropdownSearchDecoration: InputDecoration(
                 border: InputBorder.none,
@@ -554,7 +555,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                 hintText: "Select State",
               ),
             ),
-            onChanged: (csc.State? value) {
+            onChanged: (StateModel? value) {
               setState(() {
                 selectedState = value;
                 selectedCity = null;
@@ -588,7 +589,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Color(0xffF9CF63), width: 1.5),
           ),
-          child: DropdownSearch<csc.City>(
+          child: DropdownSearch<String>(
             items: cities,
             selectedItem: selectedCity,
             popupProps: PopupProps.menu(
@@ -596,7 +597,6 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
               searchDelay: Duration.zero,
               searchFieldProps: TextFieldProps(autofocus: true),
             ),
-            itemAsString: (csc.City city) => city.name,
             dropdownDecoratorProps: DropDownDecoratorProps(
               dropdownSearchDecoration: InputDecoration(
                 border: InputBorder.none,
@@ -604,7 +604,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                 hintText: "Select City",
               ),
             ),
-            onChanged: (csc.City? value) {
+            onChanged: (String? value) {
               setState(() {
                 selectedCity = value;
               });
@@ -624,7 +624,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
 
   Future<void> _loadCountries() async {
     try {
-      countries = await csc.getAllCountries();
+      countries = await LocationApiService.getCountries();
       setState(() {});
     } catch (e) {
       ScaffoldMessenger.of(
@@ -637,7 +637,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
     if (selectedCountry == null) return;
 
     try {
-      states = await csc.getStatesOfCountry(selectedCountry!.isoCode);
+      states = await LocationApiService.getStates(selectedCountry!.name);
       setState(() {
         selectedState = null;
         cities = [];
@@ -654,9 +654,9 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
     if (selectedCountry == null || selectedState == null) return;
 
     try {
-      cities = await csc.getStateCities(
-        selectedCountry!.isoCode,
-        selectedState!.isoCode,
+      cities = await LocationApiService.getCities(
+        selectedCountry!.name,
+        selectedState!.name,
       );
       setState(() {
         selectedCity = null;
@@ -717,10 +717,11 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
         "email": email.text,
         "m_no": mobile.text,
         "address": address.text,
-        "city": selectedCity?.name ?? '',
+        "city": selectedCity ?? '',
         "state": selectedState?.name ?? '',
         "country": selectedCountry?.name ?? '',
         "country_code": countryCode,
+        "dealer_id": dealerId.text.trim().isEmpty ? '' : dealerId.text.trim(), // Include dealer_id
         "pincode": postalCode.text,
         "bg": selectedBloodGroup,
         "age": age.text,
@@ -1049,6 +1050,40 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                     ),
 
                     SizedBox(height: 12),
+                    
+                    // Dealer ID (Optional) field
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Dealer ID (Optional)",
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        SizedBox(height: 5),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color(0xffF9CF63),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: TextFormField(
+                            controller: dealerId,
+                            keyboardType: TextInputType.text,
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: "Enter Dealer ID (Optional)",
+                            ),
+                            // No validator - field is optional
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                      ],
+                    ),
+                    
                     buildTextField(
                       "Postal Code",
                       postalCode,

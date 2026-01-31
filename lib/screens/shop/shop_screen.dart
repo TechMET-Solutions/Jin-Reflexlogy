@@ -163,7 +163,7 @@ class _ShopScreenState extends State<ShopScreen> {
                               itemBuilder: (context, index) {
                                 final product = filteredProducts[index];
 
-                                return GestureDetector(
+                                return  GestureDetector(
                                   onTap: () {
                                     Navigator.push(
                                       context,
@@ -227,51 +227,57 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   // ================= API =================
-  Future<List<Product>> fetchProducts() async {
-    final String country = widget.deliveryType == "india" ? "in" : "us";
+Future<List<Product>> fetchProducts() async {
+  final String country = widget.deliveryType == "india" ? "in" : "us";
 
-    const String url =
-        "https://admin.jinreflexology.in/api/products/by-country";
+  const String url =
+      "https://admin.jinreflexology.in/api/products/by-country";
 
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"country": country}),
+  final response = await http.post(
+    Uri.parse(url),
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode({"country": country}),
+  );
+
+  final Map<String, dynamic> jsonData = json.decode(response.body);
+  final List list = jsonData["data"] ?? [];
+
+  // फक्त non-course प्रोडक्ट (course = 0) घ्या
+  final List nonCourseProducts = list.where((e) {
+    final isCourse = e["course"] == 1;
+    return !isCourse; // फक्त course = 0 प्रोडक्ट घ्या
+  }).toList();
+
+  return nonCourseProducts.map<Product>((e) {
+    final List images = e["images"] ?? [];
+    final List pricing = e["pricing"] ?? [];
+    final List categoryList = e["categories"] ?? [];
+
+    final pricingForCountry = pricing.firstWhere(
+      (p) => p["country"] == country,
+      orElse: () => null,
     );
 
-    final Map<String, dynamic> jsonData = json.decode(response.body);
-    final List list = jsonData["data"] ?? [];
+    final double unitPrice =
+        pricingForCountry != null
+            ? double.parse(pricingForCountry["unit_price"].toString())
+            : 0;
 
-    return list.map<Product>((e) {
-      final List images = e["images"] ?? [];
-      final List pricing = e["pricing"] ?? [];
-      final List categoryList = e["categories"] ?? [];
-
-      final pricingForCountry = pricing.firstWhere(
-        (p) => p["country"] == country,
-        orElse: () => null,
-      );
-
-      final double unitPrice =
-          pricingForCountry != null
-              ? double.parse(pricingForCountry["unit_price"].toString())
-              : 0;
-
-      return Product(
-        id: e["id"].toString(),
-        title: e["title"] ?? "",
-        image: images.isNotEmpty ? images.first : "",
-        unitPrice: unitPrice,
-        shippingPrice: 0,
-        description: e["description"] ?? "",
-        details: e["description"] ?? "",
-        additionalInfo: "",
-        categories:
-            categoryList
-                .map<String>((c) => c['name']?.toString() ?? "")
-                .where((e) => e.isNotEmpty)
-                .toList(),
-      );
-    }).toList();
-  }
+    return Product(
+      id: e["id"].toString(),
+      title: e["title"] ?? "",
+      image: images.isNotEmpty ? images.first : "",
+      unitPrice: unitPrice,
+      shippingPrice: 0,
+      description: e["description"] ?? "",
+      details: e["description"] ?? "",
+      additionalInfo: "",
+      categories:
+          categoryList
+              .map<String>((c) => c['name']?.toString() ?? "")
+              .where((e) => e.isNotEmpty)
+              .toList(),
+    );
+  }).toList();
+}
 }

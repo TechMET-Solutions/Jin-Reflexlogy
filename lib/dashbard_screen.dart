@@ -39,6 +39,7 @@ import 'package:jin_reflex_new/screens/life_style/life_style_screen.dart';
 import 'package:jin_reflex_new/screens/life_style/treatmentPlan.dart';
 import 'package:jin_reflex_new/screens/shop/shop_screen.dart';
 import 'package:jin_reflex_new/screens/speesh_screen.dart';
+import 'package:jin_reflex_new/screens/treatment/helth_meeter_screen.dart';
 import 'package:jin_reflex_new/screens/visitUsScreen.dart';
 import 'package:jin_reflex_new/screens/point_finder_screen.dart';
 import 'package:jin_reflex_new/screens/point_screen.dart';
@@ -61,6 +62,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String _countryName = 'Loading...';
   String _countryCode = '';
   bool _isLoadingLocation = true;
+  
+  // Welcome user data
+  String _welcomeMobile = '';
+  String _welcomeEmail = '';
+  String _welcomeDealerId = '';
 
   Future<void> _saveDeliveryType(String value) async {
     final prefs = await SharedPreferences.getInstance();
@@ -74,7 +80,23 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _requestLocationPermission();
     _checkDocumentsAndShowPopup();
+    _loadWelcomeData(); // Load saved welcome data
     Future.delayed(const Duration(seconds: 2), _autoSlide);
+  }
+  
+  /// Load welcome user data from SharedPreferences
+  Future<void> _loadWelcomeData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _welcomeMobile = prefs.getString('welcome_mobile') ?? '';
+      _welcomeEmail = prefs.getString('welcome_email') ?? '';
+      _welcomeDealerId = prefs.getString('welcome_dealer_id') ?? '';
+    });
+    
+    debugPrint("📊 Loaded welcome data:");
+    debugPrint("   Mobile: $_welcomeMobile");
+    debugPrint("   Email: $_welcomeEmail");
+    debugPrint("   Dealer ID: $_welcomeDealerId");
   }
 
   Future<void> _checkDocumentsAndShowPopup() async {
@@ -592,7 +614,13 @@ class _HomeScreenState extends State<HomeScreen> {
     CampaignItem(
       title: 'Health Meter',
       img: 'assets/jinImages/22.png',
-      onTap: () {},
+      onTap: () {
+      
+         Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) =>   HealthFormScreen()),
+        );
+      },
     ),
     CampaignItem(
       title: 'JR Anil Jain',
@@ -970,58 +998,154 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(color: Colors.white, fontSize: 15),
         ),
         actions: [
+          // ✅ Country Selector Dropdown
           Container(
             margin: const EdgeInsets.only(right: 16),
-            child: InkWell(
-              onTap: _refreshLocation,
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_countryCode.isNotEmpty && !_isLoadingLocation)
-                      SizedBox(
-                        width: 16,
-                        height: 10,
-                        child: CountryFlag.fromCountryCode(_countryCode),
+            child: FutureBuilder<String>(
+              future: _getSavedDeliveryType(),
+              builder: (context, snapshot) {
+                final deliveryType = snapshot.data ?? 'india';
+                final countryCode = deliveryType == 'india' ? 'in' : 'us';
+                
+                return PopupMenuButton<String>(
+                  onSelected: (value) async {
+                    await _saveDeliveryType(value);
+                    
+                    // Update UI
+                    setState(() {
+                      _countryName = value == 'india' ? 'India' : 'International';
+                      _countryCode = value == 'india' ? 'IN' : 'US';
+                    });
+                    
+                    // Show feedback
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          value == 'india' 
+                            ? 'Switched to India 🇮🇳' 
+                            : 'Switched to International 🌍',
+                        ),
+                        duration: const Duration(seconds: 2),
+                        backgroundColor: Colors.green,
                       ),
-
-                    if (_countryCode.isNotEmpty && !_isLoadingLocation)
-                      const SizedBox(width: 6),
-
-                    const SizedBox(width: 6),
-
-                    Text(
-                      _countryName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.3)),
                     ),
-
-                    if (_isLoadingLocation) ...[
-                      const SizedBox(width: 6),
-                      SizedBox(
-                        width: 12,
-                        height: 12,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_countryCode.isNotEmpty && !_isLoadingLocation)
+                          SizedBox(
+                            width: 16,
+                            height: 10,
+                            child: CountryFlag.fromCountryCode(_countryCode),
+                          ),
+                        if (_countryCode.isNotEmpty && !_isLoadingLocation)
+                          const SizedBox(width: 6),
+                        Text(
+                          _countryName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        if (_isLoadingLocation) ...[
+                          const SizedBox(width: 6),
+                          SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'india',
+                      child: Row(
+                        children: [
+                          Text('🇮🇳', style: TextStyle(fontSize: 20)),
+                          SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'India',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                'Prices in ₹',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (deliveryType == 'india') ...[
+                            Spacer(),
+                            Icon(Icons.check, color: Colors.green, size: 20),
+                          ],
+                        ],
                       ),
-                    ],
+                    ),
+                    PopupMenuItem(
+                      value: 'outside',
+                      child: Row(
+                        children: [
+                          Text('🌍', style: TextStyle(fontSize: 20)),
+                          SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'International',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                'Prices in \$',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (deliveryType == 'outside') ...[
+                            Spacer(),
+                            Icon(Icons.check, color: Colors.green, size: 20),
+                          ],
+                        ],
+                      ),
+                    ),
                   ],
-                ),
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -1043,45 +1167,84 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SizedBox(height: 10),
-                  // JIN Logo Image (Replace with your actual logo asset)
+                  // JIN Logo Image
                   Container(
-                    width: 100,
-                    height: 100,
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white,
-                      // If you have an image, use this instead:
-                      // image: DecorationImage(
-                      //   image: AssetImage('assets/jin_logo.png'),
-                      //   fit: BoxFit.cover,
-                      // ),
                     ),
                     child: Image.asset(
                       "assets/images/jin_reflexo.png",
                       height: 60,
-                      //color: Color.fromARGB(255, 19, 4, 66),
                     ),
                   ),
-                  SizedBox(height: 15),
+                  SizedBox(height: 10),
 
-                  // JIN Reflexology Text
-                  Text(
-                    "JIN",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
+                  // Show mobile number if available
+                  if (_welcomeMobile.isNotEmpty) ...[
+                    Text(
+                      _welcomeMobile,
+                      style: TextStyle(
+                        color: Colors.yellow,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  Text(
-                    "REFLEXOLOGY",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      letterSpacing: 3,
+                    SizedBox(height: 4),
+                  ],
+                  
+                  // Show email if available
+                  if (_welcomeEmail.isNotEmpty) ...[
+                    Text(
+                      _welcomeEmail,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
+                    SizedBox(height: 4),
+                  ],
+                  
+                  // Show dealer ID if available
+                  if (_welcomeDealerId.isNotEmpty) ...[
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "Dealer ID: $_welcomeDealerId",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
+                  
+                  // Show default text if no user data
+                  if (_welcomeMobile.isEmpty && _welcomeEmail.isEmpty) ...[
+                    Text(
+                      "JIN",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    Text(
+                      "REFLEXOLOGY",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        letterSpacing: 3,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

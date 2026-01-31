@@ -23,9 +23,9 @@ class MudraDetailsScreen extends StatelessWidget {
             imageUrl != null
                 ? Image.network(
                     imageUrl,
-                    height: 220,
+                    height: 320,
                     width: double.infinity,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.fill,
                     errorBuilder: (_, __, ___) =>
                         const SizedBox(height: 220, child: Icon(Icons.image)),
                   )

@@ -219,7 +219,15 @@ Future<void> login(
           builder: (_) => CourseScreen(deliveryType: DeliveryType),
         ),
       );
-    } else if (text == "ShopScreen") {
+    } else if (text == "Treatment") {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => Treatment(),
+        ),
+      );
+    }
+    else if (text == "ShopScreen") {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

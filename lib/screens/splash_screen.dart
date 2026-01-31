@@ -89,8 +89,10 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    Future.delayed(const Duration(seconds: 5), () {
+    Future.delayed(const Duration(seconds: 5), () async {
       if (!mounted) return;
+      
+      // Navigate to home screen
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(

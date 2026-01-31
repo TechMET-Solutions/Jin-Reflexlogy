@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:jin_reflex_new/api_service/api_service.dart';
 import 'package:jin_reflex_new/api_service/api_state.dart' hide ApiService;
+import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/main.dart'; // routeObserver
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_details_card.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_record_screen.dart';
@@ -136,31 +137,60 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
 
       /// ---------------- FAB ----------------
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (_) => DiagnosisScreen(
-                    patient_id: widget.patientId,
-                    name: widget.patientName,
-                    diagnosis_id: widget.diagnosisId,
-                    gender: widget.gender,
-                  ),
-            ),
-          );
-        },
-        backgroundColor: Colors.orange.shade300,
-        label: const Text(
-          "Add +",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
+  onPressed: () async {
+
+    // 🔥 Clear old Left Foot data
+    await AppPreference().remove(
+      "LF_DATA_${widget.diagnosisId}_${widget.patientId}",
+    );
+
+    await AppPreference().remove(
+      "LF_IMG_${widget.diagnosisId}_${widget.patientId}",
+    );
+  // RH
+await AppPreference().remove(
+  "RH_DATA_${widget.diagnosisId}_${widget.patientId}",
+);
+await AppPreference().remove(
+  "LH_DATA_${widget.diagnosisId}_${widget.patientId}",
+);
+
+await AppPreference().remove(
+  "LH_IMG_${widget.diagnosisId}_${widget.patientId}",
+);
+await AppPreference().remove(
+  "RH_IMG_${widget.diagnosisId}_${widget.patientId}",
+);
+    // 👉 Now go to Diagnosis screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DiagnosisScreen(
+          patient_id: widget.patientId,
+          name: widget.patientName,
+          diagnosis_id: widget.diagnosisId,
+          gender: widget.gender,
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       ),
+    );
+  },
+
+  backgroundColor: Colors.orange.shade300,
+
+  label: const Text(
+    "Add +",
+    style: TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+      color: Colors.black,
+    ),
+  ),
+
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(30),
+  ),
+),
+
 
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       backgroundColor: const Color(0xFFFDF3DD),

@@ -17,9 +17,9 @@ class YogaDetailsScreen extends StatelessWidget {
             /// IMAGE
             Image.network(
               item["image_url"]?[0] ?? "",
-              height: 220,
+              height: 250,
               width: double.infinity,
-              fit: BoxFit.cover,
+              fit: BoxFit.fill,
               errorBuilder: (_, __, ___) =>
                   const SizedBox(height: 220, child: Icon(Icons.image)),
             ),

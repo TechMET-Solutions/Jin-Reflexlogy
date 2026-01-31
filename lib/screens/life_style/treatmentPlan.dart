@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:page_flip/page_flip.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class TreatmentPlanScreen extends StatefulWidget {
   const TreatmentPlanScreen({super.key});
@@ -119,10 +120,25 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _feedbackImageBox(),
-        const SizedBox(height: 20),
-        _feedbackImageBox(),
-        const SizedBox(height: 20),
+     youtubeCard(
+  "https://www.youtube.com/watch?v=950Y5K_xPcg",
+  "JIN Reflexology Therapy",
+),
+
+const SizedBox(height: 20),
+
+youtubeCard(
+  "https://www.youtube.com/watch?v=TmD0Eapbzzg",
+  "Foot Pressure Points",
+),
+
+const SizedBox(height: 20),
+
+youtubeCard(
+  "https://www.youtube.com/watch?v=fA8uEVODBVA",
+  "Body Healing Method",
+),
+
 
         /// ---------------------------
         /// FORM FIELDS
@@ -281,6 +297,90 @@ SizedBox(
       ],
     );
   }
+
+Widget youtubeCard(String url, String title) {
+
+  final thumbUrl = getYoutubeThumbnail(url);
+
+  return GestureDetector(
+    onTap: () async {
+      final uri = Uri.parse(url);
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      }
+    },
+
+    child: Container(
+      height: 180,
+
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+          )
+        ],
+      ),
+
+      child: Column(
+        children: [
+
+          // ✅ Thumbnail Image
+          Expanded(
+            child: Stack(
+              alignment: Alignment.center,
+
+              children: [
+
+                Image.network(
+                  thumbUrl,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+
+                  errorBuilder: (_, __, ___) {
+                    return Container(
+                      color: Colors.black12,
+                      child: const Icon(
+                        Icons.broken_image,
+                        size: 40,
+                      ),
+                    );
+                  },
+                ),
+
+                const Icon(
+                  Icons.play_circle_fill,
+                  size: 60,
+                  color: Colors.red,
+                ),
+              ],
+            ),
+          ),
+
+          // Title
+          Container(
+            height: 40,
+            alignment: Alignment.center,
+            color: const Color(0xfff7eed6),
+
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
   Widget _buildFlipBookView() {
     return Column(
@@ -472,6 +572,28 @@ SizedBox(
       ),
     );
   }
+String getYoutubeThumbnail(String url) {
+  try {
+    final uri = Uri.parse(url);
+    String? videoId;
+
+    if (uri.host.contains("youtu.be")) {
+      if (uri.pathSegments.isNotEmpty) {
+        videoId = uri.pathSegments.first;
+      }
+    } 
+    else if (uri.host.contains("youtube.com")) {
+      videoId = uri.queryParameters['v'];
+    }
+
+    if (videoId == null || videoId.isEmpty) return "";
+
+    return "https://img.youtube.com/vi/$videoId/0.jpg";
+  } catch (e) {
+    return "";
+  }
+}
+
 
   /// ---------------- FEEDBACK IMAGE ----------------
   Widget _feedbackImageBox() {
@@ -500,6 +622,7 @@ SizedBox(
       ),
     );
   }
+
 
   Widget _imageCard(String img) {
     return Container(

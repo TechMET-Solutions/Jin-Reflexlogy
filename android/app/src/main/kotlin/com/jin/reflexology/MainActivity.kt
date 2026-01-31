@@ -1,4 +1,4 @@
-package com.example.jin_reflex_new
+package com.jin.reflexology
 
 import io.flutter.embedding.android.FlutterActivity
 

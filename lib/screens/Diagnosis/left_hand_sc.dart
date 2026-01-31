@@ -120,10 +120,9 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
       final parts = val.split(",");
       final p = points.firstWhere((e) => e.index.toString() == idx);
       // p.state = int.parse(parts[2]);
-      p.x = double.parse(parts[0]);   // ✅ restore X
-p.y = double.parse(parts[1]);   // ✅ restore Y
-p.state = int.parse(parts[2]);  // ✅ restore state
-
+      p.x = double.parse(parts[0]); // ✅ restore X
+      p.y = double.parse(parts[1]); // ✅ restore Y
+      p.state = int.parse(parts[2]); // ✅ restore state
     });
   }
 
@@ -232,46 +231,46 @@ p.state = int.parse(parts[2]);  // ✅ restore state
 
   /// --------------------------------------------------
   /// DOT UI
-Widget _buildDot(PointData p, double scaleX, double scaleY) {
-  Color color =
-      p.state == 1
-          ? const Color(0xFF8B0000)
-          : p.state == 2
-              ? Colors.green
-              : Colors.white;
+  Widget _buildDot(PointData p, double scaleX, double scaleY) {
+    Color color =
+        p.state == 1
+            ? const Color(0xFF8B0000)
+            : p.state == 2
+            ? Colors.green
+            : Colors.white;
 
-  return GestureDetector(
-    onTap: () {
-      setState(() {
-        p.state = (p.state + 1) % 3;
-      });
-    },
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          p.state = (p.state + 1) % 3;
+        });
+      },
 
-    /// 👉 DRAG MOVE
-    onPanUpdate: (details) {
-      // setState(() {
-      //   p.x += details.delta.dx / scaleX;
-      //   p.y += details.delta.dy / scaleY;
+      /// 👉 DRAG MOVE
+      onPanUpdate: (details) {
+        // setState(() {
+        //   p.x += details.delta.dx / scaleX;
+        //   p.y += details.delta.dy / scaleY;
 
-      //   // boundary
-      //   // p.x = p.x.clamp(0.0, baseWidth - 20);
-      //   // p.y = p.y.clamp(0.0, baseHeight - 20);
+        //   // boundary
+        //   // p.x = p.x.clamp(0.0, baseWidth - 20);
+        //   // p.y = p.y.clamp(0.0, baseHeight - 20);
 
-      //   debugPrint("LH DOT => id:${p.index}, x:${p.x}, y:${p.y}");
-      // });
-    },
+        //   debugPrint("LH DOT => id:${p.index}, x:${p.x}, y:${p.y}");
+        // });
+      },
 
-    child: Container(
-      width: 25,
-      height: 25,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.black, width: 2),
+      child: Container(
+        width: 25,
+        height: 25,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.black, width: 2),
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   /// --------------------------------------------------
   /// UI
@@ -309,16 +308,15 @@ Widget _buildDot(PointData p, double scaleX, double scaleY) {
                         children: [
                           Positioned.fill(
                             child: Image.asset(
-                              "assets/images/hand2.jpeg", // same bg
-                              fit: BoxFit.fill,
+                              "assets/images/lf_hand.png",
+                              fit: BoxFit.contain,
                             ),
                           ),
                           ...points.map(
                             (p) => Positioned(
-                left: (p.x * scaleX) - 10,
-                top: (p.y * scaleY) - 10,
-                child: _buildDot(p, scaleX, scaleY),
-                          
+                              left: (p.x * scaleX) - 10,
+                              top: (p.y * scaleY) - 10,
+                              child: _buildDot(p, scaleX, scaleY),
                             ),
                           ),
                         ],

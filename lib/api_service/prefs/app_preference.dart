@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,6 +22,10 @@ class AppPreference {
   Future<void> initialAppPreference() async {
     _preferences = await SharedPreferences.getInstance();
   }
+
+Future<void> remove(String key) async {
+  await _preferences?.remove(key);
+}
 
   Future setString(String key, String value) async {
     await _preferences?.setString(key, value);
@@ -51,8 +56,35 @@ class AppPreference {
   }
 
   Future clearSharedPreferences() async {
+    // Save welcome dialog data before clearing
+    final welcomeMobile = _preferences?.getString('welcome_mobile');
+    final welcomeEmail = _preferences?.getString('welcome_email');
+    final welcomeDealerId = _preferences?.getString('welcome_dealer_id');
+    final isFirstTime = _preferences?.getBool('is_first_time_user');
+    final welcomeShown = _preferences?.getBool('welcome_dialog_shown');
+    
+    // Clear all data
     await _preferences?.clear();
     await _preferences!.remove(PreferencesKey.token);
+    
+    // Restore welcome dialog data (should persist across logout)
+    if (welcomeMobile != null) {
+      await _preferences!.setString('welcome_mobile', welcomeMobile);
+    }
+    if (welcomeEmail != null) {
+      await _preferences!.setString('welcome_email', welcomeEmail);
+    }
+    if (welcomeDealerId != null) {
+      await _preferences!.setString('welcome_dealer_id', welcomeDealerId);
+    }
+    if (isFirstTime != null) {
+      await _preferences!.setBool('is_first_time_user', isFirstTime);
+    }
+    if (welcomeShown != null) {
+      await _preferences!.setBool('welcome_dialog_shown', welcomeShown);
+    }
+    
+    debugPrint("✅ Logout: Cleared session data but preserved welcome dialog data");
     // await _preferences!.remove(PreferencesKey.introPage);
     // await _preferences!.remove(PreferencesKey.isLoggedIn);
     // await _preferences!.remove(PreferencesKey.isLoggedInFirstTimeSt);

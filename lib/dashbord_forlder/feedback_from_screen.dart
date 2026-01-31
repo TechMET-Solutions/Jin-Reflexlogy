@@ -555,46 +555,48 @@ class _FeedBackFormNewState extends State<FeedBackFormNew> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: LayoutBuilder(
-  builder: (context, constraints) {
-    final width = constraints.maxWidth;
+                          builder: (context, constraints) {
+                            final width = constraints.maxWidth;
 
-    return AspectRatio(
-      aspectRatio: imageAspectRatio, // correct ratio
-      child: GestureDetector(
-        onTapDown: (details) {
-          final box = context.findRenderObject() as RenderBox;
-          final local = box.globalToLocal(details.globalPosition);
+                            return AspectRatio(
+                              aspectRatio: imageAspectRatio, // correct ratio
+                              child: GestureDetector(
+                                onTapDown: (details) {
+                                  final box =
+                                      context.findRenderObject() as RenderBox;
+                                  final local = box.globalToLocal(
+                                    details.globalPosition,
+                                  );
 
-          final dx = local.dx / box.size.width;
-          final dy = local.dy / box.size.height;
+                                  final dx = local.dx / box.size.width;
+                                  final dy = local.dy / box.size.height;
 
-          for (final cell in bodyCells) {
-            if (cell.contains(dx, dy)) {
-              _toggleCellSelection(cell.id);
-              break;
-            }
-          }
-        },
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              'assets/images/fedback.jpeg',
-              fit: BoxFit.contain, // ✅ No stretch
-            ),
+                                  for (final cell in bodyCells) {
+                                    if (cell.contains(dx, dy)) {
+                                      _toggleCellSelection(cell.id);
+                                      break;
+                                    }
+                                  }
+                                },
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Image.asset(
+                                      'assets/images/fedback.jpeg',
+                                      fit: BoxFit.contain, // ✅ No stretch
+                                    ),
 
-            CustomPaint(
-              painter: BodyHighlightPainter(
-                selectedCellIds: selectedCellIds,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  },
-),
-
+                                    CustomPaint(
+                                      painter: BodyHighlightPainter(
+                                        selectedCellIds: selectedCellIds,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
 
@@ -603,7 +605,6 @@ class _FeedBackFormNewState extends State<FeedBackFormNew> {
                 ),
               ),
 
-            
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
                 color: Colors.grey.shade50,

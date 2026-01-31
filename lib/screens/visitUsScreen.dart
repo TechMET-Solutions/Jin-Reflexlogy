@@ -50,10 +50,10 @@ class _VisitUsScreenState extends ConsumerState<VisitUsScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.asset(
-                  "assets/images/google_map.png",
+                  "assets/images/location.jpeg",
                   height: 250,
                   width: double.infinity,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.fill,
                 ),
               ),
             ),

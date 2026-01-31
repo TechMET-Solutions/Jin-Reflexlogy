@@ -283,7 +283,7 @@ Future<void> loadPoints() async {
   Widget build(BuildContext context) {
     double desiredAspect = baseWidth / baseHeight;
     double screenW = MediaQuery.of(context).size.width * 0.90;
-   double screenH = MediaQuery.of(context).size.height * 0.9;
+   double screenH = MediaQuery.of(context).size.height * 10;
 
 
     double containerW = math.min(screenW, screenH * desiredAspect);
@@ -304,7 +304,7 @@ Future<void> loadPoints() async {
               ? const Center(child: CircularProgressIndicator())
               : Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 25),
                   child: SizedBox(
                     width: containerW,
                     height: containerH,
@@ -314,8 +314,8 @@ Future<void> loadPoints() async {
                         children: [
                           Positioned.fill(
                             child: Image.asset(
-                              "assets/images/hand.jpeg",
-                              fit: BoxFit.fill,
+                              "assets/images/rh_hand.png",
+                              fit: BoxFit.contain,
                             ),
                           ),
                           ...points.map(

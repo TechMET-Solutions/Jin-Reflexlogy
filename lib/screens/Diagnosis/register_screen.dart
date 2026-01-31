@@ -24,6 +24,7 @@ class _AddPatientFormState extends State<AddPatientForm> {
   final TextEditingController city = TextEditingController();
   final TextEditingController address = TextEditingController();
   final TextEditingController mobile = TextEditingController();
+  final TextEditingController dealerId = TextEditingController();
   final TextEditingController postalCode = TextEditingController();
 
   final List<String> bloodGroups = [
@@ -114,6 +115,7 @@ class _AddPatientFormState extends State<AddPatientForm> {
                     required: true,
                     inputType: TextInputType.phone,
                   ),
+                  _buildTextField("Dealer ID (Optional)", dealerId),
                   _buildTextField("Postal Code*", postalCode, required: true),
 
                   const SizedBox(height: 10),

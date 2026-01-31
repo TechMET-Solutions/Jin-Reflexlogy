@@ -524,7 +524,7 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
                                         subtotal: subtotal,
                                         discount: discount,
                                         total: total,
-                                        delveryType: widget.deliveryType,
+                                        deliveryType: widget.deliveryType,
                                       ),
                                 ),
                               ).then((_) {

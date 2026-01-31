@@ -16,7 +16,6 @@ import 'package:jin_reflex_new/screens/Diagnosis/left_foot_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/left_hand_sc.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/right_hand_sc.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/right_screen.dart';
-import 'package:jin_reflex_new/screens/right_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -27,13 +26,14 @@ class DiagnosisScreen extends StatefulWidget {
     this.name,
     this.diagnosis_id,
     this.gender,
+    this.isNew = false,
   });
 
-  // keep dynamic for flexibility (int or String)
   final dynamic patient_id;
   final dynamic name;
   final dynamic diagnosis_id;
   final String? gender;
+  final bool isNew;
 
   @override
   State<DiagnosisScreen> createState() => _DiagnosisScreenState();
@@ -44,13 +44,11 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   final TextEditingController matchedProblem = TextEditingController();
   final TextEditingController notDetected = TextEditingController();
 
-  // Track which parts are completed
   bool lfSaved = false;
   bool rfSaved = false;
   bool lhSaved = false;
   bool rhSaved = false;
 
-  // Store results
   String? lfData;
   String? lfImg64;
   String? lfResult;
@@ -65,48 +63,55 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   String? lhImg;
 
   bool isLoading = false;
+  double uploadProgress = 0.0;
 
-  final List<Map<String, dynamic>> diagnosisOptions = [
-    {
-      "title": "Diagnose Left Foot",
-      "type": "lf",
-      "screen": LeftFootScreenNew(
-        diagnosisId: "", // Will be set dynamically
-        patientId: "", // Will be set dynamically
-      ),
-    },
-    {
-      "title": "Diagnose Right Foot",
-      "type": "rf",
-      "screen": rightFootScreenNew(
-        pid: "", // Will be set dynamically
-        diagnosisId: "", // Will be set dynamically
-      ),
-    },
-    {
-      "title": "Diagnose Left Hand",
-      "type": "lh",
-      "screen": LeftHandScreen(
-        pid: "", // Will be set dynamically
-        diagnosisId: "", // Will be set dynamically
-      ),
-    },
-    {
-      "title": "Diagnose Right Hand",
-      "type": "rh",
-      "screen": RightHandScreen(
-        pid: "", // Will be set dynamically
-        diagnosisId: "", // Will be set dynamically
-      ),
-    },
-  ];
+  // Initialize as empty list, will be populated in initState
+  late List<Map<String, dynamic>> diagnosisOptions;
 
   @override
   void initState() {
     super.initState();
+    // Initialize diagnosisOptions in initState where widget is available
+    diagnosisOptions = [
+      {
+        "title": "Diagnose Left Foot",
+        "type": "lf",
+        // These will be updated dynamically in onTap
+        "screen": LeftFootScreenNew(
+          diagnosisId: widget.diagnosis_id?.toString() ?? "",
+          patientId: widget.patient_id?.toString() ?? "",
+          isNew: widget.isNew,
+        ),
+      },
+      {
+        "title": "Diagnose Right Foot",
+        "type": "rf",
+        "screen": rightFootScreenNew(
+          pid: widget.patient_id?.toString() ?? "",
+          diagnosisId: widget.diagnosis_id?.toString() ?? "",
+        ),
+      },
+      {
+        "title": "Diagnose Left Hand",
+        "type": "lh",
+        "screen": LeftHandScreen(
+          pid: widget.patient_id?.toString() ?? "",
+          diagnosisId: widget.diagnosis_id?.toString() ?? "",
+          gender: widget.gender,
+        ),
+      },
+      {
+        "title": "Diagnose Right Hand",
+        "type": "rh",
+        "screen": RightHandScreen(
+          pid: widget.patient_id?.toString() ?? "",
+          diagnosisId: widget.diagnosis_id?.toString() ?? "",
+          gender: widget.gender,
+        ),
+      },
+    ];
   }
 
-  double uploadProgress = 0.0;
   void showSnack(BuildContext context, String message, {bool error = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -117,7 +122,6 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     );
   }
 
-  // Check if all four parts are completed
   bool get allPartsCompleted {
     return lfSaved && rfSaved && lhSaved && rhSaved;
   }
@@ -166,7 +170,6 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                       onPressed: () => Navigator.of(context).pop(false),
                       child: const Text("Cancel"),
                     ),
-
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
@@ -190,7 +193,6 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
             ) ??
             false;
       },
-
       child: Scaffold(
         backgroundColor: const Color(0xffF7F3EB),
         appBar: CommonAppBar(title: "Diagnosis"),
@@ -199,7 +201,6 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Patient Info Card
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
@@ -233,10 +234,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // Diagnosis Title
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -256,10 +254,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 14),
-
-              // Diagnosis Options with status indicators
               ...diagnosisOptions.map((option) {
                 String type = option["type"];
                 bool isCompleted = false;
@@ -308,9 +303,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                       height: 40,
                       decoration: BoxDecoration(
                         color:
-                            isCompleted
-                                ? Colors.green
-                                : const Color(0xffF9CF63),
+                            isCompleted ? Colors.green : const Color(0xffF9CF63),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -332,21 +325,18 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                         fontSize: 15,
                       ),
                     ),
-                    subtitle:
-                        isCompleted && result.isNotEmpty
-                            ? Text(
-                              "Result: $result",
-                              style: const TextStyle(
-                                color: Colors.green,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            )
-                            : null,
+                    subtitle: isCompleted && result.isNotEmpty
+                        ? Text(
+                            "Result: $result",
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          )
+                        : null,
                     trailing: Icon(
-                      isCompleted
-                          ? Icons.check_circle
-                          : Icons.arrow_forward_ios,
+                      isCompleted ? Icons.check_circle : Icons.arrow_forward_ios,
                       color: isCompleted ? Colors.green : Colors.grey,
                       size: 20,
                     ),
@@ -357,46 +347,43 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                         result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder:
-                                (_) => LeftFootScreenNew(
-                                  diagnosisId: widget.diagnosis_id.toString(),
-                                  patientId: widget.patient_id.toString(),
-                                ),
+                            builder: (_) => LeftFootScreenNew(
+                              diagnosisId: widget.diagnosis_id.toString(),
+                              patientId: widget.patient_id.toString(),
+                              isNew: widget.isNew,
+                            ),
                           ),
                         );
                       } else if (type == "rf") {
                         result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder:
-                                (_) => rightFootScreenNew(
-                                  pid: widget.patient_id.toString(),
-                                  diagnosisId: widget.diagnosis_id.toString(),
-                                ),
+                            builder: (_) => rightFootScreenNew(
+                              pid: widget.patient_id.toString(),
+                              diagnosisId: widget.diagnosis_id.toString(),
+                            ),
                           ),
                         );
                       } else if (type == "rh") {
                         result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder:
-                                (_) => RightHandScreen(
-                                  pid: widget.patient_id.toString(),
-                                  diagnosisId: widget.diagnosis_id.toString(),
-                                  gender: widget.gender,
-                                ),
+                            builder: (_) => RightHandScreen(
+                              pid: widget.patient_id.toString(),
+                              diagnosisId: widget.diagnosis_id.toString(),
+                              gender: widget.gender,
+                            ),
                           ),
                         );
                       } else if (type == "lh") {
                         result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder:
-                                (_) => LeftHandScreen(
-                                  pid: widget.patient_id.toString(),
-                                  diagnosisId: widget.diagnosis_id.toString(),
-                                  gender: widget.gender,
-                                ),
+                            builder: (_) => LeftHandScreen(
+                              pid: widget.patient_id.toString(),
+                              diagnosisId: widget.diagnosis_id.toString(),
+                              gender: widget.gender,
+                            ),
                           ),
                         );
                       }
@@ -434,7 +421,6 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                           }
                         });
 
-                        // Show success message
                         if (mounted) {
                           showSnack(
                             context,
@@ -446,8 +432,6 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                   ),
                 );
               }),
-
-              // Status Summary
               Container(
                 margin: const EdgeInsets.only(top: 10, bottom: 10),
                 padding: const EdgeInsets.all(12),
@@ -466,8 +450,6 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                   ],
                 ),
               ),
-
-              // Satisfaction Section
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -511,16 +493,12 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 8),
-
                     _textInput(
                       "Which of the Diagnosis points match your problem?",
                       matchedProblem,
                     ),
-
                     const SizedBox(height: 12),
-
                     _textInput(
                       "Which problems were not detected?",
                       notDetected,
@@ -528,12 +506,10 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 80),
             ],
           ),
         ),
-
         bottomNavigationBar: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -557,37 +533,46 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
               ),
               allPartsCompleted
                   ? InkWell(
-                    onTap:
-                        isLoading
-                            ? null
-                            : () {
+                      onTap: isLoading
+                          ? null
+                          : () {
                               if (matchedProblem.text.isEmpty) {
                                 Utils().showToastMessage(
-                                  "plse enter Which of the Diagnosis points match your problem?",
+                                  "Please enter which diagnosis points match your problem?",
                                 );
                                 return;
                               }
-                              if (matchedProblem.text.isEmpty) {
-                                Utils().showToastMessage("message");
+                              if (notDetected.text.isEmpty) {
+                                Utils().showToastMessage(
+                                    "Please enter which problems were not detected?");
                                 return;
                               }
                               submitDiagnosis();
                             },
-                    borderRadius: BorderRadius.circular(30),
-                    child:
-                        isLoading
-                            ? _loadingButton()
-                            : _button("Submit", Colors.green, () {
-                              submitDiagnosis();
-                            }, isEnabled: true),
-                  )
-                  : _button("Submit", Colors.grey, () {
-                    showSnack(
-                      context,
-                      "Please complete all 4 diagnosis parts first!",
-                      error: true,
-                    );
-                  }, isEnabled: false),
+                      borderRadius: BorderRadius.circular(30),
+                      child: isLoading
+                          ? _loadingButton()
+                          : _button(
+                              "Submit",
+                              Colors.green,
+                              () {
+                                submitDiagnosis();
+                              },
+                              isEnabled: true,
+                            ),
+                    )
+                  : _button(
+                      "Submit",
+                      Colors.grey,
+                      () {
+                        showSnack(
+                          context,
+                          "Please complete all 4 diagnosis parts first!",
+                          error: true,
+                        );
+                      },
+                      isEnabled: false,
+                    ),
             ],
           ),
         ),
@@ -677,29 +662,21 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     }
 
     try {
-      // Base64 string ला Uint8List मध्ये convert करा
       Uint8List imageBytes = base64Decode(base64Image);
-
-      // Image size check करा
       int originalSize = imageBytes.lengthInBytes;
       debugPrint("Original image size: ${originalSize ~/ 1024} KB");
 
-      // जर image 500KB पेक्षा लहान असेल तर compress करू नका
       if (originalSize < 500 * 1024) {
-        return base64Image; // Original image return करा
+        return base64Image;
       }
 
-      // Quality based on size
       int quality = 70;
       if (originalSize > 2 * 1024 * 1024) {
-        // 2MB पेक्षा मोठं
         quality = 50;
       } else if (originalSize > 1 * 1024 * 1024) {
-        // 1MB पेक्षा मोठं
         quality = 60;
       }
 
-      // Image compress करा
       Uint8List? compressedBytes = await FlutterImageCompress.compressWithList(
         imageBytes,
         minHeight: 800,
@@ -720,10 +697,10 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
         return compressedBase64;
       }
 
-      return base64Image; // जर compress fail झालं तर original return करा
+      return base64Image;
     } catch (e) {
       debugPrint("Image compression error: $e");
-      return base64Image; // Error आल्यास original return करा
+      return base64Image;
     }
   }
 
@@ -734,17 +711,12 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     });
 
     try {
-      // Debug: Original sizes
       debugPrint("=== Original Image Sizes ===");
       if (lfImg64 != null) debugPrint("LF: ${lfImg64!.length ~/ 1024} KB");
       if (rfImg != null) debugPrint("RF: ${rfImg!.length ~/ 1024} KB");
       if (lhImg != null) debugPrint("LH: ${lhImg!.length ~/ 1024} KB");
       if (rhImg != null) debugPrint("RH: ${rhImg!.length ~/ 1024} KB");
 
-      // सर्व images compress करा
-      // showSnack(context, "Compressing images...", duration: 2);
-
-      // Parallel compression
       List<Future> compressionTasks = [];
 
       String? compressedLfImg;
@@ -752,67 +724,20 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       String? compressedLhImg;
       String? compressedRhImg;
 
-      // प्रत्येक image साठी compress करा
-      if (lfImg64 != null && lfImg64!.isNotEmpty) {
-        compressionTasks.add(
-          compressBase64Image(lfImg64!).then((value) {
-            compressedLfImg = value;
-          }),
-        );
-      }
+    
 
-      if (rfImg != null && rfImg!.isNotEmpty) {
-        compressionTasks.add(
-          compressBase64Image(rfImg!).then((value) {
-            compressedRfImg = value;
-          }),
-        );
-      }
+     
+     
 
-      if (lhImg != null && lhImg!.isNotEmpty) {
-        compressionTasks.add(
-          compressBase64Image(lhImg!).then((value) {
-            compressedLhImg = value;
-          }),
-        );
-      }
+     
 
-      if (rhImg != null && rhImg!.isNotEmpty) {
-        compressionTasks.add(
-          compressBase64Image(rhImg!).then((value) {
-            compressedRhImg = value;
-          }),
-        );
-      }
-
-      // Wait for all compression to complete
-      if (compressionTasks.isNotEmpty) {
-        await Future.wait(compressionTasks);
-
-        // Debug: Compressed sizes
-        debugPrint("=== Compressed Image Sizes ===");
-        if (compressedLfImg != null)
-          debugPrint("LF: ${compressedLfImg!.length ~/ 1024} KB");
-        if (compressedRfImg != null)
-          debugPrint("RF: ${compressedRfImg!.length ~/ 1024} KB");
-        if (compressedLhImg != null)
-          debugPrint("LH: ${compressedLhImg!.length ~/ 1024} KB");
-        if (compressedRhImg != null)
-          debugPrint("RH: ${compressedRhImg!.length ~/ 1024} KB");
-      }
-
-      // Calculate total size
+     
       int totalSize = 0;
-      totalSize += compressedLfImg?.length ?? 0;
-      totalSize += compressedRfImg?.length ?? 0;
-      totalSize += compressedLhImg?.length ?? 0;
-      totalSize += compressedRhImg?.length ?? 0;
+
 
       debugPrint("Total size to upload: ${totalSize ~/ 1024} KB");
 
-      // जर खूप मोठं असेल तर warning
       if (totalSize > 5 * 1024 * 1024) {
-        // 5MB
         showSnack(
           context,
           "Warning: Large data size (${totalSize ~/ 1024}KB). Upload may take time.",
@@ -822,17 +747,16 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
 
       FormData formData = FormData.fromMap({
         "lf_data": lfData ?? "",
-        "lf_img":
-            lfImg64 ?? (lfImg64 ?? ""), // जर compress fail झालं तर original
+        "lf_img": lfImg64 ?? lfImg64 ?? "",
         "lf_result": lfResult ?? "",
         "rf_data": rfData ?? "",
-        "rf_img": rfImg ?? (rfImg ?? ""),
+        "rf_img": rfImg ?? rfImg ?? "",
         "rf_result": rfResult ?? "",
         "lh_data": lhData ?? "",
-        "lh_img": lhImg ?? (lhImg ?? ""),
+        "lh_img": lhImg ?? lhImg ?? "",
         "lh_result": lhResult ?? "",
         "rh_data": rhData ?? "",
-        "rh_img": rhImg ?? (rhImg ?? ""),
+        "rh_img": rhImg ?? rhImg ?? "",
         "rh_result": rhResult ?? "",
         "problems_matched": matchedProblem.text,
         "not_detected": notDetected.text,
@@ -845,12 +769,9 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
 
       final dio = Dio();
 
-      // Increase timeout for large uploads
       dio.options.connectTimeout = Duration(seconds: 60);
       dio.options.receiveTimeout = Duration(seconds: 60);
       dio.options.sendTimeout = Duration(seconds: 120);
-
-      // showSnack(context, "Uploading data...", duration: 2);
 
       final response = await dio.post(
         add_diagnosis,
@@ -869,14 +790,13 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
               });
             }
 
-            // Debug progress
             debugPrint(
               "Upload: ${sent ~/ 1024}KB / ${total ~/ 1024}KB (${progress.toStringAsFixed(1)}%)",
             );
           }
         },
       );
-      // 🔍 DEBUG: FormData fields
+
       debugPrint("===== FORM DATA FIELDS =====");
       for (var field in formData.fields) {
         debugPrint(
@@ -884,7 +804,6 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
         );
       }
 
-      // 🔍 DEBUG: FormData files
       debugPrint("===== FORM DATA FILES =====");
       for (var file in formData.files) {
         debugPrint("${file.key} => ${file.value.filename}");

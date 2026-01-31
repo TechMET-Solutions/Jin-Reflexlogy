@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'PreferencesKey.dart';
@@ -50,7 +51,35 @@ Future<void> clearSharedPreferences() async {
   if (_preferences == null) {
     _preferences = await SharedPreferences.getInstance();
   }
+  
+  // Save welcome dialog data before clearing
+  final welcomeMobile = _preferences!.getString('welcome_mobile');
+  final welcomeEmail = _preferences!.getString('welcome_email');
+  final welcomeDealerId = _preferences!.getString('welcome_dealer_id');
+  final isFirstTime = _preferences!.getBool('is_first_time_user');
+  final welcomeShown = _preferences!.getBool('welcome_dialog_shown');
+  
+  // Clear all data
   await _preferences!.clear();
+  
+  // Restore welcome dialog data (should persist across logout)
+  if (welcomeMobile != null) {
+    await _preferences!.setString('welcome_mobile', welcomeMobile);
+  }
+  if (welcomeEmail != null) {
+    await _preferences!.setString('welcome_email', welcomeEmail);
+  }
+  if (welcomeDealerId != null) {
+    await _preferences!.setString('welcome_dealer_id', welcomeDealerId);
+  }
+  if (isFirstTime != null) {
+    await _preferences!.setBool('is_first_time_user', isFirstTime);
+  }
+  if (welcomeShown != null) {
+    await _preferences!.setBool('welcome_dialog_shown', welcomeShown);
+  }
+  
+  debugPrint("✅ Logout: Cleared session data but preserved welcome dialog data");
 }
 
 

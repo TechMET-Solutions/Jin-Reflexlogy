@@ -198,7 +198,7 @@ class _rightFootScreenNewState extends State<rightFootScreenNew> {
   Future<void> fetchServerData() async {
     try {
       final response = await Dio().post(
-        "https://jinreflexology.in/api/get_data.php",
+        "https://jinreflexology.in/api1/new/get_data.php",
         data: FormData.fromMap({
           "diagnosisId": widget.diagnosisId,
           "pid": widget.pid,

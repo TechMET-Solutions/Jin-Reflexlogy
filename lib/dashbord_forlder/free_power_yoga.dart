@@ -113,19 +113,33 @@ class _PowerYogaScreenState extends State<PowerYogaScreen> {
   /// =====================
   /// YOUTUBE THUMBNAIL (SAME AS SUCCESS STORY)
   /// =====================
+  /// =====================
+  /// GET YOUTUBE THUMBNAIL
+  /// =====================
   String getYoutubeThumbnail(String url) {
     try {
       final uri = Uri.parse(url);
       String? videoId;
 
+      // youtu.be/ID
       if (uri.host.contains("youtu.be")) {
-        videoId = uri.pathSegments.first;
-      } else {
+        if (uri.pathSegments.isNotEmpty) {
+          videoId = uri.pathSegments.first;
+        }
+      }
+      // youtube.com/watch?v=ID
+      else if (uri.host.contains("youtube.com")) {
         videoId = uri.queryParameters['v'];
       }
 
+      if (videoId == null || videoId.isEmpty) {
+        return "";
+      }
+
+      // HD thumbnail (fallback to normal if not exists)
       return "https://img.youtube.com/vi/$videoId/0.jpg";
-    } catch (_) {
+    } catch (e) {
+      debugPrint("Thumbnail Error: $e");
       return "";
     }
   }
@@ -134,9 +148,16 @@ class _PowerYogaScreenState extends State<PowerYogaScreen> {
   /// OPEN YOUTUBE
   /// =====================
   Future<void> openYoutube(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    try {
+      final uri = Uri.parse(url);
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        debugPrint("Cannot open: $url");
+      }
+    } catch (e) {
+      debugPrint("Open Youtube Error: $e");
     }
   }
 

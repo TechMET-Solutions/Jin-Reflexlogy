@@ -64,7 +64,7 @@ class PatientDiagnosisScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const DiagnosisScreen(),
+                        builder: (context) =>  DiagnosisScreen(isNew: true,),
                       ),
                     );
                   ScaffoldMessenger.of(context).showSnackBar(
