@@ -39,6 +39,8 @@ class _WelcomeDialogState extends State<WelcomeDialog>
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _dealerIdController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -97,6 +99,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
       final response = await dio.post(
         'https://admin.jinreflexology.in/api/user-dealer-mappings',
         data: {
+          "name":_nameController.text.trim(),
           "mobile": _mobileController.text.trim(),
           "email": _emailController.text.trim(),
           "dealerId": _dealerIdController.text.trim().isEmpty 
@@ -332,8 +335,63 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 15),
+TextFormField(
+  controller: _nameController,
+  style: const TextStyle(color: Colors.white),
+  keyboardType: TextInputType.name,
+  textCapitalization: TextCapitalization.words,
 
+  decoration: InputDecoration(
+    labelText: 'Full Name *',
+    labelStyle: const TextStyle(color: Colors.white70),
+
+    prefixIcon: const Icon(
+      Icons.person,
+      color: Colors.yellow,
+    ),
+
+    filled: true,
+    fillColor: Colors.white.withOpacity(0.1),
+
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide:
+          BorderSide(color: Colors.white.withOpacity(0.3)),
+    ),
+
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide:
+          BorderSide(color: Colors.white.withOpacity(0.3)),
+    ),
+
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide:
+          const BorderSide(color: Colors.yellow, width: 2),
+    ),
+
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: Colors.red),
+    ),
+  ),
+
+  validator: (value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Name is required';
+    }
+
+    if (value.trim().length < 3) {
+      return 'Enter valid name';
+    }
+
+    return null;
+  },
+),
+
+                     const SizedBox(height: 10),
                     // Mobile Number Field
                     TextFormField(
                       controller: _mobileController,

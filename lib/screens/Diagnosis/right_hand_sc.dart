@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:dio/dio.dart';
+import 'package:jin_reflex_new/api_service/global/utils.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
@@ -202,24 +203,52 @@ Future<void> loadPoints() async {
 
   /// --------------------------------------------------
   /// SCREENSHOT
-  Future<String?> captureScreenshot() async {
-    try {
-      await Future.delayed(const Duration(milliseconds: 100));
-      final boundary =
-          screenshotKey.currentContext?.findRenderObject()
-              as RenderRepaintBoundary?;
-      if (boundary == null) return null;
+   Future<String?> captureScreenshot() async {
+  try {
+    await Future.delayed(const Duration(milliseconds: 100));
 
-      final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) return null;
+    final boundary =
+        screenshotKey.currentContext?.findRenderObject()
+            as RenderRepaintBoundary?;
 
-      return base64Encode(byteData.buffer.asUint8List());
-    } catch (e) {
-      debugPrint("❌ RH Screenshot error: $e");
+    if (boundary == null) {
+      debugPrint("Screenshot: boundary null");
       return null;
     }
+
+    // ⭐ Medium quality (fast + stable)
+    final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final paint = Paint();
+
+    // ✅ FIX: Vertical flip (upside-down bug)
+    canvas.translate(0, image.height.toDouble());
+    canvas.scale(1, -1);
+
+    canvas.drawImage(image, Offset.zero, paint);
+
+    final picture = recorder.endRecording();
+
+    final fixedImage =
+        await picture.toImage(image.width, image.height);
+
+    final byteData =
+        await fixedImage.toByteData(format: ui.ImageByteFormat.png);
+
+    if (byteData == null) return null;
+
+    final bytes = byteData.buffer.asUint8List();
+
+    return base64Encode(bytes);
+  } catch (e, st) {
+    debugPrint("Screenshot error: $e");
+    debugPrint("$st");
+    return null;
   }
+}
+
 
   /// --------------------------------------------------
   /// SAVE & EXIT
@@ -250,6 +279,12 @@ Future<void> loadPoints() async {
         setState(() {
           p.state = (p.state + 1) % 3;
         });
+                ScaffoldMessenger.of(context).clearSnackBars();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(p.tag), duration: Duration(milliseconds: 500)),
+        );
+
       },
 
       /// 👉 DOT MOVE (DRAG)
@@ -312,12 +347,17 @@ Future<void> loadPoints() async {
                       key: screenshotKey,
                       child: Stack(
                         children: [
-                          Positioned.fill(
-                            child: Image.asset(
-                              "assets/images/rh_hand.png",
-                              fit: BoxFit.contain,
-                            ),
-                          ),
+                        Positioned.fill(
+  child: Transform.rotate(
+    angle: 3.1416, // 180 degree
+    child: Image.asset(
+      "assets/images/rh_hand.png",
+      fit: BoxFit.contain,
+    ),
+  ),
+),
+
+
                           ...points.map(
                             (p) => Positioned(
                               left: (p.x * scaleX) - 12.5,

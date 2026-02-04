@@ -5,7 +5,7 @@ import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// =====================
-/// MODELS
+/// MODELS (keep as is)
 /// =====================
 class PowerYogaResponse {
   final bool success;
@@ -98,10 +98,9 @@ class _PowerYogaScreenState extends State<PowerYogaScreen> {
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        yogaList =
-            (jsonData['data'] as List)
-                .map((e) => PowerYoga.fromJson(e))
-                .toList();
+        yogaList = (jsonData['data'] as List)
+            .map((e) => PowerYoga.fromJson(e))
+            .toList();
       }
     } catch (e) {
       debugPrint("API Error: $e");
@@ -110,9 +109,6 @@ class _PowerYogaScreenState extends State<PowerYogaScreen> {
     setState(() => isLoading = false);
   }
 
-  /// =====================
-  /// YOUTUBE THUMBNAIL (SAME AS SUCCESS STORY)
-  /// =====================
   /// =====================
   /// GET YOUTUBE THUMBNAIL
   /// =====================
@@ -136,7 +132,6 @@ class _PowerYogaScreenState extends State<PowerYogaScreen> {
         return "";
       }
 
-      // HD thumbnail (fallback to normal if not exists)
       return "https://img.youtube.com/vi/$videoId/0.jpg";
     } catch (e) {
       debugPrint("Thumbnail Error: $e");
@@ -162,117 +157,260 @@ class _PowerYogaScreenState extends State<PowerYogaScreen> {
   }
 
   /// =====================
-  /// UI
+  /// RESPONSIVE UI
   /// =====================
   @override
   Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width >= 600;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = isTablet ? 24.0 : 12.0;
+
     return Scaffold(
       appBar: CommonAppBar(title: "Power Yoga"),
-      body:
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: yogaList.length,
-                itemBuilder: (context, index) {
-                  final yoga = yogaList[index];
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              padding: EdgeInsets.all(padding),
+              itemCount: yogaList.length,
+              itemBuilder: (context, index) {
+                final yoga = yogaList[index];
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Heading with responsive font size
+                    Text(
+                      yoga.heading,
+                      style: TextStyle(
+                        fontSize: isTablet ? 22.0 : 18.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: isTablet ? 16.0 : 10.0),
+
+                    // Videos grid/list based on screen size
+                    isTablet
+                        ? _buildTabletVideos(yoga.videos, screenWidth)
+                        : _buildMobileVideos(yoga.videos),
+                    
+                    SizedBox(height: isTablet ? 24.0 : 20.0),
+                  ],
+                );
+              },
+            ),
+    );
+  }
+
+  /// =====================
+  /// TABLET LAYOUT (Grid View)
+  /// =====================
+  Widget _buildTabletVideos(List<YogaVideo> videos, double screenWidth) {
+    // Calculate columns based on screen width
+    final crossAxisCount = screenWidth >= 900 ? 3 : 2;
+    final itemSpacing = 16.0;
+    final runSpacing = 16.0;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: itemSpacing,
+        mainAxisSpacing: runSpacing,
+        childAspectRatio: 1.1, // Better aspect ratio for tablets
+      ),
+      itemCount: videos.length,
+      itemBuilder: (context, index) {
+        final video = videos[index];
+        final thumbnail = getYoutubeThumbnail(video.youtubeLink);
+
+        return GestureDetector(
+          onTap: () => openYoutube(video.youtubeLink),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xfffff3d6),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xfff1cd8f),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Video title with responsive font
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Text(
+                    video.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+
+                // Thumbnail with play button
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Thumbnail image
+                          _buildThumbnailImage(video, true),
+                          
+                          // Play button overlay
+                          Container(
+                            width: 70,
+                            height: 70,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.black.withOpacity(0.5),
+                            ),
+                            child: const Icon(
+                              Icons.play_arrow,
+                              size: 40,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// =====================
+  /// MOBILE LAYOUT (List View)
+  /// =====================
+  Widget _buildMobileVideos(List<YogaVideo> videos) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: videos.length,
+      itemBuilder: (context, index) {
+        final video = videos[index];
+        final thumbnail = getYoutubeThumbnail(video.youtubeLink);
+
+        return GestureDetector(
+          onTap: () => openYoutube(video.youtubeLink),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xfffff3d6),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xfff1cd8f),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  video.title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Text(
-                        yoga.heading,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      // Thumbnail image
+                      _buildThumbnailImage(video, false),
+                      
+                      // Play button overlay
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black.withOpacity(0.4),
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow,
+                          size: 36,
+                          color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 10),
-
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: yoga.videos.length,
-                        itemBuilder: (context, i) {
-                          final video = yoga.videos[i];
-                          final thumbnail = getYoutubeThumbnail(
-                            video.youtubeLink,
-                          );
-
-                          return GestureDetector(
-                            onTap: () => openYoutube(video.youtubeLink),
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xfffff3d6),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: const Color(0xfff1cd8f),
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    video.title,
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        Image.network(
-                                          "${video.image_url}",
-                                          height: 200,
-                                          width: double.infinity,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (_, __, ___) => Container(
-                                                height: 200,
-                                                width: double.infinity,
-                                                color: Colors.grey[300],
-                                                child: const Icon(
-                                                  Icons.broken_image,
-                                                  size: 40,
-                                                ),
-                                              ),
-                                        ),
-                                        Container(
-                                          width: 80,
-                                          height: 80,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: Colors.black.withOpacity(
-                                              0.4,
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.play_arrow,
-                                            size: 42,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 20),
                     ],
-                  );
-                },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// =====================
+  /// REUSABLE THUMBNAIL IMAGE WIDGET
+  /// =====================
+  Widget _buildThumbnailImage(YogaVideo video, bool isTablet) {
+    return Image.network(
+      video.image_url.isNotEmpty ? video.image_url : getYoutubeThumbnail(video.youtubeLink),
+      height: isTablet ? 180 : 200,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(
+        height: isTablet ? 180 : 200,
+        width: double.infinity,
+        color: Colors.grey[300],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.broken_image,
+              size: 40,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Image not available",
+              style: TextStyle(
+                fontSize: isTablet ? 14 : 12,
+                color: Colors.grey[600],
               ),
+            ),
+          ],
+        ),
+      ),
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(
+          height: isTablet ? 180 : 200,
+          width: double.infinity,
+          color: Colors.grey[200],
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      },
     );
   }
 }

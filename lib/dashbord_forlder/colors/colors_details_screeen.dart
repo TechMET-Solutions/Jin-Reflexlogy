@@ -14,25 +14,43 @@ class ColorDetailsScreen extends StatelessWidget {
             : null;
 
     return DefaultTabController(
-      length: 3,
+      length: 6, // Fixed 6 tabs for colors
       child: Scaffold(
         appBar: CommonAppBar(title: item["title"] ?? ""),
         body: Column(
           children: [
             /// IMAGE
+            SizedBox(height: 10),
             imageUrl != null
-                ? Image.network(
+                ? Container(
+                  //height: 220,
+                  width: double.infinity,
+                  decoration: BoxDecoration(color: Colors.grey[200]),
+                  child: Image.network(
                     imageUrl,
-                    height: 220,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        const SizedBox(height: 220, child: Icon(Icons.image)),
-                  )
-                : const SizedBox(
-                    height: 220,
-                    child: Center(child: Icon(Icons.image)),
+                    fit: BoxFit.contain,
+                    errorBuilder:
+                        (_, __, ___) => Center(
+                          child: Icon(
+                            Icons.color_lens,
+                            size: 80,
+                            color: Colors.grey[400],
+                          ),
+                        ),
                   ),
+                )
+                : Container(
+                  height: 220,
+                  width: double.infinity,
+                  color: Colors.grey[100],
+                  child: Center(
+                    child: Icon(
+                      Icons.color_lens,
+                      size: 80,
+                      color: Colors.grey[400],
+                    ),
+                  ),
+                ),
 
             /// TITLE
             Padding(
@@ -43,18 +61,27 @@ class ColorDetailsScreen extends StatelessWidget {
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
+                textAlign: TextAlign.center,
               ),
             ),
 
             /// TABS
-            const TabBar(
-              labelColor: Colors.black,
-              indicatorColor: Colors.black,
-              tabs: [
-                Tab(text: "Description"),
-                Tab(text: "Details"),
-                Tab(text: "Additional Info"),
-              ],
+            Container(
+              color: Colors.white,
+              child: TabBar(
+                isScrollable: true,
+                labelColor: Colors.black,
+                unselectedLabelColor: Colors.grey[600],
+                indicatorColor: Colors.black,
+                tabs: const [
+                  Tab(text: "Description"),
+                  Tab(text: "Details"),
+                  Tab(text: "Additional Info"),
+                  Tab(text: "Benefits"),
+                  Tab(text: "Precautions"),
+                  Tab(text: "Side Effects"),
+                ],
+              ),
             ),
 
             /// TAB CONTENT
@@ -64,6 +91,9 @@ class ColorDetailsScreen extends StatelessWidget {
                   _tabText(item["description"]),
                   _tabText(item["details"]),
                   _tabText(item["additionalInfo"]),
+                  _tabText(item["benefits"]),
+                  _tabText(item["precautions"]),
+                  _tabText(item["side_effects"]),
                 ],
               ),
             ),
@@ -74,12 +104,17 @@ class ColorDetailsScreen extends StatelessWidget {
   }
 
   Widget _tabText(String? text) {
+    // Filter out test data (single letters)
+    if (text != null && text.length == 1 && text == "d") {
+      text = "No data available";
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: SingleChildScrollView(
         child: Text(
           text != null && text.isNotEmpty ? text : "No data available",
-          style: const TextStyle(fontSize: 14),
+          style: const TextStyle(fontSize: 14, height: 1.5),
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -53,7 +54,9 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
         "diagnosisId": widget.diagnosisId,
       });
       print("ddddddddddddddddddddddddddddddddddddddddddd");
-      print("${widget.diagnosisId}  ${AppPreference().getString(PreferencesKey.userId)} ${diagnosis_images}");
+      print(
+        "${widget.diagnosisId}  ${AppPreference().getString(PreferencesKey.userId)} ${diagnosis_images}",
+      );
 
       final response = await Dio().post(
         diagnosis_images,
@@ -122,13 +125,7 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
             padding: const EdgeInsets.all(8),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child:Transform.rotate(
-                  angle: 3.14159,
-                child: Image.memory(
-                  image,
-                  fit: BoxFit.contain,
-                ),
-              ),
+              child: Image.memory(image, fit: BoxFit.contain),
             ),
           ),
         ],
@@ -301,16 +298,21 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
                       borderRadius: BorderRadius.circular(25),
                     ),
                   ),
+                  // day: "last"
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => BodyPartScreen()),
+                      MaterialPageRoute(
+                        builder:
+                            (_) => BodyPartScreen(
+                              pId: widget.patientId,
+                              dId: widget.diagnosisId,
+                              isShow: false,
+                            ),
+                      ),
                     );
                   },
-                  child: Text(
-                    "History",
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: Text("History", style: TextStyle(color: Colors.white)),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(

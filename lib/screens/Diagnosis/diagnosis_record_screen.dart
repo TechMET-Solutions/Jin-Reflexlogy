@@ -86,8 +86,8 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       {
         "title": "Diagnose Right Foot",
         "type": "rf",
-        "screen": rightFootScreenNew(
-          pid: widget.patient_id?.toString() ?? "",
+        "screen": RightFootScreenNew(
+          patientId: widget.patient_id?.toString() ?? "",
           diagnosisId: widget.diagnosis_id?.toString() ?? "",
         ),
       },
@@ -358,8 +358,8 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                         result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => rightFootScreenNew(
-                              pid: widget.patient_id.toString(),
+                            builder: (_) => RightFootScreenNew(
+                              patientId: widget.patient_id.toString(),
                               diagnosisId: widget.diagnosis_id.toString(),
                             ),
                           ),
@@ -717,13 +717,6 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       if (lhImg != null) debugPrint("LH: ${lhImg!.length ~/ 1024} KB");
       if (rhImg != null) debugPrint("RH: ${rhImg!.length ~/ 1024} KB");
 
-      List<Future> compressionTasks = [];
-
-      String? compressedLfImg;
-      String? compressedRfImg;
-      String? compressedLhImg;
-      String? compressedRhImg;
-
     
 
      
@@ -798,6 +791,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       );
 
       debugPrint("===== FORM DATA FIELDS =====");
+      debugPrint("===== ${response.data} =====");
       for (var field in formData.fields) {
         debugPrint(
           "${field.key} => ${field.value.length > 100 ? field.value.substring(0, 100) + '...' : field.value}",

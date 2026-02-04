@@ -54,6 +54,7 @@ dependencies:
   syncfusion_flutter_gauges: ^31.1.19
   country_state_city_picker: ^1.2.8
   cached_network_image: ^3.4.1
+  image: ^4.5.4
   
 
 dev_dependencies:

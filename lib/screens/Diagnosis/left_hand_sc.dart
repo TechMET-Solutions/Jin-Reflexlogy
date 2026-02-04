@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:dio/dio.dart';
+import 'package:jin_reflex_new/api_service/global/utils.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
@@ -197,24 +198,52 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
 
   /// --------------------------------------------------
   /// SCREENSHOT
-  Future<String?> captureScreenshot() async {
-    try {
-      await Future.delayed(const Duration(milliseconds: 120));
-      final boundary =
-          screenshotKey.currentContext?.findRenderObject()
-              as RenderRepaintBoundary?;
-      if (boundary == null) return null;
+ Future<String?> captureScreenshot() async {
+  try {
+    await Future.delayed(const Duration(milliseconds: 100));
 
-      final image = await boundary.toImage(pixelRatio: 2.5);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) return null;
+    final boundary =
+        screenshotKey.currentContext?.findRenderObject()
+            as RenderRepaintBoundary?;
 
-      return base64Encode(byteData.buffer.asUint8List());
-    } catch (e) {
-      debugPrint("❌ LH Screenshot error: $e");
+    if (boundary == null) {
+      debugPrint("Screenshot: boundary null");
       return null;
     }
+
+    // ⭐ Medium quality (fast + stable)
+    final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final paint = Paint();
+
+    // ✅ FIX: Vertical flip (upside-down bug)
+    canvas.translate(0, image.height.toDouble());
+    canvas.scale(1, -1);
+
+    canvas.drawImage(image, Offset.zero, paint);
+
+    final picture = recorder.endRecording();
+
+    final fixedImage =
+        await picture.toImage(image.width, image.height);
+
+    final byteData =
+        await fixedImage.toByteData(format: ui.ImageByteFormat.png);
+
+    if (byteData == null) return null;
+
+    final bytes = byteData.buffer.asUint8List();
+
+    return base64Encode(bytes);
+  } catch (e, st) {
+    debugPrint("Screenshot error: $e");
+    debugPrint("$st");
+    return null;
   }
+}
+
 
   /// --------------------------------------------------
   /// SAVE & EXIT
@@ -244,20 +273,26 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
         setState(() {
           p.state = (p.state + 1) % 3;
         });
+               ScaffoldMessenger.of(context).clearSnackBars();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(p.tag), duration: Duration(milliseconds: 500)),
+        );
+
       },
 
       /// 👉 DRAG MOVE
       onPanUpdate: (details) {
-        // setState(() {
-        //   p.x += details.delta.dx / scaleX;
-        //   p.y += details.delta.dy / scaleY;
+        setState(() {
+          p.x += details.delta.dx / scaleX;
+          p.y += details.delta.dy / scaleY;
 
-        //   // boundary
-        //   // p.x = p.x.clamp(0.0, baseWidth - 20);
-        //   // p.y = p.y.clamp(0.0, baseHeight - 20);
+          // boundary
+          // p.x = p.x.clamp(0.0, baseWidth - 20);
+          // p.y = p.y.clamp(0.0, baseHeight - 20);
 
-        //   debugPrint("LH DOT => id:${p.index}, x:${p.x}, y:${p.y}");
-        // });
+          debugPrint("LH DOT => id:${p.index}, x:${p.x}, y:${p.y}");
+        });
       },
 
       child: Container(
@@ -306,12 +341,16 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
                       key: screenshotKey,
                       child: Stack(
                         children: [
-                          Positioned.fill(
-                            child: Image.asset(
-                              "assets/images/lf_hand.png",
-                              fit: BoxFit.contain,
-                            ),
-                          ),
+                         Positioned.fill(
+  child: Transform.rotate(
+    angle: 3.1416, // 180 degree
+    child: Image.asset(
+      "assets/images/lf_hand.png",
+      fit: BoxFit.contain,
+    ),
+  ),
+),
+
                           ...points.map(
                             (p) => Positioned(
                               left: (p.x * scaleX) - 10,

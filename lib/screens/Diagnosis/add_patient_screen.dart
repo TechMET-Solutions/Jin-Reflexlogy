@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'dart:developer';
-import 'package:jin_reflex_new/api_service/location_api_service.dart';
+import 'package:country_state_city/country_state_city.dart' as csc;
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -41,21 +42,22 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
   final address = TextEditingController();
   final code = TextEditingController();
   final mobile = TextEditingController();
-  final dealerId = TextEditingController(); // New Dealer ID field
   final postalCode = TextEditingController();
 
   String? selectedBloodGroup = "A+";
   String? gender;
   String? maritalStatus;
   bool isLoading = false;
+  bool isLoadingStates = false;
+  bool isLoadingCities = false;
 
   // Location dropdown variables
-  List<CountryModel> countries = [];
-  List<StateModel> states = [];
-  List<String> cities = [];
-  CountryModel? selectedCountry;
-  StateModel? selectedState;
-  String? selectedCity;
+  List<csc.Country> countries = [];
+  List<csc.State> states = [];
+  List<csc.City> cities = [];
+  csc.Country? selectedCountry;
+  csc.State? selectedState;
+  csc.City? selectedCity;
   String countryCode = "+91";
 
   final formKey = GlobalKey<FormState>();
@@ -64,6 +66,10 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
   TextEditingController amountController = TextEditingController();
   String savedAmount = "0";
   bool showValidation = false;
+
+  // Debouncing timers
+  Timer? _statesTimer;
+  Timer? _citiesTimer;
 
   @override
   void initState() {
@@ -86,6 +92,8 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
   @override
   void dispose() {
     _razorpay.clear();
+    _statesTimer?.cancel();
+    _citiesTimer?.cancel();
     super.dispose();
   }
 
@@ -140,9 +148,9 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
       context: context,
       builder: (BuildContext context) {
         return FutureBuilder<bool>(
-          future: isIndianUser(), // ✅ async call here
+          future: isIndianUser(),
           builder: (context, snapshot) {
-            final bool isIndia = snapshot.data ?? true; // default India
+            final bool isIndia = snapshot.data ?? true;
 
             return StatefulBuilder(
               builder: (context, setState) {
@@ -164,7 +172,6 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                       ),
                     ],
                   ),
-
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -186,14 +193,11 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                       const SizedBox(height: 10),
                     ],
                   ),
-
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: const Text('Cancel'),
                     ),
-
-                    /// 🔥 PAY BUTTON
                     ElevatedButton(
                       onPressed: () async {
                         final amountText = amountController.text.trim();
@@ -207,13 +211,12 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
 
                         final int rupees = int.parse(amountText);
 
-                        Navigator.pop(context); // close dialog
+                        Navigator.pop(context);
 
                         if (isIndia) {
-                          // 🇮🇳 INDIA → Razorpay
                           _razorpay.open({
                             'key': razorpayKey,
-                            'amount': rupees * 100, // paise
+                            'amount': rupees * 100,
                             'name': AppPreference().getString(
                               PreferencesKey.name,
                             ),
@@ -228,9 +231,6 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                             },
                           });
                         } else {
-                          // 🌍 OUTSIDE INDIA → PayPal
-                          final usdAmount = (rupees / 83).toStringAsFixed(2);
-
                           _startPayPalPayment(context);
                         }
                       },
@@ -250,77 +250,63 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
     String amount = amountController.text.trim();
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder:
-            (_) => PaypalCheckoutView(
-              sandboxMode: isSandboxMode,
-
-              clientId: paypalClientId,
-              secretKey: paypalSecret,
-
-              /// ✅ ONLY AMOUNT – NO PRODUCT
-              transactions: [
-                {
-                  "amount": {
-                    "total": amount, // example: $0.60
-                    "currency": "USD",
-                  },
-                  "description": "Wallet / Service Payment",
-                },
-              ],
-
-              note: "Demo PayPal payment",
-
-              onSuccess: (Map params) async {
-                final paypalPaymentId = params["data"]?["id"];
-
-                debugPrint("PayPal Payment ID: $paypalPaymentId");
-
-                if (paypalPaymentId == null) {
-                  debugPrint("❌ PayPal paymentId null");
-                  return;
-                }
-
-                await sendPaymentToBackend(
-                  status: "success",
-                  paymentId: paypalPaymentId,
-                  orderId: null,
-                  amount: int.parse(amountController.text), // wallet ₹ amount
-                );
-
-                if (!mounted) return;
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("PayPal Payment Successful"),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-                Navigator.pop(context); // close popup
-
-                Navigator.pop(context); // close PayPal screen
+        builder: (_) => PaypalCheckoutView(
+          sandboxMode: isSandboxMode,
+          clientId: paypalClientId,
+          secretKey: paypalSecret,
+          transactions: [
+            {
+              "amount": {
+                "total": amount,
+                "currency": "USD",
               },
+              "description": "Wallet / Service Payment",
+            },
+          ],
+          note: "Demo PayPal payment",
+          onSuccess: (Map params) async {
+            final paypalPaymentId = params["data"]?["id"];
 
-              onError: (error) async {
-                await sendPaymentToBackend(
-                  status: "failed",
-                  reason: error.toString(),
-                  amount: int.parse(amountController.text),
-                );
-                debugPrint("❌ PayPal Error: $error");
+            debugPrint("PayPal Payment ID: $paypalPaymentId");
 
-                Navigator.pop(context);
-              },
+            if (paypalPaymentId == null) {
+              debugPrint("❌ PayPal paymentId null");
+              return;
+            }
 
-              onCancel: () async {
-                //      await sendPaymentToBackend(
-                //   status: "failed",
-                //   reason: "Payment cancelled",
-                //   amount: int.parse(amountController.text),
-                // );
-                debugPrint("⚠️ PayPal Cancelled");
-                Navigator.pop(context);
-              },
-            ),
+            await sendPaymentToBackend(
+              status: "success",
+              paymentId: paypalPaymentId,
+              orderId: null,
+              amount: int.parse(amountController.text),
+            );
+
+            if (!mounted) return;
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("PayPal Payment Successful"),
+                backgroundColor: Colors.green,
+              ),
+            );
+            Navigator.pop(context);
+            Navigator.pop(context);
+          },
+          onError: (error) async {
+            await sendPaymentToBackend(
+              status: "failed",
+              reason: error.toString(),
+              amount: int.parse(amountController.text),
+            );
+            debugPrint("❌ PayPal Error: $error");
+
+            Navigator.pop(context);
+          },
+          onCancel: () async {
+            debugPrint("⚠️ PayPal Cancelled");
+            Navigator.pop(context);
+          },
+        ),
       ),
     );
   }
@@ -344,19 +330,10 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
         "name": AppPreference().getString(PreferencesKey.name),
         "contact": AppPreference().getString(PreferencesKey.contactNumber),
       };
-      log("${postData}");
+      log("$postData");
       final response = await dio.post(
         "https://admin.jinreflexology.in/api/payment_callback",
-        data: {
-          "user_id": AppPreference().getString(PreferencesKey.userId),
-          "payment_id": paymentId,
-          "orderid": orderId,
-          "amount": amount.toString(),
-          "status": status,
-          "email": AppPreference().getString(PreferencesKey.email),
-          "name": AppPreference().getString(PreferencesKey.name),
-          "contact": AppPreference().getString(PreferencesKey.contactNumber),
-        },
+        data: postData,
       );
 
       debugPrint("✅ Payment sent to backend: ${response.data}");
@@ -396,11 +373,8 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
           child: TextFormField(
             controller: controller,
             keyboardType: keyboard,
-            validator:
-                (value) =>
-                    value == null || value.isEmpty
-                        ? "$label is required"
-                        : null,
+            validator: (value) =>
+                value == null || value.isEmpty ? "$label is required" : null,
             decoration: InputDecoration(
               border: InputBorder.none,
               hintText: "Enter $label",
@@ -449,13 +423,12 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
             value: selectedBloodGroup,
             decoration: InputDecoration(border: InputBorder.none),
             hint: Text("Select Blood Group"),
-            items:
-                bloodGroups.map((String group) {
-                  return DropdownMenuItem<String>(
-                    value: group,
-                    child: Text(group),
-                  );
-                }).toList(),
+            items: bloodGroups
+                .map((String group) => DropdownMenuItem<String>(
+                      value: group,
+                      child: Text(group),
+                    ))
+                .toList(),
             onChanged: (value) {
               setState(() {
                 selectedBloodGroup = value;
@@ -486,15 +459,19 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Color(0xffF9CF63), width: 1.5),
           ),
-          child: DropdownSearch<CountryModel>(
+          child: DropdownSearch<csc.Country>(
             items: countries,
             selectedItem: selectedCountry,
             popupProps: PopupProps.menu(
               showSearchBox: true,
-              searchDelay: Duration.zero,
-              searchFieldProps: TextFieldProps(autofocus: true),
+              searchFieldProps: TextFieldProps(
+                decoration: InputDecoration(
+                  hintText: "Search country...",
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
             ),
-            itemAsString: (CountryModel country) => country.name,
+            itemAsString: (csc.Country country) => country.name,
             dropdownDecoratorProps: DropDownDecoratorProps(
               dropdownSearchDecoration: InputDecoration(
                 border: InputBorder.none,
@@ -502,17 +479,20 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                 hintText: "Select Country",
               ),
             ),
-            onChanged: (CountryModel? value) {
+            onChanged: (csc.Country? value) async {
+              if (value == null) return;
+              
               setState(() {
                 selectedCountry = value;
                 selectedState = null;
                 selectedCity = null;
-                countryCode = "+91";
+                states = [];
+                cities = [];
+                countryCode = "+" + (value.phoneCode ?? "91");
                 code.text = countryCode;
               });
-              if (value != null) {
-                _loadStates();
-              }
+              
+              await _loadStates();
             },
             validator: (value) {
               if (value == null) {
@@ -539,15 +519,19 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Color(0xffF9CF63), width: 1.5),
           ),
-          child: DropdownSearch<StateModel>(
+          child: DropdownSearch<csc.State>(
             items: states,
             selectedItem: selectedState,
             popupProps: PopupProps.menu(
               showSearchBox: true,
-              searchDelay: Duration.zero,
-              searchFieldProps: TextFieldProps(autofocus: true),
+              searchFieldProps: TextFieldProps(
+                decoration: InputDecoration(
+                  hintText: "Search state...",
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
             ),
-            itemAsString: (StateModel state) => state.name,
+            itemAsString: (csc.State state) => state.name,
             dropdownDecoratorProps: DropDownDecoratorProps(
               dropdownSearchDecoration: InputDecoration(
                 border: InputBorder.none,
@@ -555,23 +539,48 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                 hintText: "Select State",
               ),
             ),
-            onChanged: (StateModel? value) {
+            onChanged: (csc.State? value) async {
+              if (value == null) return;
+              
               setState(() {
                 selectedState = value;
                 selectedCity = null;
+                cities = [];
               });
-              if (value != null) {
-                _loadCities();
-              }
+              
+              await _loadCities();
             },
+            enabled: selectedCountry != null && !isLoadingStates,
             validator: (value) {
-              if (value == null) {
+              if (selectedCountry != null && (value == null || states.isEmpty)) {
                 return "State is required";
               }
               return null;
             },
           ),
         ),
+        if (isLoadingStates)
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Row(
+              children: [
+                SizedBox(width: 12),
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xffF9CF63)),
+                  ),
+                ),
+                SizedBox(width: 8),
+                Text(
+                  "Loading states...",
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
         SizedBox(height: 12),
       ],
     );
@@ -589,14 +598,19 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Color(0xffF9CF63), width: 1.5),
           ),
-          child: DropdownSearch<String>(
+          child: DropdownSearch<csc.City>(
             items: cities,
             selectedItem: selectedCity,
             popupProps: PopupProps.menu(
               showSearchBox: true,
-              searchDelay: Duration.zero,
-              searchFieldProps: TextFieldProps(autofocus: true),
+              searchFieldProps: TextFieldProps(
+                decoration: InputDecoration(
+                  hintText: "Search city...",
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
             ),
+            itemAsString: (csc.City city) => city.name,
             dropdownDecoratorProps: DropDownDecoratorProps(
               dropdownSearchDecoration: InputDecoration(
                 border: InputBorder.none,
@@ -604,19 +618,42 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                 hintText: "Select City",
               ),
             ),
-            onChanged: (String? value) {
+            onChanged: (csc.City? value) {
               setState(() {
                 selectedCity = value;
               });
             },
+            enabled: selectedState != null && !isLoadingCities,
             validator: (value) {
-              if (value == null) {
+              if (selectedState != null && (value == null || cities.isEmpty)) {
                 return "City is required";
               }
               return null;
             },
           ),
         ),
+        if (isLoadingCities)
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Row(
+              children: [
+                SizedBox(width: 12),
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xffF9CF63)),
+                  ),
+                ),
+                SizedBox(width: 8),
+                Text(
+                  "Loading cities...",
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
         SizedBox(height: 12),
       ],
     );
@@ -624,79 +661,117 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
 
   Future<void> _loadCountries() async {
     try {
-      countries = await LocationApiService.getCountries();
+      countries = await csc.getAllCountries();
       setState(() {});
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error loading countries")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error loading countries: $e")),
+        );
+      }
     }
   }
 
   Future<void> _loadStates() async {
     if (selectedCountry == null) return;
-
-    try {
-      states = await LocationApiService.getStates(selectedCountry!.name);
-      setState(() {
-        selectedState = null;
-        cities = [];
-        selectedCity = null;
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error loading states")));
-    }
+    
+    // Cancel previous timer
+    _statesTimer?.cancel();
+    
+    setState(() {
+      isLoadingStates = true;
+      states = [];
+      selectedState = null;
+      cities = [];
+      selectedCity = null;
+    });
+    
+    // Set new timer with delay for debouncing
+    _statesTimer = Timer(const Duration(milliseconds: 300), () async {
+      try {
+        final newStates = await csc.getStatesOfCountry(selectedCountry!.isoCode);
+        if (mounted) {
+          setState(() {
+            states = newStates;
+            isLoadingStates = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            isLoadingStates = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error loading states: $e")),
+          );
+        }
+      }
+    });
   }
 
   Future<void> _loadCities() async {
     if (selectedCountry == null || selectedState == null) return;
-
-    try {
-      cities = await LocationApiService.getCities(
-        selectedCountry!.name,
-        selectedState!.name,
-      );
-      setState(() {
-        selectedCity = null;
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error loading cities")));
-    }
+    
+    // Cancel previous timer
+    _citiesTimer?.cancel();
+    
+    setState(() {
+      isLoadingCities = true;
+      cities = [];
+      selectedCity = null;
+    });
+    
+    // Set new timer with delay for debouncing
+    _citiesTimer = Timer(const Duration(milliseconds: 300), () async {
+      try {
+        final newCities = await csc.getStateCities(
+          selectedCountry!.isoCode,
+          selectedState!.isoCode,
+        );
+        if (mounted) {
+          setState(() {
+            cities = newCities;
+            isLoadingCities = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            isLoadingCities = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error loading cities: $e")),
+          );
+        }
+      }
+    });
   }
 
   Future<Map<String, String>?> addPatient() async {
     debugPrint("=== STARTING addPatient METHOD ===");
 
-    // Hide keyboard
     FocusScope.of(context).unfocus();
 
-    // Validate form
     if (!formKey.currentState!.validate()) {
       debugPrint("ERROR: Form validation failed");
       return null;
     }
     debugPrint("SUCCESS: Form validation passed");
 
-    // Validate gender
     if (gender == null || gender!.isEmpty) {
       debugPrint("ERROR: Gender not selected");
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Please select gender")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Please select gender")),
+      );
       return null;
     }
     debugPrint("SUCCESS: Gender selected - $gender");
 
-    // Validate marital status
     if (maritalStatus == null || maritalStatus!.isEmpty) {
       debugPrint("ERROR: Marital status not selected");
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Please select marital status")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Please select marital status")),
+      );
       return null;
     }
     debugPrint("SUCCESS: Marital status selected - $maritalStatus");
@@ -717,11 +792,10 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
         "email": email.text,
         "m_no": mobile.text,
         "address": address.text,
-        "city": selectedCity ?? '',
+        "city": selectedCity?.name ?? '',
         "state": selectedState?.name ?? '',
         "country": selectedCountry?.name ?? '',
         "country_code": countryCode,
-        "dealer_id": dealerId.text.trim().isEmpty ? '' : dealerId.text.trim(), // Include dealer_id
         "pincode": postalCode.text,
         "bg": selectedBloodGroup,
         "age": age.text,
@@ -729,14 +803,11 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
         "mStatus": maritalStatus,
       });
 
-      // Log all individual form fields
       debugPrint("=== FORM DATA FIELDS ===");
       for (var field in formData.fields) {
         debugPrint("${field.key} : ${field.value}");
       }
       debugPrint("=== END FORM DATA FIELDS ===");
-
-      debugPrint("INFO: Form data prepared - ${formData.fields}");
 
       debugPrint("INFO: Making API request to $add_patient");
       final response = await ApiService().postRequest(add_patient, formData);
@@ -747,16 +818,14 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
 
       dynamic jsonBody;
       if (response?.data is String) {
-        // openCheckout();
         debugPrint("INFO: Response data is String, attempting to decode JSON");
         try {
           jsonBody = jsonDecode(response!.data);
-          debugPrint("SUCCESS: JSON decoded successfully${jsonBody}");
+          debugPrint("SUCCESS: JSON decoded successfully$jsonBody");
         } catch (jsonError) {
           debugPrint("ERROR: Failed to decode JSON - $jsonError");
           debugPrint("ERROR: Response appears to be HTML or invalid JSON");
           debugPrint("ERROR: Full response data: ${response?.data}");
-          // If it's HTML, set jsonBody to null or handle accordingly
           jsonBody = {
             "success": 0,
             "message": "Invalid response format from server",
@@ -781,7 +850,6 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
           ),
         );
 
-        /// 🔥 API RESPONSE SE DATA NIKALO
         final String patientId = jsonBody["data"]?["id"]?.toString() ?? "";
         final String patientName =
             jsonBody["data"]?["name"]?.toString() ?? fullName;
@@ -877,7 +945,6 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                       onPressed: () => Navigator.of(context).pop(false),
                       child: const Text("Cancel"),
                     ),
-
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
@@ -908,7 +975,6 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
           showBalance: true,
           userId: userId,
         ),
-
         body: Stack(
           children: [
             SingleChildScrollView(
@@ -1050,47 +1116,13 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                     ),
 
                     SizedBox(height: 12),
-                    
-                    // Dealer ID (Optional) field
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Dealer ID (Optional)",
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        SizedBox(height: 5),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Color(0xffF9CF63),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: TextFormField(
-                            controller: dealerId,
-                            keyboardType: TextInputType.text,
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              hintText: "Enter Dealer ID (Optional)",
-                            ),
-                            // No validator - field is optional
-                          ),
-                        ),
-                        SizedBox(height: 12),
-                      ],
-                    ),
-                    
                     buildTextField(
                       "Postal Code",
                       postalCode,
                       keyboard: TextInputType.number,
                     ),
 
-                    buildDropdownField(), // Blood group dropdown
+                    buildDropdownField(),
 
                     SizedBox(height: 70),
                   ],
@@ -1098,7 +1130,6 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
               ),
             ),
 
-            // Loading Overlay
             if (isLoading)
               Container(
                 color: Colors.black.withOpacity(0.3),
@@ -1112,7 +1143,6 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
               ),
           ],
         ),
-
         bottomNavigationBar: Container(
           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           color: Color(0xFFFDF3DD),
@@ -1144,49 +1174,45 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                     ),
                     padding: EdgeInsets.symmetric(vertical: 15),
                   ),
-                  onPressed:
-                      isLoading
-                          ? null
-                          : () async {
-                            final result = await addPatient();
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          final result = await addPatient();
 
-                            if (result != null &&
-                                result["id"] != null &&
-                                result["id"]!.isNotEmpty) {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) => DiagnosisScreen(
-                                        patient_id: result["id"],
-                                        name: result["name"],
-                                        diagnosis_id: widget.diagnosisId,
-                                      ),
+                          if (result != null &&
+                              result["id"] != null &&
+                              result["id"]!.isNotEmpty) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => DiagnosisScreen(
+                                  patient_id: result["id"],
+                                  name: result["name"],
+                                  diagnosis_id: widget.diagnosisId,
                                 ),
-                              );
-                            }
-                          },
-
-                  child:
-                      isLoading
-                          ? SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.black,
                               ),
-                            ),
-                          )
-                          : Text(
-                            "Confirm",
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                            );
+                          }
+                        },
+                  child: isLoading
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.black,
                             ),
                           ),
+                        )
+                      : Text(
+                          "Confirm",
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
                 ),
               ),
             ],

@@ -99,104 +99,141 @@ class _PointsScreenState extends State<PointsScreen> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F8),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF130442),
-        title: const Text(
-          'Effective Points',
-          style: TextStyle(color: Colors.white),
-        ),
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white),
+@override
+Widget build(BuildContext context) {
+
+  final bool isTablet =
+      MediaQuery.of(context).size.shortestSide >= 600;
+
+  final double titleSize = isTablet ? 26 : 20;
+  final double descSize = isTablet ? 18 : 15;
+  final double videoHeight = isTablet ? 320 : 200;
+  final double padding = isTablet ? 24 : 16;
+
+  return Scaffold(
+    backgroundColor: const Color(0xFFF5F5F8),
+    appBar: AppBar(
+      backgroundColor: const Color(0xFF130442),
+      title: const Text(
+        'Effective Points',
+        style: TextStyle(color: Colors.white),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: videos.length,
-        itemBuilder: (context, index) {
-          final item = videos[index];
+      centerTitle: true,
+      iconTheme: const IconThemeData(color: Colors.white),
+    ),
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                item.title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+    body: ListView.builder(
+      padding: EdgeInsets.all(padding),
+      itemCount: videos.length,
+
+      itemBuilder: (context, index) {
+        final item = videos[index];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+
+            /// Title
+            Text(
+              item.title,
+              style: TextStyle(
+                fontSize: titleSize,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 8),
+            ),
 
-              if (item.url.isEmpty)
-                Container(
-                  height: 200,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Text(
-                    'Video coming soon',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                )
-              else if (playingIndex == index)
-                ClipRRect(
+            const SizedBox(height: 10),
+
+            /// Video / Thumbnail
+            if (item.url.isEmpty)
+
+              Container(
+                height: videoHeight,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(14),
-                  child: YoutubePlayer(
-                    controller: _activeController!,
-                    showVideoProgressIndicator: true,
-                  ),
-                )
-              else
-                GestureDetector(
-                  onTap: () => _playVideo(index),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: Image.network(
-                          'https://img.youtube.com/vi/'
-                          '${YoutubePlayer.convertUrlToId(item.url)}/0.jpg',
-                          height: 200,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.45),
-                          shape: BoxShape.circle,
-                        ),
-                        padding: const EdgeInsets.all(16),
-                        child: const Icon(
-                          Icons.play_arrow,
-                          size: 50,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
 
-              const SizedBox(height: 10),
+                child: Text(
+                  'Video coming soon',
+                  style: TextStyle(
+                    fontSize: isTablet ? 18 : 16,
+                  ),
+                ),
+              )
 
-              Text(
-                item.description,
-                style: const TextStyle(fontSize: 15),
+            else if (playingIndex == index)
+
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+
+                child: YoutubePlayer(
+                  controller: _activeController!,
+                  showVideoProgressIndicator: true,
+                ),
+              )
+
+            else
+
+              GestureDetector(
+                onTap: () => _playVideo(index),
+
+                child: Stack(
+                  alignment: Alignment.center,
+
+                  children: [
+
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+
+                      child: Image.network(
+                        'https://img.youtube.com/vi/'
+                        '${YoutubePlayer.convertUrlToId(item.url)}/0.jpg',
+
+                        height: videoHeight,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.45),
+                        shape: BoxShape.circle,
+                      ),
+
+                      padding: EdgeInsets.all(isTablet ? 22 : 16),
+
+                      child: Icon(
+                        Icons.play_arrow,
+                        size: isTablet ? 70 : 50,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
-              const SizedBox(height: 30),
-            ],
-          );
-        },
-      ),
-    );
-  }
+            const SizedBox(height: 12),
+
+            /// Description
+            Text(
+              item.description,
+              style: TextStyle(
+                fontSize: descSize,
+                height: 1.4,
+              ),
+            ),
+
+            SizedBox(height: isTablet ? 40 : 28),
+          ],
+        );
+      },
+    ),
+  );
+}
+
 }
 
 class _VideoItem {

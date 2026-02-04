@@ -117,33 +117,62 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
   // ---------------------------------------------------
   // LOAD FROM SINGLE JSON STRING (FAST)
   // ---------------------------------------------------
+  // void loadSavedLocal() {
+  //   final key = "LF_DATA_${widget.diagnosisId}_${widget.patientId}";
+  //   final savedJson = AppPreference().getString(key);
+
+  //   debugPrint("LOAD LOCAL KEY -> $key");
+  //   debugPrint(
+  //     "SAVED JSON PREVIEW -> ${savedJson.isNotEmpty ? savedJson.substring(0, math.min(savedJson.length, 120)) : 'EMPTY'}",
+  //   );
+
+  //   if (savedJson.isEmpty) return;
+
+  //   try {
+  //     final decoded = jsonDecode(savedJson) as Map<String, dynamic>;
+
+  //     decoded.forEach((idx, val) {
+  //       final parts = (val as String).split(",");
+  //       try {
+  //         final p = points.firstWhere((e) => e.index.toString() == idx);
+  //         p.x = double.parse(parts[0]);
+  //         p.y = double.parse(parts[1]);
+  //         p.state = int.parse(parts[2]);
+  //       } catch (e) {
+  //         debugPrint("Error applying saved point $idx -> $e");
+  //       }
+  //     });
+  //   } catch (e) {
+  //     debugPrint("Error decoding saved JSON for LF: $e");
+  //   }
+  // }
+
   void loadSavedLocal() {
     final key = "LF_DATA_${widget.diagnosisId}_${widget.patientId}";
     final savedJson = AppPreference().getString(key);
 
-    debugPrint("LOAD LOCAL KEY -> $key");
-    debugPrint(
-      "SAVED JSON PREVIEW -> ${savedJson.isNotEmpty ? savedJson.substring(0, math.min(savedJson.length, 120)) : 'EMPTY'}",
-    );
-
     if (savedJson.isEmpty) return;
 
     try {
-      final decoded = jsonDecode(savedJson) as Map<String, dynamic>;
+      final Map<String, dynamic> decoded = jsonDecode(savedJson);
 
-      decoded.forEach((idx, val) {
-        final parts = (val as String).split(",");
-        try {
-          final p = points.firstWhere((e) => e.index.toString() == idx);
-          p.x = double.parse(parts[0]);
-          p.y = double.parse(parts[1]);
-          p.state = int.parse(parts[2]);
-        } catch (e) {
-          debugPrint("Error applying saved point $idx -> $e");
+      for (var p in points) {
+        final saved = decoded[p.index.toString()];
+
+        if (saved != null) {
+          final parts = (saved as String).split(",");
+
+          if (parts.length == 3) {
+            p.x = double.parse(parts[0]);
+            p.y = double.parse(parts[1]);
+            p.state = int.parse(parts[2]); // ⭐ IMPORTANT
+          }
         }
-      });
+      }
+
+      debugPrint("✅ LF Local data restored");
     } catch (e) {
-      debugPrint("Error decoding saved JSON for LF: $e");
+      debugPrint("❌ loadSavedLocal error: $e");
     }
   }
 
@@ -306,30 +335,43 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
   // --------------------------------------------------
   Future<String?> captureScreenshot() async {
     try {
+      await Future.delayed(const Duration(milliseconds: 100));
+
       final boundary =
           screenshotKey.currentContext?.findRenderObject()
               as RenderRepaintBoundary?;
+
       if (boundary == null) {
-        debugPrint("captureScreenshot: boundary is null");
+        debugPrint("Screenshot: boundary null");
         return null;
       }
 
-      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      final ByteData? byteData = await image.toByteData(
+      // ⭐ Medium quality (fast + stable)
+      final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final paint = Paint();
+
+      // ✅ FIX: Vertical flip (upside-down bug)
+      canvas.translate(0, image.height.toDouble());
+      canvas.scale(1, -1);
+
+      canvas.drawImage(image, Offset.zero, paint);
+
+      final picture = recorder.endRecording();
+
+      final fixedImage = await picture.toImage(image.width, image.height);
+
+      final byteData = await fixedImage.toByteData(
         format: ui.ImageByteFormat.png,
       );
-      if (byteData == null) {
-        debugPrint("captureScreenshot: byteData is null");
-        return null;
-      }
 
-      final Uint8List pngBytes = byteData.buffer.asUint8List();
-      final String base64Str = base64Encode(pngBytes);
+      if (byteData == null) return null;
 
-      debugPrint(
-        "captureScreenshot: size=${pngBytes.lengthInBytes}, base64Len=${base64Str.length}",
-      );
-      return base64Str;
+      final bytes = byteData.buffer.asUint8List();
+
+      return base64Encode(bytes);
     } catch (e, st) {
       debugPrint("Screenshot error: $e");
       debugPrint("$st");
@@ -391,16 +433,21 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
         safeSetState(() {
           p.state = (p.state + 1) % 3;
         });
-        
-          print("ssssds${p.tag}");
-        Utils().showToastMessage(p.tag);
-         Utils().showToastMessage(p.tag);
+
+        print("ssssds${p.tag}");
+        // Utils().showToastMessage(p.tag);
+        ScaffoldMessenger.of(context).clearSnackBars();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(p.tag), duration: Duration(milliseconds: 500)),
+        );
+
         print("ssssds${p.tag}");
         print(
           "RF CLICK => ID:${p.id}, Index:${p.index}, X:${p.x}, Y:${p.y}, State:${p.state}",
         );
       },
-      
+
       /// 👉 DOT MOVE (DRAG)
       child: Container(
         width: 16 * scale,
@@ -565,7 +612,9 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
     double scale = math.min(scaleX, scaleY);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Left Foot Editor")),
+      // appBar: AppBar(title: const Text("Left Foot Editor")),
+      appBar: CommonAppBar(title: "Left Foot"),
+
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _saveAndExit,
         label: const Text("Save", style: TextStyle(color: Colors.white)),

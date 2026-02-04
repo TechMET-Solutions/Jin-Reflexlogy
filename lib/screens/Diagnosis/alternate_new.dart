@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class altTreatmentAddV2Screen extends StatefulWidget {
   final String patientId;
@@ -38,10 +39,15 @@ class _altTreatmentAddV2ScreenState extends State<altTreatmentAddV2Screen> {
   String whiteSpinal = "-";
   String yellowSpinal = "-";
   String sufferingProblems = "-";
+  late final String lifestyleUrl;
 
   @override
   void initState() {
     super.initState();
+
+    lifestyleUrl =
+        "https://jinreflexology.in/api1/new/patient_lifestyle_history.php?diagnosisId=${widget.diagnosisId}";
+
     _fetchTreatment();
   }
 
@@ -152,6 +158,7 @@ class _altTreatmentAddV2ScreenState extends State<altTreatmentAddV2Screen> {
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
+    print("sdsdsd ${widget.diagnosisId}"  );
     return Scaffold(
       appBar: AppBar(
         title: const Text("Jin Reflexology"),
@@ -175,6 +182,7 @@ class _altTreatmentAddV2ScreenState extends State<altTreatmentAddV2Screen> {
                   vertical: 10,
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _headerCard(),
                     _outlinedSection("Boyle Magnet", boyleMagnet),
@@ -187,6 +195,9 @@ class _altTreatmentAddV2ScreenState extends State<altTreatmentAddV2Screen> {
                     _resultsSection(),
                     const SizedBox(height: 20),
                     _submitButton(),
+                    SizedBox(height: 10,),
+                    Text("LifeStyle",style: TextStyle(fontSize: 18,color: Colors.black,fontWeight: FontWeight.bold),),
+                    _lifestyleWebView(),
                   ],
                 ),
               ),
@@ -306,6 +317,26 @@ class _altTreatmentAddV2ScreenState extends State<altTreatmentAddV2Screen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _lifestyleWebView() {
+    return Container(
+      height: 400, // adjust height
+      margin: const EdgeInsets.only(top: 15),
+      decoration: BoxDecoration(
+        border: Border.all(color: borderYellow, width: 2),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: WebViewWidget(
+          controller:
+              WebViewController()
+                ..setJavaScriptMode(JavaScriptMode.unrestricted)
+                ..loadRequest(Uri.parse(lifestyleUrl)),
+        ),
       ),
     );
   }

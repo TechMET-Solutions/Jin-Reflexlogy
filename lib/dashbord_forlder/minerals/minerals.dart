@@ -25,6 +25,7 @@ class _MineralsScreenState extends State<MineralsScreen> {
     try {
       final response =
           await dio.get("https://admin.jinreflexology.in/api/minerals");
+print(response.data);
 
       if (response.statusCode == 200 && response.data["success"] == true) {
         setState(() {

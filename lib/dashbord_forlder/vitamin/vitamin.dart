@@ -25,7 +25,7 @@ class _VitaminsScreenState extends State<VitaminsScreen> {
     try {
       final response =
           await dio.get("https://admin.jinreflexology.in/api/vitamins");
-
+print(response.data);
       if (response.statusCode == 200 && response.data["success"] == true) {
         setState(() {
           vitaminsList = response.data["data"] ?? [];

@@ -139,29 +139,33 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
       floatingActionButton: FloatingActionButton.extended(
   onPressed: () async {
 
-    // 🔥 Clear old Left Foot data
-    await AppPreference().remove(
+      await AppPreference().remove(
       "LF_DATA_${widget.diagnosisId}_${widget.patientId}",
     );
-
     await AppPreference().remove(
       "LF_IMG_${widget.diagnosisId}_${widget.patientId}",
     );
-  // RH
-await AppPreference().remove(
-  "RH_DATA_${widget.diagnosisId}_${widget.patientId}",
-);
-await AppPreference().remove(
-  "LH_DATA_${widget.diagnosisId}_${widget.patientId}",
-);
+   await AppPreference().remove(
+      "RF_DATA_${widget.diagnosisId}_${widget.patientId}",
+    );
+    await AppPreference().remove(
+      "RF_IMG_${widget.diagnosisId}_${widget.patientId}",
+    );
+    // 🔥 Clear old Right Hand data
+    await AppPreference().remove(
+      "RH_DATA_${widget.diagnosisId}_${widget.patientId}",
+    );
+    await AppPreference().remove(
+      "RH_IMG_${widget.diagnosisId}_${widget.patientId}",
+    );
 
-await AppPreference().remove(
-  "LH_IMG_${widget.diagnosisId}_${widget.patientId}",
-);
-await AppPreference().remove(
-  "RH_IMG_${widget.diagnosisId}_${widget.patientId}",
-);
-    // 👉 Now go to Diagnosis screen
+    // 🔥 Clear old Left Hand data
+    await AppPreference().remove(
+      "LH_DATA_${widget.diagnosisId}_${widget.patientId}",
+    );
+    await AppPreference().remove(
+      "LH_IMG_${widget.diagnosisId}_${widget.patientId}",
+    );
     Navigator.push(
       context,
       MaterialPageRoute(

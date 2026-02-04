@@ -78,8 +78,13 @@ class _BannerSliderState extends State<BannerSlider> {
       builder: (context, snapshot) {
         if (snapshot.connectionState ==
             ConnectionState.waiting) {
-          return const SizedBox(
-            height: 175,
+          return Container(
+            height: 200,
+           // margin: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: Center(child: CircularProgressIndicator()),
           );
         }
@@ -91,98 +96,110 @@ class _BannerSliderState extends State<BannerSlider> {
 
         final banners = snapshot.data!;
 
-        return Column(
-          children: [
-            // ================= SLIDER =================
-            CarouselSlider(
-              items: banners.map((banner) {
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            BannerDetailScreen(
-                          banner: banner,
+        return Container(
+          margin: EdgeInsets.only(top: 0),
+          child: Column(
+            children: [
+              // ================= SLIDER =================
+              CarouselSlider(
+                items: banners.map((banner) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              BannerDetailScreen(
+                            banner: banner,
+                          ),
                         ),
+                      );
+                    },
+
+                    child: Container(
+                      margin: EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 12,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
                       ),
-                    );
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: _buildBannerImage(banner.image),
+                      ),
+                    ),
+                  );
+                }).toList(),
+
+                carouselController: _controller,
+
+                options: CarouselOptions(
+                  height: 200,
+                  autoPlay: true,
+                  enlargeCenterPage: true,
+                  viewportFraction: 0.9,
+                  autoPlayInterval:
+                      const Duration(seconds: 30),
+
+                  onPageChanged:
+                      (index, reason) {
+                    setState(() {
+                      _currentIndex = index;
+                    });
                   },
-
-                  child: ClipRRect(
-                    borderRadius:
-                        BorderRadius.circular(15),
-
-                    child: _buildBannerImage(
-                      banner.image,
-                    ),
-                  ),
-                );
-              }).toList(),
-
-              carouselController: _controller,
-
-              options: CarouselOptions(
-                height: 175,
-                autoPlay: true,
-                enlargeCenterPage: true,
-                viewportFraction: 0.9,
-                autoPlayInterval:
-                    const Duration(seconds: 30),
-
-                onPageChanged:
-                    (index, reason) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
-                },
+                ),
               ),
-            ),
 
-            const SizedBox(height: 10),
+              const SizedBox(height: 16),
 
-            // ================= INDICATOR =================
-            Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.center,
+              // ================= INDICATOR =================
+              Row(
+                mainAxisAlignment:
+                    MainAxisAlignment.center,
 
-              children: banners
-                  .asMap()
-                  .entries
-                  .map((entry) {
-                return GestureDetector(
-                  onTap: () =>
-                      _controller.animateToPage(
-                    entry.key,
-                  ),
-
-                  child: Container(
-                    width:
-                        _currentIndex == entry.key
-                            ? 12
-                            : 8,
-
-                    height: 8,
-
-                    margin:
-                        const EdgeInsets.symmetric(
-                      horizontal: 4,
+                children: banners
+                    .asMap()
+                    .entries
+                    .map((entry) {
+                  return GestureDetector(
+                    onTap: () =>
+                        _controller.animateToPage(
+                      entry.key,
                     ),
 
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-
-                      color:
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      width:
                           _currentIndex == entry.key
-                              ? Colors.blue
-                              : Colors.grey
-                                  .shade400,
+                              ? 24
+                              : 8,
+
+                      height: 8,
+
+                      margin:
+                          const EdgeInsets.symmetric(
+                        horizontal: 4,
+                      ),
+
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+
+                        color:
+                            _currentIndex == entry.key
+                                ? Color(0xFF5B4FCF)
+                                : Colors.grey.shade300,
+                      ),
                     ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -194,14 +211,14 @@ class _BannerSliderState extends State<BannerSlider> {
     if (path.startsWith("http")) {
       return Image.network(
         path,
-        fit: BoxFit.cover,
+        fit: BoxFit.fill,
         width: double.infinity,
 
         errorBuilder:
             (context, error, stackTrace) {
           return Image.asset(
             "assets/images/jin_slide1.png",
-            fit: BoxFit.cover,
+            fit: BoxFit.fill,
             width: double.infinity,
           );
         },
@@ -211,7 +228,7 @@ class _BannerSliderState extends State<BannerSlider> {
     // Local asset
     return Image.asset(
       path,
-      fit: BoxFit.cover,
+      fit: BoxFit.fill,
       width: double.infinity,
     );
   }
@@ -229,10 +246,14 @@ class BannerDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: Text(banner.title),
-        backgroundColor:
-            const Color(0xFF3B3B8F),
+        title: Text(
+          banner.title,
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Color(0xFF5B4FCF),
+        elevation: 0,
       ),
 
       body: SingleChildScrollView(
@@ -244,7 +265,7 @@ class BannerDetailScreen extends StatelessWidget {
             _buildDetailImage(),
 
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
 
               child: Column(
                 crossAxisAlignment:
@@ -254,17 +275,35 @@ class BannerDetailScreen extends StatelessWidget {
                   Text(
                     banner.title,
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: Color(0xFF2D2D2D),
                     ),
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
-                  Text(
-                    banner.desc,
-                    style:
-                        const TextStyle(fontSize: 14),
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      banner.desc,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        height: 1.6,
+                        color: Color(0xFF555555),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -281,7 +320,7 @@ class BannerDetailScreen extends StatelessWidget {
         banner.image,
         width: double.infinity,
         height: 220,
-        fit: BoxFit.cover,
+        fit: BoxFit.fill,
 
         errorBuilder:
             (context, error, stackTrace) {
@@ -289,7 +328,7 @@ class BannerDetailScreen extends StatelessWidget {
             "assets/images/jin_slide1.png",
             width: double.infinity,
             height: 220,
-            fit: BoxFit.cover,
+            fit: BoxFit.fill,
           );
         },
       );
@@ -299,7 +338,7 @@ class BannerDetailScreen extends StatelessWidget {
       banner.image,
       width: double.infinity,
       height: 220,
-      fit: BoxFit.cover,
+      fit: BoxFit.fill,
     );
   }
 }

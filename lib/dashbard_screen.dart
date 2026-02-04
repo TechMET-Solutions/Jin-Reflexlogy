@@ -11,6 +11,7 @@ import 'package:jin_reflex_new/bannar.dart';
 import 'package:jin_reflex_new/dashbord_forlder/colors/color_screen.dart';
 import 'package:jin_reflex_new/dashbord_forlder/feedback_form.dart';
 import 'package:jin_reflex_new/dashbord_forlder/feedback_from_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/freddback_list.dart';
 import 'package:jin_reflex_new/dashbord_forlder/free_power_yoga.dart';
 import 'package:jin_reflex_new/dashbord_forlder/healthy_tips.dart';
 import 'package:jin_reflex_new/dashbord_forlder/food/food_screen.dart';
@@ -62,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _countryName = 'Loading...';
   String _countryCode = '';
   bool _isLoadingLocation = true;
-  
+
   // Welcome user data
   String _welcomeMobile = '';
   String _welcomeEmail = '';
@@ -83,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadWelcomeData(); // Load saved welcome data
     Future.delayed(const Duration(seconds: 2), _autoSlide);
   }
-  
+
   /// Load welcome user data from SharedPreferences
   Future<void> _loadWelcomeData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -92,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _welcomeEmail = prefs.getString('welcome_email') ?? '';
       _welcomeDealerId = prefs.getString('welcome_dealer_id') ?? '';
     });
-    
+
     debugPrint("📊 Loaded welcome data:");
     debugPrint("   Mobile: $_welcomeMobile");
     debugPrint("   Email: $_welcomeEmail");
@@ -478,11 +479,6 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'Life Style',
       img: 'assets/jinImages/11.png',
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => LifestyleScreen()),
-        );
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => LifestyleScreen()),
@@ -496,7 +492,15 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => FeedBackFormNew()),
+          MaterialPageRoute(
+            builder:
+                (_) => BodyPartScreen(
+                  pId: AppPreference().getString(PreferencesKey.userId),
+                  dId: null,
+                  day: "last",
+                  isShow: true,
+                ),
+          ),
         );
       },
     ),
@@ -579,12 +583,13 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ),
     CampaignItem(
-      title: 'Free power Yoga',
-      img: 'assets/jinImages/19.png',
+      title: 'Update',
+      img: 'assets/jinImages/38.png',
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const PowerYogaScreen()),
+        //Navigator.pop(context);
+        launchUrl(
+          Uri.parse("https://www.facebook.com/profile.php?id=61580519183420"),
+          mode: LaunchMode.externalApplication,
         );
       },
     ),
@@ -602,6 +607,17 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ),
     CampaignItem(
+      title: 'Free power Yoga',
+      img: 'assets/jinImages/19.png',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PowerYogaScreen()),
+        );
+      },
+    ),
+
+    CampaignItem(
       title: 'Healthy Tips',
       img: 'assets/jinImages/21.png',
       onTap: () {
@@ -613,25 +629,15 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
     CampaignItem(
       title: 'Health Meter',
-      img: 'assets/jinImages/22.png',
-      onTap: () {
-      
-         Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) =>   HealthFormScreen()),
-        );
-      },
-    ),
-    CampaignItem(
-      title: 'JR Anil Jain',
-      img: 'assets/jinImages/23.png',
+      img: 'assets/images/metericon.jpeg',
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => AboutJinReflexologyScreen()),
+          MaterialPageRoute(builder: (_) => HealthFormScreen()),
         );
       },
     ),
+
     CampaignItem(
       title: 'Success Story',
       img: 'assets/jinImages/24.png',
@@ -642,14 +648,13 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     ),
-
     CampaignItem(
-      title: 'Speeches',
-      img: 'assets/jinImages/speech.png',
+      title: 'Food',
+      img: 'assets/jinImages/food.png',
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => SpeechesScreen()),
+          MaterialPageRoute(builder: (_) => FoodScreen()),
         );
       },
     ),
@@ -674,15 +679,16 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ),
     CampaignItem(
-      title: 'Yoga',
-      img: 'assets/jinImages/yoga.png',
+      title: 'Speeches',
+      img: 'assets/jinImages/speech.png',
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => YogasScreen()),
+          MaterialPageRoute(builder: (_) => SpeechesScreen()),
         );
       },
     ),
+
     CampaignItem(
       title: 'Mudra',
       img: 'assets/jinImages/mudra.png',
@@ -694,15 +700,16 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ),
     CampaignItem(
-      title: 'Food',
-      img: 'assets/jinImages/food.png',
+      title: 'Yoga',
+      img: 'assets/jinImages/yoga.png',
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => FoodScreen()),
+          MaterialPageRoute(builder: (_) => YogasScreen()),
         );
       },
     ),
+
     CampaignItem(
       title: 'Color',
       img: 'assets/jinImages/color.png',
@@ -904,16 +911,16 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ),
     CampaignItem(
-      title: 'Update',
-      img: 'assets/jinImages/38.png',
+      title: 'JR Anil Jain',
+      img: 'assets/jinImages/23.png',
       onTap: () {
-        //Navigator.pop(context);
-        launchUrl(
-          Uri.parse("https://www.facebook.com/profile.php?id=61580519183420"),
-          mode: LaunchMode.externalApplication,
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => AboutJinReflexologyScreen()),
         );
       },
     ),
+
     CampaignItem(
       title: 'Contact Us',
       img: 'assets/jinImages/39.png',
@@ -1006,24 +1013,25 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (context, snapshot) {
                 final deliveryType = snapshot.data ?? 'india';
                 final countryCode = deliveryType == 'india' ? 'in' : 'us';
-                
+
                 return PopupMenuButton<String>(
                   onSelected: (value) async {
                     await _saveDeliveryType(value);
-                    
+
                     // Update UI
                     setState(() {
-                      _countryName = value == 'india' ? 'India' : 'International';
+                      _countryName =
+                          value == 'india' ? 'India' : 'International';
                       _countryCode = value == 'india' ? 'IN' : 'US';
                     });
-                    
+
                     // Show feedback
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          value == 'india' 
-                            ? 'Switched to India 🇮🇳' 
-                            : 'Switched to International 🌍',
+                          value == 'india'
+                              ? 'Switched to India 🇮🇳'
+                              : 'Switched to International 🌍',
                         ),
                         duration: const Duration(seconds: 2),
                         backgroundColor: Colors.green,
@@ -1031,7 +1039,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
@@ -1078,72 +1089,81 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'india',
-                      child: Row(
-                        children: [
-                          Text('🇮🇳', style: TextStyle(fontSize: 20)),
-                          SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  itemBuilder:
+                      (context) => [
+                        PopupMenuItem(
+                          value: 'india',
+                          child: Row(
                             children: [
-                              Text(
-                                'India',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
+                              Text('🇮🇳', style: TextStyle(fontSize: 20)),
+                              SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'India',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Prices in ₹',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                'Prices in ₹',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
+                              if (deliveryType == 'india') ...[
+                                Spacer(),
+                                Icon(
+                                  Icons.check,
+                                  color: Colors.green,
+                                  size: 20,
                                 ),
-                              ),
+                              ],
                             ],
                           ),
-                          if (deliveryType == 'india') ...[
-                            Spacer(),
-                            Icon(Icons.check, color: Colors.green, size: 20),
-                          ],
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'outside',
-                      child: Row(
-                        children: [
-                          Text('🌍', style: TextStyle(fontSize: 20)),
-                          SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                        PopupMenuItem(
+                          value: 'outside',
+                          child: Row(
                             children: [
-                              Text(
-                                'International',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
+                              Text('🌍', style: TextStyle(fontSize: 20)),
+                              SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'International',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Prices in \$',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                'Prices in \$',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
+                              if (deliveryType == 'outside') ...[
+                                Spacer(),
+                                Icon(
+                                  Icons.check,
+                                  color: Colors.green,
+                                  size: 20,
                                 ),
-                              ),
+                              ],
                             ],
                           ),
-                          if (deliveryType == 'outside') ...[
-                            Spacer(),
-                            Icon(Icons.check, color: Colors.green, size: 20),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
+                        ),
+                      ],
                 );
               },
             ),
@@ -1194,37 +1214,34 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     SizedBox(height: 4),
                   ],
-                  
+
                   // Show email if available
                   if (_welcomeEmail.isNotEmpty) ...[
                     Text(
                       _welcomeEmail,
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                     SizedBox(height: 4),
                   ],
-                  
+
                   // Show dealer ID if available
                   if (_welcomeDealerId.isNotEmpty) ...[
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         "Dealer ID: $_welcomeDealerId",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                        ),
+                        style: TextStyle(color: Colors.white, fontSize: 11),
                       ),
                     ),
                   ],
-                  
+
                   // Show default text if no user data
                   if (_welcomeMobile.isEmpty && _welcomeEmail.isEmpty) ...[
                     Text(
