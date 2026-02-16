@@ -482,24 +482,28 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
       debugPrint(
         "❌ Showing LoginScreen - Type: $type, Token empty: ${token.isEmpty}",
       );
-      return  type == "therapist" || type == "prouser"|| type == "user"|| token.isEmpty
+      return type == "therapist" ||
+              type == "prouser" ||
+              type == "user" ||
+              token.isEmpty
           ? JinLoginScreen(
-        text: "BodyPartScreen",
-        type: "patient",
-        onTab: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (context) => BodyPartScreen(
-                    day: widget.day,
-                    pId: widget.pId,
-                    dId: widget.dId,
-                  ),
-            ),
-          );
-        },
-      ):_buildBodyPartScreen();
+            text: "BodyPartScreen",
+            type: "patient",
+            onTab: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => BodyPartScreen(
+                        day: widget.day,
+                        pId: widget.pId,
+                        dId: widget.dId,
+                      ),
+                ),
+              );
+            },
+          )
+          : _buildBodyPartScreen();
     }
   }
 

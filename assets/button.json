@@ -100,7 +100,7 @@
       "id": "customClickButton13",
       "x": 197.07,
       "y": 149.17,
-      "tag": "Lung",
+      "tag": "Lungs",
       "index": 11,
       "group": "normal"
     },
@@ -108,7 +108,7 @@
       "id": "customClickButton14",
       "x": 203.09,
       "y": 164.98,
-      "tag": "Lung",
+      "tag": "Lungs",
       "index": 12,
       "group": "normal"
     },
@@ -116,7 +116,7 @@
       "id": "customClickButton15",
       "x": 207,
       "y": 178.54,
-      "tag": "Lung",
+      "tag": "Lungs",
       "index": 13,
       "group": "normal"
     },
@@ -124,7 +124,7 @@
       "id": "customClickButton16",
       "x": 213.28,
       "y": 194.28,
-      "tag": "Lung",
+      "tag": "Lungs",
       "index": 14,
       "group": "normal"
     },
@@ -132,7 +132,7 @@
       "id": "customClickButton17",
       "x": 218.28,
       "y": 209,
-      "tag": "Lung",
+      "tag": "Lungs",
       "index": 15,
       "group": "normal"
     },
@@ -140,7 +140,7 @@
       "id": "customClickButton18",
       "x": 224.00,
       "y": 225.28,
-      "tag": "Lung",
+      "tag": "Lungs",
       "index": 16,
       "group": "normal"
     },
@@ -620,7 +620,7 @@
       "id": "customClickButton83",
       "x": 88.87,
       "y": 638.71,
-      "tag": "sacrum",
+      "tag": "Sacrum",
       "index": 81,
       "group": "spinal"
     },
@@ -628,7 +628,7 @@
       "id": "customClickButton84",
       "x": 176,
       "y": 774.58,
-      "tag": "Sacrum",
+      "tag": "Anus",
       "index": 82,
       "group": "spinal"
     },
@@ -884,7 +884,7 @@
       "id": "customClickButton113",
       "x": 144,
       "y": 350,
-      "tag": "Anus",
+      "tag": "Stomach",
       "index": 110,
       "group": "normal"
     },
@@ -932,7 +932,7 @@
       "id": "customClickButton122",
       "x": 12.24,
       "y": 258.43,
-      "tag": "C6",
+      "tag": "C7",
       "index": 118,
       "group": "normal"
     },
@@ -972,7 +972,7 @@
       "id": "customClickButton124",
       "x": 258.13,
       "y": 620.99,
-      "tag": "Knee",
+      "tag": "Thigh",
       "index": 120,
       "group": "normal"
     },
@@ -1508,7 +1508,7 @@
       "id": "customClickButton196",
       "x": 268.05,
       "y": 605.53,
-      "tag": "Outer knee",
+      "tag": "Outer Knee",
       "index": 699,
       "group": "normal"
     },

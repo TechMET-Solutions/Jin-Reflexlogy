@@ -238,40 +238,66 @@ class ScreenshotHelper {
       final boundary =
           key.currentContext!.findRenderObject() as RenderRepaintBoundary;
 
-      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-
+      // 1. पहिले original image सेव्ह करू
+      final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
       final ByteData? byteData = await image.toByteData(
         format: ui.ImageByteFormat.png,
       );
-
       if (byteData == null) return null;
 
-      Uint8List pngBytes = byteData.buffer.asUint8List();
+      // 2. ORIGINAL IMAGE सेव्ह (डिबगging साठी)
+      Uint8List originalBytes = byteData.buffer.asUint8List();
+      final originalDir = await getTemporaryDirectory();
+      final originalPath = '${originalDir.path}/original_${DateTime.now().millisecondsSinceEpoch}.png';
+      final originalFile = File(originalPath);
+      await originalFile.writeAsBytes(originalBytes);
+      debugPrint('📸 ORIGINAL image saved: $originalPath');
 
-      // Decode image
-      final decoded = img.decodeImage(pngBytes);
-      if (decoded == null) return null;
+      // 3. IMAGE PROCESSING
+      final decoded = img.decodeImage(originalBytes);
+      if (decoded == null) {
+        debugPrint('❌ Decode failed');
+        return null;
+      }
 
-      // 🔥 Step 1: Rotate 180 (fix upside-down)
-      final rotated = img.copyRotate(decoded, angle: 180);
+      debugPrint('📏 Original size: ${decoded.width}x${decoded.height}');
 
-      // 🔥 Step 2: Flip Horizontal (fix mirror)
-      final fixed = img.flipHorizontal(rotated);
+      // Try different combinations
+      img.Image processed;
+      
+      // 🔥 OPTION 1: फक्त rotate 180
+      // processed = img.copyRotate(decoded, angle: 180);
+      
+      // 🔥 OPTION 2: rotate 180 + flip horizontal (तुझा current कोड)
+      processed = img.copyRotate(decoded, angle: 180);
+      processed = img.flipHorizontal(processed);
+      
+      // 🔥 OPTION 3: rotate 90
+      // processed = img.copyRotate(decoded, angle: 90);
+      
+      // 🔥 OPTION 4: rotate 270
+      // processed = img.copyRotate(decoded, angle: 270);
+      
+      // 🔥 OPTION 5: फक्त flip vertical
+      // processed = img.flipVertical(decoded);
+      
+      // 🔥 OPTION 6: फक्त flip horizontal
+      // processed = img.flipHorizontal(decoded);
 
-      final fixedBytes = Uint8List.fromList(img.encodePng(fixed));
+      final fixedBytes = Uint8List.fromList(img.encodePng(processed));
 
+      // 4. PROCESSED IMAGE सेव्ह
       final dir = await getTemporaryDirectory();
-
-      final path =
-          '${dir.path}/body_map_${DateTime.now().millisecondsSinceEpoch}.png';
-
+      final path = '${dir.path}/fixed_${DateTime.now().millisecondsSinceEpoch}.png';
       final file = File(path);
-
       await file.writeAsBytes(fixedBytes);
+      
+      debugPrint('✅ FIXED image saved: $path');
+      debugPrint('📤 Uploading file: ${file.path}');
 
       return file;
     } catch (e) {
-      debugPrint('Screenshot Error: $e');
+      debugPrint('❌ Screenshot Error: $e');
       return null;
     }
   }

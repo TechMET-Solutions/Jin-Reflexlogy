@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:get/get.dart' hide FormData;
+
 import 'package:http/http.dart' as http;
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
@@ -29,23 +31,27 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
     return value == null ? "" : value.toString();
   }
 
+  bool _isLoggingIn = false;
+
   Future<void> login(
     BuildContext context,
     VoidCallback onTab,
     String text,
-    String type, // "therapist" | "prouser" | ""
+    String type,
     dynamic id,
     dynamic password, {
     dynamic DeliveryType,
   }) async {
+    // ✅ Prevent multiple clicks
+    if (_isLoggingIn) return;
+    _isLoggingIn = true;
+
     state = const AsyncValue.loading();
 
     try {
-      // ===============================
-      // 🔁 TYPE CONFLICT CHECK
-      // (फक्त UI type non-empty असेल तेव्हाच)
-      // ===============================
+      // ================= TYPE CHECK =================
       final oldType = AppPreference().getString(PreferencesKey.type);
+
       if (type.trim().isNotEmpty && oldType.isNotEmpty && oldType != type) {
         state = const AsyncValue.data(null);
 
@@ -56,6 +62,9 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
           onConfirm: () async {
             await AppPreference().clearSharedPreferences();
             Navigator.pop(context);
+
+            _isLoggingIn = false;
+
             login(
               context,
               onTab,
@@ -70,9 +79,7 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
         return;
       }
 
-      // ===============================
-      // 🌐 API CALL
-      // ===============================
+      // ================= API CALL =================
       final dio = Dio(
         BaseOptions(
           responseType: ResponseType.plain,
@@ -85,32 +92,50 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
         data: FormData.fromMap({"id": id, "password": password, "type": type}),
       );
 
-      debugPrint("===== LOGIN DEBUG START =====");
-      debugPrint("TYPE FROM UI: $type");
-      debugPrint("STATUS: ${response.statusCode}");
-      debugPrint("RAW RESPONSE: ${response.data}");
-      debugPrint("===== LOGIN DEBUG END =====");
+      final raw = response.data.toString().trim();
 
-      if (response.statusCode != 200 || response.data == null) {
-        state = AsyncValue.error(
-          "Server error ${response.statusCode}",
-          StackTrace.current,
-        );
-        return;
+      debugPrint("===== LOGIN RAW RESPONSE =====");
+      debugPrint(raw);
+      debugPrint("=============================");
+
+      // ================= VALIDATE RESPONSE =================
+
+      if (!raw.startsWith("{")) {
+        throw "Invalid server response";
+      }
+      // 🔥 Extract only JSON part
+      final int jsonStart = raw.indexOf('{');
+
+      if (jsonStart == -1) {
+        throw "Invalid server response";
       }
 
-      final Map<String, dynamic> jsonData = jsonDecode(
-        response.data.toString(),
+      final cleanJson = raw.substring(jsonStart);
+
+      final Map<String, dynamic> jsonData = jsonDecode(cleanJson);
+
+      final String message = jsonData["message"] ?? "Login failed";
+
+      // ================= SHOW MESSAGE =================
+
+      Get.rawSnackbar(
+        message: message,
+        backgroundColor: Colors.black,
+        snackPosition: SnackPosition.BOTTOM,
+        borderRadius: 8,
+        margin: const EdgeInsets.all(12),
+        duration: const Duration(seconds: 2),
       );
 
-      if (jsonData['success'] != 1) {
-        state = AsyncValue.error("Invalid credentials", StackTrace.current);
+      // ================= FAIL CASE =================
+
+      if (jsonData["success"] != 1) {
+        state = AsyncValue.error("Login failed", StackTrace.current);
         return;
       }
 
-      // ===============================
-      // 🧠 HANDLE BOTH RESPONSE TYPES
-      // ===============================
+      // ================= SUCCESS =================
+
       final Map<String, dynamic>? userData =
           jsonData['user_data'] is Map ? jsonData['user_data'] : null;
 
@@ -121,157 +146,58 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
       final mobile = userData?['t_mobile'] ?? userData?['p_number'] ?? "";
 
       if (userId == null || userId.toString().isEmpty) {
-        state = AsyncValue.error("User ID missing", StackTrace.current);
-        return;
+        throw "User ID missing";
       }
 
-      // ===============================
-      // 🔥 FINAL TYPE DECISION
-      // ===============================
-      String finalType = type.trim().isNotEmpty 
-          ? type 
-          : (jsonData['type']?.toString() ?? "");
-      
-      // If still empty, use "patient" as default for BodyPartScreen
+      // ================= TYPE FIX =================
+
+      String finalType =
+          type.trim().isNotEmpty ? type : (jsonData['type'] ?? "").toString();
+
       if (finalType.isEmpty && text == "BodyPartScreen") {
         finalType = "patient";
-        debugPrint("⚠️ Type was empty, setting default: patient");
       }
 
-      // ===============================
-      // 💾 SAVE TO SHARED PREFS
-      // ===============================
+      // ================= SAVE PREFS =================
+
       await AppPreference().setString(PreferencesKey.userId, userId.toString());
+
       await AppPreference().setString(PreferencesKey.token, token.toString());
+
       await AppPreference().setString(PreferencesKey.name, name.toString());
+
       await AppPreference().setString(PreferencesKey.email, email.toString());
+
       await AppPreference().setString(
         PreferencesKey.contactNumber,
         mobile.toString(),
       );
+
       await AppPreference().setString(PreferencesKey.type, finalType);
 
-      // ===============================
-      // 🧪 VERIFY STORED DATA
-      // ===============================
-      debugPrint("===== STORED PREFS =====");
-      debugPrint(
-        "USER ID: ${AppPreference().getString(PreferencesKey.userId)}",
-      );
-      debugPrint("TYPE: ${AppPreference().getString(PreferencesKey.type)}");
-      debugPrint("TOKEN: ${AppPreference().getString(PreferencesKey.token)}");
-      debugPrint("========================");
+      await AppPreference().initialAppPreference();
 
-      AppPreference().initialAppPreference();
       state = const AsyncValue.data(null);
 
-      // ===============================
-      // 🚀 NAVIGATION
-      // ===============================
-      if (text == "MemberListScreen") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => MemberListScreen()),
-        );
-      } else if (text == "LifestyleScreen") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => LifestyleScreen()),
-        );
-      } else if (text == "EbookScreen") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => EbookScreen()),
-        );
-      } else if (text == "PointFinderScreen") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => PointFinderScreen()),
-        );
-      } else if (text == "CourseScreen") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => CourseScreen(deliveryType: DeliveryType),
-          ),
-        );
-      } else if (text == "Treatment") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => Treatment()),
-        );
-      } else if (text == "BodyPartScreen") {
-        // Force reload preferences to ensure latest data is available
-        await AppPreference().initialAppPreference();
-        
-        final savedUserId = AppPreference().getString(PreferencesKey.userId);
-        final savedType = AppPreference().getString(PreferencesKey.type);
-        final savedToken = AppPreference().getString(PreferencesKey.token);
-        
-        debugPrint("===== NAVIGATION TO BODYPARTSCREEN =====");
-        debugPrint("Saved User ID: $savedUserId");
-        debugPrint("Saved Type: $savedType");
-        debugPrint("Saved Token: $savedToken");
-        debugPrint("========================================");
-        
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => BodyPartScreen(
-                  pId: savedUserId,
-                  dId: null,
-                  day: "last",
-                  isShow: false, // ✅ Set to false to skip login check
-                ),
-          ),
-        );
-      } else if (text == "ShopScreen") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ShopScreen(deliveryType: DeliveryType),
-          ),
-        );
-      }
-    } catch (e, st) {
-      debugPrint("LOGIN ERROR: $e");
-      state = AsyncValue.error(e, st);
-    }
-  }
+      debugPrint("===== LOGIN SUCCESS =====");
 
-  void _showTypeConflictDialog(
-    BuildContext context, {
-    required String oldType,
-    required String newType,
-    required VoidCallback onConfirm,
-  }) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) {
-        return AlertDialog(
-          title: const Text("Already Logged In"),
-          content: Text(
-            "You are already logged in as $oldType.\n\n"
-            "Do you want to logout $oldType and login as $newType?",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: onConfirm,
-              child: const Text(
-                "Logout & Continue",
-                style: TextStyle(color: Colors.red),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+      // ================= NAVIGATION =================
+
+      _navigate(context, text, DeliveryType);
+    } catch (e, st) {
+      debugPrint("LOGIN ERROR => $e");
+      debugPrint("$st");
+
+      Get.rawSnackbar(
+        message: "Server Error. Try again",
+        backgroundColor: Colors.black,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+
+      state = AsyncValue.error(e, st);
+    } finally {
+      _isLoggingIn = false; // ✅ unlock
+    }
   }
 }
 
@@ -297,4 +223,112 @@ class ApiService {
       return {"success": 0, "message": e.toString()};
     }
   }
+}
+
+void _navigate(BuildContext context, String text, dynamic DeliveryType) {
+  switch (text) {
+    case "MemberListScreen":
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => MemberListScreen()),
+      );
+      break;
+
+    case "LifestyleScreen":
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => LifestyleScreen()),
+      );
+      break;
+
+    case "EbookScreen":
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => EbookScreen()),
+      );
+      break;
+
+    case "PointFinderScreen":
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => PointFinderScreen()),
+      );
+      break;
+
+    case "CourseScreen":
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CourseScreen(deliveryType: DeliveryType),
+        ),
+      );
+      break;
+
+    case "Treatment":
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => Treatment()),
+      );
+      break;
+
+    case "BodyPartScreen":
+      final uid = AppPreference().getString(PreferencesKey.userId);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => BodyPartScreen(
+                pId: uid,
+                dId: null,
+                day: "last",
+                isShow: false,
+              ),
+        ),
+      );
+      break;
+
+    case "ShopScreen":
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ShopScreen(deliveryType: DeliveryType),
+        ),
+      );
+      break;
+  }
+}
+
+void _showTypeConflictDialog(
+  BuildContext context, {
+  required String oldType,
+  required String newType,
+  required VoidCallback onConfirm,
+}) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) {
+      return AlertDialog(
+        title: const Text("Already Logged In"),
+        content: Text(
+          "You are already logged in as $oldType.\n\n"
+          "Do you want to logout $oldType and login as $newType?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: onConfirm,
+            child: const Text(
+              "Logout & Continue",
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      );
+    },
+  );
 }

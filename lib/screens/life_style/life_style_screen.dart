@@ -12,8 +12,7 @@ import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LifestyleScreen extends StatefulWidget {
-  final String? patientId; // Optional patient ID parameter
-  
+  final String? patientId;
   const LifestyleScreen({super.key, this.patientId});
 
   @override
@@ -25,38 +24,36 @@ class _LifestyleScreenState extends State<LifestyleScreen> {
   bool isLoading = true;
   double progress = 0;
 
-@override
-void initState() {
-  super.initState();
-  
-  // Platform initialization for WebView
-  _initPlatformSettings();
-  
-  _initWebView();
-}
+  @override
+  void initState() {
+    super.initState();
+    _initPlatformSettings();
+    _initWebView();
+  }
 
-void _initPlatformSettings() {
-  // For Android
-  if (Platform.isAndroid) {
-    // Android specific settings
-    // No need to set WebView.platform explicitly in newer versions
+  void _initPlatformSettings() {
+    // For Android
+    if (Platform.isAndroid) {
+      // Android specific settings
+      // No need to set WebView.platform explicitly in newer versions
+    }
+
+    // For iOS
+    if (Platform.isIOS) {
+      // iOS specific settings
+    }
   }
-  
-  // For iOS
-  if (Platform.isIOS) {
-    // iOS specific settings
-  }
-}
+
   Future<void> _initWebView() async {
     try {
       // Get patient ID from parameter or preferences
       String patientId = widget.patientId ?? await _getPatientId();
-      
+
       print("🟢 Loading WebView for patient ID: $patientId");
-      
+
       // Create platform specific controller
       late final PlatformWebViewControllerCreationParams params;
-      
+
       if (WebViewPlatform.instance is WebKitWebViewPlatform) {
         params = WebKitWebViewControllerCreationParams(
           allowsInlineMediaPlayback: true,
@@ -66,7 +63,9 @@ void _initPlatformSettings() {
         params = const PlatformWebViewControllerCreationParams();
       }
 
-      final webViewController = WebViewController.fromPlatformCreationParams(params);
+      final webViewController = WebViewController.fromPlatformCreationParams(
+        params,
+      );
 
       // Platform specific configurations
       if (webViewController.platform is AndroidWebViewController) {
@@ -76,68 +75,73 @@ void _initPlatformSettings() {
       }
 
       // Setup controller
-      controller = webViewController
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(Colors.white)
-        ..setNavigationDelegate(
-          NavigationDelegate(
-            onProgress: (int progress) {
-              print("Loading progress: $progress%");
-              setState(() {
-                this.progress = progress / 100;
-              });
-            },
-            onPageStarted: (String url) {
-              print("Page started loading: $url");
-              setState(() {
-                isLoading = true;
-              });
-            },
-            onPageFinished: (String url) {
-              print("Page finished loading: $url");
-              setState(() {
-                isLoading = false;
-              });
-            },
-            onWebResourceError: (WebResourceError error) {
-              print("WebResourceError: ${error.errorCode} - ${error.description}");
-              print("Error URL: ${error.url}");
-              print("Error Type: ${error.errorType}");
-              setState(() {
-                isLoading = false;
-              });
-            },
-            onNavigationRequest: (NavigationRequest request) {
-              print("Navigation request: ${request.url}");
-              return NavigationDecision.navigate;
-            },
-            onUrlChange: (UrlChange change) {
-              print("URL changed: ${change.url}");
-            },
-          ),
-        )
-        ..addJavaScriptChannel(
-          'Flutter',
-          onMessageReceived: (JavaScriptMessage message) {
-            print("JavaScript message: ${message.message}");
-          },
-        );
+      controller =
+          webViewController
+            ..setJavaScriptMode(JavaScriptMode.unrestricted)
+            ..setBackgroundColor(Colors.white)
+            ..setNavigationDelegate(
+              NavigationDelegate(
+                onProgress: (int progress) {
+                  print("Loading progress: $progress%");
+                  setState(() {
+                    this.progress = progress / 100;
+                  });
+                },
+                onPageStarted: (String url) {
+                  print("Page started loading: $url");
+                  setState(() {
+                    isLoading = true;
+                  });
+                },
+                onPageFinished: (String url) {
+                  print("Page finished loading: $url");
+                  setState(() {
+                    isLoading = false;
+                  });
+                },
+                onWebResourceError: (WebResourceError error) {
+                  print(
+                    "WebResourceError: ${error.errorCode} - ${error.description}",
+                  );
+                  print("Error URL: ${error.url}");
+                  print("Error Type: ${error.errorType}");
+                  setState(() {
+                    isLoading = false;
+                  });
+                },
+                onNavigationRequest: (NavigationRequest request) {
+                  print("Navigation request: ${request.url}");
+                  return NavigationDecision.navigate;
+                },
+                onUrlChange: (UrlChange change) {
+                  print("URL changed: ${change.url}");
+                },
+              ),
+            )
+            ..addJavaScriptChannel(
+              'Flutter',
+              onMessageReceived: (JavaScriptMessage message) {
+                print("JavaScript message: ${message.message}");
+              },
+            );
 
       // Load URL
-      String url = "https://jinreflexology.in/api1/new/patient_lifestyle.php?id=${AppPreference().getString(PreferencesKey.userId)}";
+      String url =
+          "https://jinreflexology.in/api1/new/patient_lifestyle.php?id=${AppPreference().getString(PreferencesKey.userId)}";
       print("🔗 Loading URL: $url");
-      
+
       await controller.loadRequest(
         Uri.parse(url),
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'User-Agent':
+              'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
+          'Accept':
+              'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.9',
         },
       );
 
       setState(() {});
-      
     } catch (e, stackTrace) {
       print("❌ Error initializing WebView: $e");
       print("Stack trace: $stackTrace");
@@ -157,7 +161,7 @@ void _initPlatformSettings() {
       } else if (routeArgs is Map) {
         return routeArgs['patientId']?.toString() ?? '';
       }
-      
+
       // Then try from preferences
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString('patientId') ?? '1059'; // Default fallback
@@ -170,11 +174,11 @@ void _initPlatformSettings() {
   Widget build(BuildContext context) {
     final token = AppPreference().getString(PreferencesKey.token);
     final type = AppPreference().getString(PreferencesKey.type);
-    
+
     print("DEBUG TYPE => '$type'");
     print("DEBUG TOKEN => '$token'");
     print("DEBUG isEmpty => ${token.isEmpty}");
-    
+
     return Scaffold(
       appBar: CommonAppBar(
         title: "Lifestyle",
@@ -185,101 +189,110 @@ void _initPlatformSettings() {
           );
         },
       ),
-      body: type == "therapist" || type == "prouser"|| type == "user"|| token.isEmpty
-          ? JinLoginScreen(
-              text: "LifestyleScreen",
-              type: "patient",
-              // registershow: true,
-              onTab: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => LifestyleScreen()),
-                );
-              },
-            )
-          : Stack(
-              children: [
-                WebViewWidget(controller: controller),
-                
-                // Loading indicator
-                if (isLoading)
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.white.withOpacity(0.8),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(
-                            value: progress,
-                            backgroundColor: Colors.grey[300],
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            "Loading... ${(progress * 100).toStringAsFixed(0)}%",
-                            style: TextStyle(
-                              color: Colors.orange,
-                              fontSize: 16,
+      body:
+          type == "therapist" ||
+                  type == "prouser" ||
+                  type == "user" ||
+                  token.isEmpty
+              ? JinLoginScreen(
+                text: "LifestyleScreen",
+                type: "patient",
+                // registershow: true,
+                onTab: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => LifestyleScreen()),
+                  );
+                },
+              )
+              : Stack(
+                children: [
+                  WebViewWidget(controller: controller),
+
+                  // Loading indicator
+                  if (isLoading)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.white.withOpacity(0.8),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              value: progress,
+                              backgroundColor: Colors.grey[300],
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.orange,
+                              ),
                             ),
-                          ),
-                        ],
+                            SizedBox(height: 16),
+                            Text(
+                              "Loading... ${(progress * 100).toStringAsFixed(0)}%",
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                
-                // Error/Reload button
-                if (!isLoading && progress == 0)
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.white,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            color: Colors.red,
-                            size: 64,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            "Failed to load content",
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey[700],
+
+                  // Error/Reload button
+                  if (!isLoading && progress == 0)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.white,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.red,
+                              size: 64,
                             ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            "Please check your internet connection",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[500],
+                            SizedBox(height: 16),
+                            Text(
+                              "Failed to load content",
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey[700],
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 24),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                isLoading = true;
-                                progress = 0;
-                              });
-                              _initWebView();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                            SizedBox(height: 8),
+                            Text(
+                              "Please check your internet connection",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
                             ),
-                            child: Text(
-                              "Reload",
-                              style: TextStyle(color: Colors.white),
+                            SizedBox(height: 24),
+                            ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  isLoading = true;
+                                  progress = 0;
+                                });
+                                _initWebView();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 32,
+                                  vertical: 12,
+                                ),
+                              ),
+                              child: Text(
+                                "Reload",
+                                style: TextStyle(color: Colors.white),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
+                ],
+              ),
     );
   }
 }

@@ -11,7 +11,7 @@ class JinLoginScreen extends ConsumerStatefulWidget {
     this.diliveryType,
     this.type,
     this.registershow = false,
-    
+    this.shop = false,
   });
 
   final VoidCallback onTab;
@@ -19,6 +19,7 @@ class JinLoginScreen extends ConsumerStatefulWidget {
   final type;
   final diliveryType;
   final registershow;
+  final shop;
 
   @override
   ConsumerState<JinLoginScreen> createState() => _JinLoginScreenState();
@@ -343,40 +344,74 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                       const SizedBox(height: 20),
 
                       /// 🔹 Sign Up Link
-                      /// 
-                      if(widget.registershow == true)
-                      Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Don't have an account? ",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => SignUpScreen(),
-                                  ),
-                                );
-                              },
-                              child: Text(
-                                "Sign Up",
+                      ///
+                      if (widget.registershow == true)
+                        Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Don't have an account? ",
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: const Color.fromARGB(255, 19, 4, 66),
-                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[600],
                                 ),
                               ),
-                            ),
-                          ],
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => SignUpScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  "Sign Up",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: const Color.fromARGB(255, 19, 4, 66),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+
+                      if (widget.shop == true)
+                        Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Don't have an account? ",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => SignUpScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  "Sign Up",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: const Color.fromARGB(255, 19, 4, 66),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -429,8 +464,3 @@ class TopWaveClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
-
-
-
-
-

@@ -203,7 +203,7 @@ Future<void> loadPoints() async {
 
   /// --------------------------------------------------
   /// SCREENSHOT
-   Future<String?> captureScreenshot() async {
+Future<String?> captureScreenshot() async {
   try {
     await Future.delayed(const Duration(milliseconds: 100));
 
@@ -216,26 +216,12 @@ Future<void> loadPoints() async {
       return null;
     }
 
-    // ⭐ Medium quality (fast + stable)
+    // High quality
     final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
 
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    final paint = Paint();
-
-    // ✅ FIX: Vertical flip (upside-down bug)
-    canvas.translate(0, image.height.toDouble());
-    canvas.scale(1, -1);
-
-    canvas.drawImage(image, Offset.zero, paint);
-
-    final picture = recorder.endRecording();
-
-    final fixedImage =
-        await picture.toImage(image.width, image.height);
-
-    final byteData =
-        await fixedImage.toByteData(format: ui.ImageByteFormat.png);
+    final byteData = await image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
 
     if (byteData == null) return null;
 

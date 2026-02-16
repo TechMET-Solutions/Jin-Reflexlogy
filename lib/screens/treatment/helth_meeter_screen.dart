@@ -75,45 +75,60 @@ class _HealthFormScreenState extends State<HealthFormScreen> {
     return "Not specified";
   }
 
-  // Calculate Score
-  double get score {
-    double s = 0;
-    double totalPoints = 27; // Total number of health factors
+  // Calculate Score - PDF मधल्या टक्क्यांनुसार
+double get score {
+  double s = 0;
 
-    // Lifestyle factors (1-18)
-    if (wakeUp) s += (100 / totalPoints);
-    if (meditation) s += (100 / totalPoints);
-    if (yoga) s += (100 / totalPoints);
-    if (exercise) s += (100 / totalPoints);
-    if (stretching) s += (100 / totalPoints);
-    if (barefootWalking) s += (100 / totalPoints);
-    if (sunBath) s += (100 / totalPoints);
-    if (foodTiming) s += (100 / totalPoints);
-    if (avoidWaterWithMeal) s += (100 / totalPoints);
-    if (drinkWater) s += (100 / totalPoints);
-    if (avoidScreenWhileEating) s += (100 / totalPoints);
-    if (chewFood) s += (100 / totalPoints);
-    if (avoidTeaCoffee) s += (100 / totalPoints);
-    if (avoidAlcohol) s += (100 / totalPoints);
-    if (avoidNonVeg) s += (100 / totalPoints);
-    if (dinnerSleepGap) s += (100 / totalPoints);
-    if (sleepTiming) s += (100 / totalPoints);
-    if (avoidDaySleep) s += (100 / totalPoints);
+  // Lifestyle factors with their weights from PDF
+  if (wakeUp) s += 4.0;
+  if (meditation) s += 4.0;
+  if (yoga) s += 4.0;
+  if (exercise) s += 3.0;  // Note: PDF says "3 Minute normal starching" maybe 3%?
+  if (stretching) s += 1.0;
+  if (barefootWalking) s += 2.0;
+  if (sunBath) s += 2.0;  // Food Intect time - 2% (Assuming Sun Bath is 2%)
+  if (foodTiming) s += 4.0;  // Breakfast timing 4%
+  if (avoidWaterWithMeal) s += 2.0;
+  if (drinkWater) s += 1.0;
+  if (avoidScreenWhileEating) s += 2.0;
+  if (chewFood) s += 4.0;
+  if (avoidTeaCoffee) s += 8.0;
+  if (avoidAlcohol) s += 4.0;
+  if (avoidNonVeg) s += 4.0;
+  if (dinnerSleepGap) s += 2.0;
+  if (sleepTiming) s += 4.0;
+  if (avoidDaySleep) s += 2.0;  // From PDF: "Avoid Sleep in Day and Late Night Waking"
 
-    // Celibacy (19-20)
-    if (followCelibacy) s += (100 / totalPoints);
-
-    // Other factors (21-27)
-    if (avoidMobilePosture) s += (100 / totalPoints);
-    if (avoidLongPosture) s += (100 / totalPoints);
-    if (avoidPainkillers) s += (100 / totalPoints);
-    if (avoidLustContent) s += (100 / totalPoints);
-    if (familyTime) s += (100 / totalPoints);
-    if (workWithPatience) s += (100 / totalPoints);
-    if (liveStressFree) s += (100 / totalPoints);
-
-    return double.parse(s.toStringAsFixed(1)); // Max = 100
+  // Celibacy - Age wise weights
+  if (followCelibacy) {
+    int userAge = age;
+    if (userAge >= 1 && userAge <= 21) {
+      s += 10.0;
+    } else if (userAge > 21 && userAge <= 30) {
+      s += 10.0;
+    } else if (userAge > 30 && userAge <= 50) {
+      s += 10.0;
+    } else if (userAge > 50 && userAge <= 70) {
+      s += 10.0;
+    } else if (userAge > 70) {
+      s += 10.0;
+    }
   }
+
+  // Other lifestyle factors
+  if (avoidMobilePosture) s += 4.0;
+  if (avoidLongPosture) s += 2.0;
+  if (avoidPainkillers) s += 5.0;
+  if (avoidLustContent) s += 6.0;
+  if (familyTime) s += 4.0;
+  if (workWithPatience) s += 4.0;
+  if (liveStressFree) s += 2.0;  // Assuming last line is 2%
+
+  // Total possible score = सर्व टक्क्यांची बेरीज
+  // PDF मधील एकूण टक्के 100% पर्यंत आहेत का ते तपासा
+  // आपण फक्त calculate केलेले score return करू
+  return double.parse(s.toStringAsFixed(1)); // Max = 100 (जर सर्व weights बेरजेने 100 झाले)
+}
 
   // Health Meter Widget - Fixed at top
   Widget healthMeter(double value) {
@@ -131,9 +146,9 @@ class _HealthFormScreenState extends State<HealthFormScreen> {
           ),
         ],
       ),
-      margin:  EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: 16),
       child: Column(
-         mainAxisSize: MainAxisSize.min, // 👈 Important
+        mainAxisSize: MainAxisSize.min, // 👈 Important
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Custom Health Meter with Images
@@ -142,8 +157,8 @@ class _HealthFormScreenState extends State<HealthFormScreen> {
               healthValue: value,
               meterBackgroundImage: 'assets/images/meter_bg.png',
               needleImage: 'assets/images/needle.png',
-            width: 250,
-height: 250,
+              width: 250,
+              height: 250,
 
               animationDuration: const Duration(milliseconds: 1500),
               animationCurve: Curves.easeInOut,
@@ -154,89 +169,6 @@ height: 250,
                 color: _getHealthStatusColor(value),
               ),
             ),
-          ),
-
-           const SizedBox(height: 10),
-
-          // Title
-          const Center(
-            child: Text(
-              "Health Meter",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-          ),
-
-          // const SizedBox(height: 20),
-
-          // Gender Section - Bullet points प्रमाणे
-          const Text(
-            "Gender",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              // Male bullet with circle
-              _buildGenderOption('Male'),
-              const SizedBox(width: 20),
-              // Female bullet with circle
-              _buildGenderOption('Female'),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Age Section
-          const Text(
-            "Age -",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: ageController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              hintText: "Enter age",
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.grey),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-            ),
-            onChanged: (value) {
-              setState(() {});
-            },
-          ),
-
-          const SizedBox(height: 16),
-
-          // Working position - Checkboxes प्रमाणे
-          const Text(
-            "Working position -",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _buildWorkPositionCheckbox('Sit', sitPosition, (v) {
-                setState(() => sitPosition = v!);
-              }),
-              const SizedBox(width: 15),
-              _buildWorkPositionCheckbox('standing', standingPosition, (v) {
-                setState(() => standingPosition = v!);
-              }),
-              const SizedBox(width: 15),
-              _buildWorkPositionCheckbox('field work', fieldWorkPosition, (v) {
-                setState(() => fieldWorkPosition = v!);
-              }),
-            ],
           ),
         ],
       ),
@@ -265,11 +197,12 @@ height: 250,
               ),
               color: isSelected ? Colors.green : Colors.transparent,
             ),
-            child: isSelected
-                ? const Center(
-                    child: Icon(Icons.check, size: 12, color: Colors.white),
-                  )
-                : null,
+            child:
+                isSelected
+                    ? const Center(
+                      child: Icon(Icons.check, size: 12, color: Colors.white),
+                    )
+                    : null,
           ),
           const SizedBox(width: 8),
           Text(
@@ -303,11 +236,12 @@ height: 250,
             borderRadius: BorderRadius.circular(4),
             color: value ? Colors.green : Colors.transparent,
           ),
-          child: value
-              ? const Center(
-                  child: Icon(Icons.check, size: 14, color: Colors.white),
-                )
-              : null,
+          child:
+              value
+                  ? const Center(
+                    child: Icon(Icons.check, size: 14, color: Colors.white),
+                  )
+                  : null,
         ),
         const SizedBox(width: 6),
         Text(
@@ -349,15 +283,16 @@ height: 250,
                   borderRadius: BorderRadius.circular(4),
                   color: value ? Colors.green : Colors.transparent,
                 ),
-                child: value
-                    ? const Center(
-                        child: Icon(
-                          Icons.check,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      )
-                    : null,
+                child:
+                    value
+                        ? const Center(
+                          child: Icon(
+                            Icons.check,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                        )
+                        : null,
               ),
             ),
           ),
@@ -401,10 +336,7 @@ height: 250,
       body: Column(
         children: [
           // Fixed Health Meter Section (Non-scrollable)
-          Expanded(
-            flex: 0,
-            child: healthMeter(score),
-          ),
+          Expanded(flex: 0, child: healthMeter(score)),
 
           // Scrollable Content Section
           Expanded(
@@ -416,7 +348,10 @@ height: 250,
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -438,23 +373,125 @@ height: 250,
                       ),
                     ),
                   ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // const SizedBox(height: 20),
 
+                        // Gender Section - Bullet points प्रमाणे
+                        const Text(
+                          "Gender",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            // Male bullet with circle
+                            _buildGenderOption('Male'),
+                            const SizedBox(width: 20),
+                            // Female bullet with circle
+                            _buildGenderOption('Female'),
+                          ],
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Age Section
+                        const Text(
+                          "Age -",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: ageController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: "Enter age",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.grey),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                          ),
+                          onChanged: (value) {
+                            setState(() {});
+                          },
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Working position - Checkboxes प्रमाणे
+                        const Text(
+                          "Working position -",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            _buildWorkPositionCheckbox('Sit', sitPosition, (v) {
+                              setState(() => sitPosition = v!);
+                            }),
+                            const SizedBox(width: 15),
+                            _buildWorkPositionCheckbox(
+                              'standing',
+                              standingPosition,
+                              (v) {
+                                setState(() => standingPosition = v!);
+                              },
+                            ),
+                            const SizedBox(width: 15),
+                            _buildWorkPositionCheckbox(
+                              'field work',
+                              fieldWorkPosition,
+                              (v) {
+                                setState(() => fieldWorkPosition = v!);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                   // Daily Lifestyle Checkboxes (1-18)
-                  _buildHealthItem("1. Early Wake Up (Between 4 to 6 am)", wakeUp, (v) {
-                    setState(() => wakeUp = v!);
-                  }),
+                  _buildHealthItem(
+                    "1. Early Wake Up (Between 4 to 6 am)",
+                    wakeUp,
+                    (v) {
+                      setState(() => wakeUp = v!);
+                    },
+                  ),
 
                   _buildHealthItem("2. 15 Minutes Meditation", meditation, (v) {
                     setState(() => meditation = v!);
                   }),
 
-                  _buildHealthItem("3. 15 Minutes Yoga and Pranayama", yoga, (v) {
+                  _buildHealthItem("3. 15 Minutes Yoga and Pranayama", yoga, (
+                    v,
+                  ) {
                     setState(() => yoga = v!);
                   }),
 
-                  _buildHealthItem("4. 30 Minutes Physical Exercise", exercise, (v) {
-                    setState(() => exercise = v!);
-                  }),
+                  _buildHealthItem(
+                    "4. 30 Minutes Physical Exercise",
+                    exercise,
+                    (v) {
+                      setState(() => exercise = v!);
+                    },
+                  ),
 
                   _buildHealthItem(
                     "5. 3 Minutes Normal Stretching (Only for sitting work)",
@@ -464,15 +501,21 @@ height: 250,
                     },
                   ),
 
-                  _buildHealthItem("6. 5 Minutes Barefoot Walking", barefootWalking, (v) {
-                    setState(() => barefootWalking = v!);
-                  }),
+                  _buildHealthItem(
+                    "6. 5 Minutes Barefoot Walking",
+                    barefootWalking,
+                    (v) {
+                      setState(() => barefootWalking = v!);
+                    },
+                  ),
 
                   _buildHealthItem("7. 15 Minutes Sun Bath", sunBath, (v) {
                     setState(() => sunBath = v!);
                   }),
 
-                  _buildHealthItem("8. Follow Proper Food Timing", foodTiming, (v) {
+                  _buildHealthItem("8. Follow Proper Food Timing", foodTiming, (
+                    v,
+                  ) {
                     setState(() => foodTiming = v!);
                   }),
 
@@ -484,7 +527,9 @@ height: 250,
                     },
                   ),
 
-                  _buildHealthItem("10. Drink 2 to 3 Liter Water", drinkWater, (v) {
+                  _buildHealthItem("10. Drink 2 to 3 Liter Water", drinkWater, (
+                    v,
+                  ) {
                     setState(() => drinkWater = v!);
                   }),
 
@@ -496,7 +541,9 @@ height: 250,
                     },
                   ),
 
-                  _buildHealthItem("12. Chew Your Food Thoroughly", chewFood, (v) {
+                  _buildHealthItem("12. Chew Your Food Thoroughly", chewFood, (
+                    v,
+                  ) {
                     setState(() => chewFood = v!);
                   }),
 
@@ -516,9 +563,13 @@ height: 250,
                     },
                   ),
 
-                  _buildHealthItem("15. Avoid Non-Vegetarian Food", avoidNonVeg, (v) {
-                    setState(() => avoidNonVeg = v!);
-                  }),
+                  _buildHealthItem(
+                    "15. Avoid Non-Vegetarian Food",
+                    avoidNonVeg,
+                    (v) {
+                      setState(() => avoidNonVeg = v!);
+                    },
+                  ),
 
                   _buildHealthItem(
                     "16. Maintain Gap Between Dinner and Sleep",
@@ -528,9 +579,13 @@ height: 250,
                     },
                   ),
 
-                  _buildHealthItem("17. Go to Bed Between 9 to 11 pm", sleepTiming, (v) {
-                    setState(() => sleepTiming = v!);
-                  }),
+                  _buildHealthItem(
+                    "17. Go to Bed Between 9 to 11 pm",
+                    sleepTiming,
+                    (v) {
+                      setState(() => sleepTiming = v!);
+                    },
+                  ),
 
                   _buildHealthItem(
                     "18. Avoid Sleep in Day and Late Night Waking",
@@ -590,7 +645,10 @@ height: 250,
                         const SizedBox(height: 8),
                         Text(
                           celibacyGuideline,
-                          style: TextStyle(fontSize: 14, color: Colors.green[800]),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.green[800],
+                          ),
                         ),
                       ],
                     ),
@@ -641,7 +699,9 @@ height: 250,
                     },
                   ),
 
-                  _buildHealthItem("26. Work with Patience", workWithPatience, (v) {
+                  _buildHealthItem("26. Work with Patience", workWithPatience, (
+                    v,
+                  ) {
                     setState(() => workWithPatience = v!);
                   }),
 
@@ -678,9 +738,13 @@ height: 250,
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: _getHealthStatusColor(score).withOpacity(0.1),
+                            color: _getHealthStatusColor(
+                              score,
+                            ).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: _getHealthStatusColor(score)),
+                            border: Border.all(
+                              color: _getHealthStatusColor(score),
+                            ),
                           ),
                           child: Text(
                             _getHealthStatus(score),
@@ -694,7 +758,10 @@ height: 250,
                         const SizedBox(height: 10),
                         Text(
                           "Gender: $gender  |  Age: ${ageController.text.isEmpty ? "Not set" : age}  |  Working: ${sitPosition ? "Sit" : ""}${standingPosition ? "Standing" : ""}${fieldWorkPosition ? "Field work" : ""}",
-                          style: const TextStyle(fontSize: 14, color: Colors.grey),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -705,7 +772,10 @@ height: 250,
 
                   // Check Score Button
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
@@ -722,76 +792,87 @@ height: 250,
                       onPressed: () {
                         showDialog(
                           context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text(
-                              "Health Assessment",
-                              style: TextStyle(color: Colors.green),
-                            ),
-                            content: SingleChildScrollView(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Health Score: ${score.toInt()}%",
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Text(
+                                  "Health Assessment",
+                                  style: TextStyle(color: Colors.green),
+                                ),
+                                content: SingleChildScrollView(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Health Score: ${score.toInt()}%",
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        "Status: ${_getHealthStatus(score)}",
+                                        style: TextStyle(
+                                          color: _getHealthStatusColor(score),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 15),
+                                      const Divider(),
+                                      const SizedBox(height: 10),
+                                      const Text(
+                                        "Personal Details:",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text("Gender: $gender"),
+                                      Text(
+                                        "Age: ${ageController.text.isEmpty ? "Not specified" : age}",
+                                      ),
+                                      Text(
+                                        "Working Position: ${sitPosition ? "Sit" : ""}${standingPosition ? ", Standing" : ""}${fieldWorkPosition ? ", Field work" : ""}",
+                                      ),
+                                      const SizedBox(height: 10),
+                                      const Divider(),
+                                      const SizedBox(height: 10),
+                                      const Text(
+                                        "Celibacy Guideline:",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(celibacyGuideline),
+                                      const SizedBox(height: 10),
+                                      const Divider(),
+                                      const SizedBox(height: 10),
+                                      const Text(
+                                        "Health Tips:",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(_getHealthTips(score)),
+                                    ],
                                   ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    "Status: ${_getHealthStatus(score)}",
-                                    style: TextStyle(
-                                      color: _getHealthStatusColor(score),
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text("OK"),
                                   ),
-                                  const SizedBox(height: 15),
-                                  const Divider(),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    "Personal Details:",
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  Text("Gender: $gender"),
-                                  Text(
-                                    "Age: ${ageController.text.isEmpty ? "Not specified" : age}",
-                                  ),
-                                  Text(
-                                    "Working Position: ${sitPosition ? "Sit" : ""}${standingPosition ? ", Standing" : ""}${fieldWorkPosition ? ", Field work" : ""}",
-                                  ),
-                                  const SizedBox(height: 10),
-                                  const Divider(),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    "Celibacy Guideline:",
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  Text(celibacyGuideline),
-                                  const SizedBox(height: 10),
-                                  const Divider(),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    "Health Tips:",
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  Text(_getHealthTips(score)),
                                 ],
                               ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text("OK"),
-                              ),
-                            ],
-                          ),
                         );
                       },
                       child: const Text(
                         "View Detailed Health Report",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),

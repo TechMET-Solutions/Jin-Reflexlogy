@@ -346,26 +346,10 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
         return null;
       }
 
-      // ⭐ Medium quality (fast + stable)
+      // High quality
       final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
 
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
-      final paint = Paint();
-
-      // ✅ FIX: Vertical flip (upside-down bug)
-      canvas.translate(0, image.height.toDouble());
-      canvas.scale(1, -1);
-
-      canvas.drawImage(image, Offset.zero, paint);
-
-      final picture = recorder.endRecording();
-
-      final fixedImage = await picture.toImage(image.width, image.height);
-
-      final byteData = await fixedImage.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
       if (byteData == null) return null;
 
@@ -418,6 +402,13 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
   // --------------------------------------------------
   // DOT UI
   // --------------------------------------------------
+
+  bool _isDisabledIndex(PointData p) {
+    const disabledIndexes = {98, 99, 100, 101, 102, 103, 104};
+
+    return disabledIndexes.contains(p.index);
+  }
+
   Widget _buildDot(PointData p, double scale) {
     Color color;
     if (p.state == 1) {
@@ -430,25 +421,32 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
 
     return GestureDetector(
       onTap: () {
+        if (_isDisabledIndex(p)) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("This point is not selectable"),
+              duration: Duration(milliseconds: 400),
+            ),
+          );
+          return;
+        }
         safeSetState(() {
           p.state = (p.state + 1) % 3;
         });
-
-        print("ssssds${p.tag}");
-        // Utils().showToastMessage(p.tag);
         ScaffoldMessenger.of(context).clearSnackBars();
-
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(p.tag), duration: Duration(milliseconds: 500)),
+          SnackBar(
+            content: Text(p.tag),
+            duration: const Duration(milliseconds: 500),
+          ),
         );
-
         print("ssssds${p.tag}");
         print(
           "RF CLICK => ID:${p.id}, Index:${p.index}, X:${p.x}, Y:${p.y}, State:${p.state}",
         );
       },
 
-      /// 👉 DOT MOVE (DRAG)
       child: Container(
         width: 16 * scale,
         height: 16 * scale,

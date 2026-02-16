@@ -18,7 +18,7 @@ class MainHomeScreenDashBoard extends StatefulWidget {
 class _MainHomeScreenDashBoardState extends State<MainHomeScreenDashBoard> {
   int _currentIndex = 0;
   int _homeScreenKey = 0; // Key to force HomeScreen rebuild
-  
+
   @override
   void initState() {
     super.initState();
@@ -26,43 +26,31 @@ class _MainHomeScreenDashBoardState extends State<MainHomeScreenDashBoard> {
     _checkAndShowWelcomeDialog();
   }
 
-  /// ✅ Check and show welcome dialog on first launch
   Future<void> _checkAndShowWelcomeDialog() async {
-    // Wait for screen to build
     await Future.delayed(const Duration(milliseconds: 500));
-    
-    debugPrint("🔍 Home: Checking if user data exists...");
-    
-    // Check if user data already exists (popup was submitted)
+
+    debugPrint("🔍 Home: Checking if dealer completed...");
+
     final prefs = await SharedPreferences.getInstance();
-    final mobile = prefs.getString('welcome_mobile');
-    final email = prefs.getString('welcome_email');
-    
-    debugPrint("📊 Home: Mobile: $mobile");
-    debugPrint("📊 Home: Email: $email");
-    
-    // If user data exists, don't show popup
-    if (mobile != null && mobile.isNotEmpty && 
-        email != null && email.isNotEmpty) {
-      debugPrint("⏭️ Home: User data exists, skipping popup");
+    final dealerCompleted = prefs.getBool('dealer_completed') ?? false;
+
+    debugPrint("📊 Home: dealer_completed = $dealerCompleted");
+
+    // If dealer is completed, don't show dialog
+    if (dealerCompleted) {
+      debugPrint("⏭️ Home: Dealer completed, skipping popup");
       return;
     }
-    
-    // No user data, show popup
-    debugPrint("✅ Home: No user data, showing welcome popup...");
-    
-    // Check if widget is still mounted before using context
+
     if (!mounted) return;
-    
-    // Show dialog and wait for it to close
+
     await WelcomeDialog.show(
       context,
       onGetStarted: () {
-        // Callback when user submits - refresh the home screen
-        debugPrint("🔄 Home: Dialog closed, refreshing home screen...");
+        debugPrint("🔄 Home: Dialog closed, refreshing...");
         if (mounted) {
           setState(() {
-            _homeScreenKey++; // Change key to force rebuild
+            _homeScreenKey++;
           });
         }
       },
@@ -127,7 +115,9 @@ class _MainHomeScreenDashBoardState extends State<MainHomeScreenDashBoard> {
   Widget _buildBody() {
     switch (_currentIndex) {
       case 0:
-        return HomeScreen(key: ValueKey(_homeScreenKey)); // Use key to force rebuild
+        return HomeScreen(
+          key: ValueKey(_homeScreenKey),
+        ); // Use key to force rebuild
       case 1:
         return MemberListScreen();
       case 3:

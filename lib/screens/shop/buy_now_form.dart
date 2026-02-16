@@ -1501,7 +1501,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
         },
       };
 
-      _razorpay.open(options);
+      _razorpay.open(options); 
     } else {
       _startPayPalPayment(context);
     }

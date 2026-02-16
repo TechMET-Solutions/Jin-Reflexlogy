@@ -86,9 +86,7 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
             children: [
               _buildHeaderBox("Patient Id: ${widget.patientId}", Colors.orange),
               _buildHeaderBox(
-                "Diagnosis Id: ${widget.diagnosisId}",
-                Colors.blue,
-              ),
+                "Diagnosis Id: ${widget.diagnosisId}",Colors.blue,),
             ],
           ),
 

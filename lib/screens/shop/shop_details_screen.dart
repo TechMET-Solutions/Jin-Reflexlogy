@@ -267,6 +267,7 @@ print("ddddddddddddddddddddddddddddddddddddddddddddd${token}");
                                             builder:
                                                 (context) => JinLoginScreen(
                                                   text: "ShopScreen",
+                                                  shop: true,
                                                   type: "",
                                                   diliveryType:
                                                       widget.deliveryType,

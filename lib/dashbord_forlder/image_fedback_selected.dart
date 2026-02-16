@@ -29,7 +29,7 @@ class _ImagesSelectedBodyPartState extends State<ImagesSelectedBodyPart> {
   DateTime selectedDate = DateTime.now();
 
   final double imageAspectRatio = 980 / 768;
-  
+
   void _handleCellTap(String cellId) {
     // ✅ Check if read-only mode
     if (widget.isReadOnly) {
@@ -49,17 +49,20 @@ class _ImagesSelectedBodyPartState extends State<ImagesSelectedBodyPart> {
             final double height = width / imageAspectRatio;
 
             return GestureDetector(
-              onTapDown: widget.isReadOnly ? null : (details) {
-                final dx = details.localPosition.dx / width;
-                final dy = details.localPosition.dy / height;
+              onTapDown:
+                  widget.isReadOnly
+                      ? null
+                      : (details) {
+                        final dx = details.localPosition.dx / width;
+                        final dy = details.localPosition.dy / height;
 
-                for (final cell in bodyCells) {
-                  if (cell.contains(dx, dy)) {
-                    _handleCellTap(cell.id);
-                    break;
-                  }
-                }
-              },
+                        for (final cell in bodyCells) {
+                          if (cell.contains(dx, dy)) {
+                            _handleCellTap(cell.id);
+                            break;
+                          }
+                        }
+                      },
               child: SizedBox(
                 width: width,
                 height: height,
@@ -76,8 +79,8 @@ class _ImagesSelectedBodyPartState extends State<ImagesSelectedBodyPart> {
                       painter: BodyHighlightPainter(
                         selectedCellIds: selectedCellIds,
                         isReadOnly: widget.isReadOnly,
-                       day: widget.day
-                         // ✅ Pass read-only status
+                        day: widget.day,
+                        // ✅ Pass read-only status
                       ),
                     ),
                   ],
@@ -102,11 +105,7 @@ class _ImagesSelectedBodyPartState extends State<ImagesSelectedBodyPart> {
                 if (widget.isReadOnly)
                   Padding(
                     padding: const EdgeInsets.only(left: 8),
-                    child: Icon(
-                      Icons.lock,
-                      size: 16,
-                      color: Colors.grey[500],
-                    ),
+                    child: Icon(Icons.lock, size: 16, color: Colors.grey[500]),
                   ),
               ],
             ),
@@ -216,67 +215,64 @@ const List<BodyCell> bodyCells = [
 class BodyHighlightPainter extends CustomPainter {
   final Set<String> selectedCellIds;
   final bool isReadOnly; // ✅ NEW: Added this parameter
-    final String day; 
+  final String day;
 
-
-  BodyHighlightPainter( {
-   
+  BodyHighlightPainter({
     required this.selectedCellIds,
     this.isReadOnly = false, // ✅ Default to false
-     required this.day,
-
+    required this.day,
   });
 
- @override
-void paint(Canvas canvas, Size size) {
+  @override
+  void paint(Canvas canvas, Size size) {
+    Color fillColor;
+    Color borderColor;
 
-  Color fillColor;
-  Color borderColor;
+    // ✅ Day based color
+    if (day.toLowerCase() == 'last') {
+      fillColor = Colors.green.withOpacity(0.45);
+      borderColor = Colors.green.shade700;
+    } else {
+      // First day default
+      fillColor = Colors.red.withOpacity(0.45);
+      borderColor = Colors.red.shade700;
+    }
 
-  // ✅ Day based color
-  if (day.toLowerCase() == 'last') {
-    fillColor = Colors.green.withOpacity(0.45);
-    borderColor = Colors.green.shade700;
-  } else {
-    // First day default
-    fillColor = Colors.red.withOpacity(0.45);
-    borderColor = Colors.red.shade700;
-  }
+    // ✅ Read only override
+    if (isReadOnly) {
+      fillColor = Colors.grey.withOpacity(0.3);
+      borderColor = Colors.grey.shade600;
+    }
 
-  // ✅ Read only override
-  if (isReadOnly) {
-    fillColor = Colors.grey.withOpacity(0.3);
-    borderColor = Colors.grey.shade600;
-  }
+    final paint =
+        Paint()
+          ..color = fillColor
+          ..style = PaintingStyle.fill;
 
-  final paint = Paint()
-    ..color = fillColor
-    ..style = PaintingStyle.fill;
+    final borderSee =
+        Paint()
+          ..color = borderColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5;
 
-  final borderSee = Paint()
-    ..color = borderColor
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 1.5;
+    for (final cell in bodyCells) {
+      if (selectedCellIds.contains(cell.id)) {
+        final rect = Rect.fromLTWH(
+          cell.x * size.width,
+          cell.y * size.height,
+          cell.w * size.width,
+          cell.h * size.height,
+        );
 
-  for (final cell in bodyCells) {
-    if (selectedCellIds.contains(cell.id)) {
-
-      final rect = Rect.fromLTWH(
-        cell.x * size.width,
-        cell.y * size.height,
-        cell.w * size.width,
-        cell.h * size.height,
-      );
-
-      canvas.drawRect(rect, paint);
-      canvas.drawRect(rect, borderSee);
+        canvas.drawRect(rect, paint);
+        canvas.drawRect(rect, borderSee);
+      }
     }
   }
-}
 
   @override
   bool shouldRepaint(covariant BodyHighlightPainter oldDelegate) {
     return oldDelegate.selectedCellIds != selectedCellIds ||
-           oldDelegate.isReadOnly != isReadOnly;
+        oldDelegate.isReadOnly != isReadOnly;
   }
 }

@@ -18,8 +18,8 @@
     },
     {
       "id": "customClickButton6",
-      "x":  238.52088216145833,
-      "y":52.36471354166674,
+      "x": 238.52088216145833,
+      "y": 52.36471354166674,
       "tag": "Pituitary Gland",
       "index": 191,
       "group": "endocrine"
@@ -60,7 +60,7 @@
       "id": "customClickButton7",
       "x": 255.24562897858803,
       "y": 115.64406828703703,
-      "tag": "Tongue 0",
+      "tag": "Tongue",
       "index": 196,
       "group": "normal"
     },
@@ -114,7 +114,7 @@
     },
     {
       "id": "customClickButton16",
-      "x":201.6345648871529,
+      "x": 201.6345648871529,
       "y": 391.65960105613397,
       "tag": "Large intestine",
       "index": 203,
@@ -123,23 +123,23 @@
     {
       "id": "customClickButton17",
       "x": 114.84445348668982,
-      "y":192.99023437500006,
+      "y": 192.99023437500006,
       "tag": "Lungs",
       "index": 204,
       "group": "normal"
     },
     {
       "id": "customClickButton18",
-      "x":  129.91742440682867,
+      "x": 129.91742440682867,
       "y": 324.494654224537,
-      "tag": "Lungs",
+      "tag": "Liver",
       "index": 205,
       "group": "normal"
     },
     {
       "id": "customClickButton19",
-      "x":  101.34114221643517,
-      "y":222.03951461226862,
+      "x": 101.34114221643517,
+      "y": 222.03951461226862,
       "tag": "Lungs",
       "index": 206,
       "group": "normal"
@@ -147,7 +147,7 @@
     {
       "id": "customClickButton21",
       "x": 252.4302734375,
-      "y":  157.08139467592568,
+      "y": 157.08139467592568,
       "tag": "Throat",
       "index": 207,
       "group": "normal"
@@ -155,7 +155,7 @@
     {
       "id": "customClickButton22",
       "x": 253.6929958767361,
-      "y":220.04212420428252,
+      "y": 220.04212420428252,
       "tag": "Esophagus",
       "index": 208,
       "group": "normal"
@@ -172,7 +172,7 @@
       "id": "customClickButton192",
       "x": 230.31230468750005,
       "y": 188.06260127314812,
-      "tag": "Parathyroid Gland 0",
+      "tag": "Parathyroid Gland",
       "index": 211,
       "group": "endocrine"
     },
@@ -204,7 +204,7 @@
       "id": "customClickButton196",
       "x": 227.1900824652778,
       "y": 259.80455729166675,
-      "tag": "Thyroid Gland 0",
+      "tag": "Thyroid Gland",
       "index": 215,
       "group": "endocrine"
     },
@@ -228,7 +228,7 @@
       "id": "customClickButton199",
       "x": 219.32314091435182,
       "y": 463.2658854166663,
-      "tag": "kidney",
+      "tag": "Kidney",
       "index": 218,
       "group": "spinal"
     },
@@ -314,15 +314,15 @@
     },
     {
       "id": "customClickButton209",
-      "x":41.25478696469906,
-      "y":256.03285590277784,
+      "x": 41.25478696469906,
+      "y": 256.03285590277784,
       "tag": "Shoulder",
       "index": 228,
       "group": "normal"
     },
     {
       "id": "customClickButton210",
-      "x":  33.21377133969905,
+      "x": 33.21377133969905,
       "y": 279.55007957175945,
       "tag": "Shoulder",
       "index": 229,
@@ -339,7 +339,7 @@
     {
       "id": "customClickButton213",
       "x": 108.87223126446759,
-      "y":176.99284396701395,
+      "y": 176.99284396701395,
       "tag": "Thymus Gland",
       "index": 231,
       "group": "endocrine"
@@ -362,8 +362,8 @@
     },
     {
       "id": "customClickButton216",
-      "x":30.25916341145832,
-      "y":321.86048900462964,
+      "x": 30.25916341145832,
+      "y": 321.86048900462964,
       "tag": "Elbow",
       "index": 234,
       "group": "normal"
@@ -371,7 +371,7 @@
     {
       "id": "customClickButton217",
       "x": 66.31389612268516,
-      "y":364.9158112702546,
+      "y": 364.9158112702546,
       "tag": "Liver",
       "index": 235,
       "group": "normal"
@@ -386,7 +386,7 @@
     },
     {
       "id": "customClickButton219",
-      "x":  104.28307653356482,
+      "x": 104.28307653356482,
       "y": 330.4606571903936,
       "tag": "Liver",
       "index": 237,
@@ -434,7 +434,7 @@
     },
     {
       "id": "customClickButton225",
-      "x":  157.87182436342593,
+      "x": 157.87182436342593,
       "y": 367.96637369791665,
       "tag": "Duodenum",
       "index": 243,
@@ -466,7 +466,7 @@
     },
     {
       "id": "customClickButton229",
-      "x":95.65449399594907,
+      "x": 95.65449399594907,
       "y": 371.86048900462964,
       "tag": "Gallbladder",
       "index": 247,
@@ -474,8 +474,8 @@
     },
     {
       "id": "customClickButton230",
-      "x":  37.907013165509284,
-      "y":373.86048900462964,
+      "x": 37.907013165509284,
+      "y": 373.86048900462964,
       "tag": "Wrist",
       "index": 248,
       "group": "normal"
@@ -499,7 +499,7 @@
     {
       "id": "customClickButton233",
       "x": 48.58448350694445,
-      "y":450.9793547453698,
+      "y": 450.9793547453698,
       "tag": "Leg",
       "index": 251,
       "group": "normal"
@@ -514,7 +514,7 @@
     },
     {
       "id": "customClickButton235",
-      "x":  56.46377133969907,
+      "x": 56.46377133969907,
       "y": 506.1185329861113,
       "tag": "Leg",
       "index": 253,
@@ -523,15 +523,15 @@
     {
       "id": "customClickButton236",
       "x": 59.50413773148142,
-      "y":531.9887876157409,
+      "y": 531.9887876157409,
       "tag": "Knee",
       "index": 254,
       "group": "normal"
     },
     {
       "id": "customClickButton237",
-      "x":  62.77631835937499,
-      "y":559.4765769675928,
+      "x": 62.77631835937499,
+      "y": 559.4765769675928,
       "tag": "Knee",
       "index": 255,
       "group": "normal"
@@ -539,7 +539,7 @@
     {
       "id": "customClickButton238",
       "x": 68.32299804687501,
-      "y":585.8256890190972,
+      "y": 585.8256890190972,
       "tag": "Knee",
       "index": 256,
       "group": "normal"
@@ -554,15 +554,15 @@
     },
     {
       "id": "customClickButton239",
-      "x":  67.87077184606481,
+      "x": 67.87077184606481,
       "y": 613.9345666956021,
-      "tag": "Tigh",
+      "tag": "Thigh",
       "index": 257,
       "group": "normal"
     },
     {
       "id": "customClickButton240",
-      "x":  69.5028030960648,
+      "x": 69.5028030960648,
       "y": 640.9486111111112,
       "tag": "Thigh",
       "index": 258,
@@ -570,15 +570,15 @@
     },
     {
       "id": "customClickButton241",
-      "x":  302.9073079427083,
-      "y":283.1788935908564,
+      "x": 302.9073079427083,
+      "y": 283.1788935908564,
       "tag": "Thigh",
       "index": 259,
       "group": "normal"
     },
     {
       "id": "customClickButton242",
-      "x":  223.1022497106483,
+      "x": 223.1022497106483,
       "y": 396.86936668113435,
       "tag": "Adrenal Gland",
       "index": 260,
@@ -618,7 +618,7 @@
     },
     {
       "id": "customClickButton247",
-      "x":255.16159035011574,
+      "x": 255.16159035011574,
       "y": 357.448779296875,
       "tag": "T5",
       "index": 265,
@@ -650,7 +650,7 @@
     },
     {
       "id": "customClickButton251",
-      "x":  241.53300781249996,
+      "x": 241.53300781249996,
       "y": 438.989178240741,
       "tag": "T9",
       "index": 269,
@@ -682,7 +682,7 @@
     },
     {
       "id": "customClickButton255",
-      "x":  231.98428096064816,
+      "x": 231.98428096064816,
       "y": 552.2278012876158,
       "tag": "L1",
       "index": 273,
@@ -896,7 +896,7 @@
       "index": 298,
       "group": "normal"
     },
-        {
+    {
       "id": "customClickButton402",
       "x": 108.038740596064,
       "y": 208.97729673032387,
@@ -906,7 +906,7 @@
     },
     {
       "id": "customClickButton282",
-      "x":  58.213536241319446,
+      "x": 58.213536241319446,
       "y": 632.134939236113,
       "tag": "Outer Knee",
       "index": 300,
@@ -914,7 +914,7 @@
     },
     {
       "id": "customClickButton282",
-      "x":  58.213536241319446,
+      "x": 58.213536241319446,
       "y": 632.134939236113,
       "tag": "Outer Cervical",
       "index": 302,
@@ -938,8 +938,8 @@
     },
     {
       "id": "customClickButton285",
-      "x":  89.77631835937495,
-      "y":639.2185329861113,
+      "x": 89.77631835937495,
+      "y": 639.2185329861113,
       "tag": "Appendix",
       "index": 301,
       "group": "normal"
@@ -947,8 +947,8 @@
     {
       "id": "customClickButton286",
       "x": 69.10598958333335,
-      "y":  664.6587058738428,
-      "tag": "Appendix",
+      "y": 664.6587058738428,
+      "tag": "Thigh",
       "index": 302,
       "group": "normal"
     },
@@ -996,7 +996,7 @@
       "id": "customClickButton291",
       "x": 214.5302734375,
       "y": 532.4401620370371,
-      "tag": "urinary tract",
+      "tag": "Urinary Tract",
       "index": 308,
       "group": "normal"
     },
@@ -1099,7 +1099,7 @@
     {
       "id": "customClickButton304",
       "x": 71.5406593605324,
-      "y":413.1278012876159,
+      "y": 413.1278012876159,
       "tag": "Large Intestine",
       "index": 321,
       "group": "normal"
@@ -1107,7 +1107,7 @@
     {
       "id": "customClickButton305",
       "x": 72.0651077835648,
-      "y":435.2794126157406,
+      "y": 435.2794126157406,
       "tag": "Large Intestine",
       "index": 322,
       "group": "normal"
@@ -1123,14 +1123,14 @@
     {
       "id": "customClickButton307",
       "x": 75.64854962384258,
-      "y":485.7005551938659,
+      "y": 485.7005551938659,
       "tag": "Large Intestine",
       "index": 325,
       "group": "normal"
     },
     {
       "id": "customClickButton308",
-      "x":  80.85449399594907,
+      "x": 80.85449399594907,
       "y": 506.6795771846068,
       "tag": "Large Intestine",
       "index": 324,
@@ -1138,7 +1138,7 @@
     },
     {
       "id": "customClickButton309",
-      "x":  84.51924189814815,
+      "x": 84.51924189814815,
       "y": 529.9580439814816,
       "tag": "Large Intestine",
       "index": 326,
@@ -1155,14 +1155,14 @@
     {
       "id": "customClickButton311",
       "x": 89.40450303819445,
-      "y":  572.3671440972225,
+      "y": 572.3671440972225,
       "tag": "Large Intestine",
       "index": 328,
       "group": "normal"
     },
     {
       "id": "customClickButton312",
-      "x":90.41884403935187,
+      "x": 90.41884403935187,
       "y": 594.0861780237271,
       "tag": "Large Intestine",
       "index": 329,
@@ -1179,7 +1179,7 @@
     {
       "id": "customClickButton314",
       "x": 133.75040690104166,
-      "y":417.579296875,
+      "y": 417.579296875,
       "tag": "Small Intestine",
       "index": 331,
       "group": "normal"
@@ -1243,7 +1243,7 @@
     {
       "id": "customClickButton323",
       "x": 136.29661277488427,
-      "y":461.976580584491,
+      "y": 461.976580584491,
       "tag": "Small Intestine",
       "index": 340,
       "group": "normal"
@@ -1266,7 +1266,7 @@
     },
     {
       "id": "customClickButton326",
-      "x":105.29741753472223,
+      "x": 105.29741753472223,
       "y": 479.74344437210664,
       "tag": "Small Intestine",
       "index": 343,
@@ -1274,8 +1274,8 @@
     },
     {
       "id": "customClickButton327",
-      "x":  136.75,
-      "y":485.2585449218751,
+      "x": 136.75,
+      "y": 485.2585449218751,
       "tag": "Small Intestine",
       "index": 344,
       "group": "normal"
@@ -1298,8 +1298,8 @@
     },
     {
       "id": "customClickButton330",
-      "x":108.9312156394676,
-      "y":506.6975549768522,
+      "x": 108.9312156394676,
+      "y": 506.6975549768522,
       "tag": "Small Intestine",
       "index": 347,
       "group": "normal"
@@ -1362,7 +1362,7 @@
     },
     {
       "id": "customClickButton339",
-      "x":  114.29701063368056,
+      "x": 114.29701063368056,
       "y": 555.9580439814818,
       "tag": "Small Intestine",
       "index": 356,
@@ -1370,7 +1370,7 @@
     },
     {
       "id": "customClickButton340",
-      "x":  136.50040690104166,
+      "x": 136.50040690104166,
       "y": 551.3164243344909,
       "tag": "Small Intestine",
       "index": 357,
@@ -1435,7 +1435,7 @@
     {
       "id": "customClickButton348",
       "x": 166.75,
-      "y":  608.24794921875,
+      "y": 608.24794921875,
       "tag": "Small Intestine",
       "index": 365,
       "group": "normal"
@@ -1490,8 +1490,8 @@
     },
     {
       "id": "customClickButton355",
-      "x":  128.32478841145834,
-      "y":  663.9580439814816,
+      "x": 128.32478841145834,
+      "y": 663.9580439814816,
       "tag": "Small Intestine",
       "index": 372,
       "group": "normal"

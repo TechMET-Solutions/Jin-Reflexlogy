@@ -1502,11 +1502,50 @@ void _showLogoutDialog(BuildContext context) {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+              try {
+                var request = http.MultipartRequest(
+                  'POST',
+                  Uri.parse('https://jinreflexology.in/api1/new/logout.php'),
+                );
+
+                request.fields['id'] = AppPreference().getString(
+                  PreferencesKey.userId,
+                );
+                request.fields['type'] = AppPreference().getString(
+                  PreferencesKey.type,
+                );
+                ;
+
+                var response = await request.send();
+
+                var responseBody = await response.stream.bytesToString();
+
+                print("Logout Response: $responseBody");
+
+                if (response.statusCode == 200) {
+                  // /// Clear Local Data
+                  // await AppPreference().clearSharedPreferences();
+
+                  /// Go To Login Screen
+                  // Navigator.pushAndRemoveUntil(
+                  //   context,
+                  //   MaterialPageRoute(builder: (_) => LoginScreen()),
+                  //   (route) => false,
+                  // );
+                  AppPreference().clearSharedPreferences();
+                  Navigator.pop(context);
+
+                  print("Logout Success");
+                } else {
+                  print("Logout Failed: ${response.statusCode}");
+                }
+              } catch (e) {
+                print("Logout Error: $e");
+              }
+
               // Navigator.pop(context); // Close dialog
               // Add your logout logic here
-              AppPreference().clearSharedPreferences();
-              Navigator.pop(context);
 
               // Example: Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
               print('User logged out');

@@ -317,7 +317,7 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
   // --------------------------------------------------
   // CAPTURE SCREENSHOT
   // --------------------------------------------------
- Future<String?> captureScreenshot() async {
+Future<String?> captureScreenshot() async {
   try {
     await Future.delayed(const Duration(milliseconds: 100));
 
@@ -330,26 +330,12 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
       return null;
     }
 
-    // ⭐ Medium quality (fast + stable)
+    // High quality
     final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
 
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    final paint = Paint();
-
-    // ✅ FIX: Vertical flip (upside-down bug)
-    canvas.translate(0, image.height.toDouble());
-    canvas.scale(1, -1);
-
-    canvas.drawImage(image, Offset.zero, paint);
-
-    final picture = recorder.endRecording();
-
-    final fixedImage =
-        await picture.toImage(image.width, image.height);
-
-    final byteData =
-        await fixedImage.toByteData(format: ui.ImageByteFormat.png);
+    final byteData = await image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
 
     if (byteData == null) return null;
 
@@ -412,32 +398,37 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
       color = Colors.white
       ;
     }
+ bool _isDisabledIndex(PointData p) {
+    const disabledIndexes = {286, 287, 288, 289, 312, 291, 292};
 
+    return disabledIndexes.contains(p.index);
+  }
     return GestureDetector(
-      onTap: () {
+ onTap: () {
+        if (_isDisabledIndex(p)) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("This point is not selectable"),
+              duration: Duration(milliseconds: 400),
+            ),
+          );
+          return;
+        }
         safeSetState(() {
           p.state = (p.state + 1) % 3;
         });
-        
-                ScaffoldMessenger.of(context).clearSnackBars();
-
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(p.tag), duration: Duration(milliseconds: 500)),
+          SnackBar(
+            content: Text(p.tag),
+            duration: const Duration(milliseconds: 500),
+          ),
         );
-
-        debugPrint("RF TAP => Tag: ${p.tag}, State: ${p.state}");
-      },
-      
-      onPanUpdate: (details) {
-        safeSetState(() {
-          p.x += details.delta.dx / scale;
-          p.y += details.delta.dy / scale;
-          p.x = p.x.clamp(0.0, baseWidth);
-          p.y = p.y.clamp(0.0, baseHeight);
-        });
-        
-         
-        debugPrint("RF DRAG => ${p.index}, X: ${p.x}, Y: ${p.y}");
+        print("ssssds${p.tag}");
+        print(
+          "RF CLICK => ID:${p.id}, Index:${p.index}, X:${p.x}, Y:${p.y}, State:${p.state}",
+        );
       },
       
       child: Container(

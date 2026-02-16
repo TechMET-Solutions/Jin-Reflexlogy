@@ -74,147 +74,113 @@ class _WelcomeDialogState extends State<WelcomeDialog>
     super.dispose();
   }
 
-  void _handleSubmit() async {
-    // Validate form
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    
-    debugPrint("🎯 WelcomeDialog: User tapped Submit");
-    
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.yellow),
-        ),
+void _handleSubmit() async {
+  if (!_formKey.currentState!.validate()) {
+    return;
+  }
+
+  debugPrint("🎯 WelcomeDialog: User tapped Submit");
+
+  // Loading dialog
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.yellow),
+      ),
+    ),
+  );
+
+  try {
+    final dio = Dio();
+
+    final response = await dio.post(
+      'https://admin.jinreflexology.in/api/user-dealer-mappings',
+      data: {
+        "name": _nameController.text.trim(),
+        "mobile": _mobileController.text.trim(),
+        "email": _emailController.text.trim(),
+        "dealerId": _dealerIdController.text.trim(),
+      },
+      options: Options(
+        headers: {'Content-Type': 'application/json'},
+        validateStatus: (status) => status! < 500,
       ),
     );
-    
-    try {
-      // Call API
-      final dio = Dio();
-      final response = await dio.post(
-        'https://admin.jinreflexology.in/api/user-dealer-mappings',
-        data: {
-          "name":_nameController.text.trim(),
-          "mobile": _mobileController.text.trim(),
-          "email": _emailController.text.trim(),
-          "dealerId": _dealerIdController.text.trim().isEmpty 
-              ? "" 
-              : _dealerIdController.text.trim(),
-        },
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-          validateStatus: (status) => status! < 500,
-        ),
-      );
-      
-      debugPrint("📥 API Response: ${response.statusCode}");
-      debugPrint("📥 API Data: ${response.data}");
-      
-      // Close loading dialog
-      if (mounted) Navigator.pop(context);
-      
-      // Check response
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        debugPrint("✅ API call successful");
-        
-        // Save data to SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('welcome_mobile', _mobileController.text.trim());
-        await prefs.setString('welcome_email', _emailController.text.trim());
-        await prefs.setString('welcome_dealer_id', _dealerIdController.text.trim());
-        
-        debugPrint("✅ WelcomeDialog: User data saved locally");
-        debugPrint("   Mobile: ${_mobileController.text}");
-        debugPrint("   Email: ${_emailController.text}");
-        debugPrint("   Dealer ID: ${_dealerIdController.text}");
-        
-        // Mark welcome as shown
-        await FirstTimeService.setWelcomeShown();
-        await FirstTimeService.setNotFirstTime();
-        
-        debugPrint("✅ WelcomeDialog: First-time status saved");
 
-        if (!mounted) return;
+    debugPrint("📥 API Response: ${response.statusCode}");
+    debugPrint("📥 API Data: ${response.data}");
 
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Registration successful!"),
-            backgroundColor: Colors.green,
-          ),
-        );
+    // Close loading dialog FIRST if context is still valid
+    if (mounted) {
+      Navigator.pop(context); // close loading
+    }
 
-        // Close dialog
-        Navigator.of(context).pop();
-        
-        debugPrint("✅ WelcomeDialog: Dialog closed");
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final prefs = await SharedPreferences.getInstance();
 
-        // Call callback if provided
-        widget.onGetStarted?.call();
-        
+      // ✅ Save user data FIRST
+      await prefs.setString('welcome_name', _nameController.text.trim());
+      await prefs.setString('welcome_mobile', _mobileController.text.trim());
+      await prefs.setString('welcome_email', _emailController.text.trim());
+      await prefs.setString('welcome_dealer_id', _dealerIdController.text.trim());
+
+      // ✅ MAIN LOGIC - Dealer ID check
+      if (_dealerIdController.text.trim().isNotEmpty) {
+        await prefs.setBool('dealer_completed', true);
+        debugPrint("✅ Dealer ID present → Popup permanently closed");
       } else {
-        // API error
-        debugPrint("❌ API error: ${response.statusCode}");
-        
-        if (!mounted) return;
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Registration failed. Please try again."),
-            backgroundColor: Colors.red,
-          ),
-        );
+        await prefs.setBool('dealer_completed', false);
+        debugPrint("⚠️ Dealer ID missing → Popup will show again");
       }
-      
-    } on DioException catch (e) {
-      debugPrint("❌ API Exception: ${e.type}");
-      debugPrint("❌ Error message: ${e.message}");
-      debugPrint("❌ Response: ${e.response?.data}");
-      
-      // Close loading dialog
-      if (mounted) Navigator.pop(context);
-      
+
+      // ✅ Force immediate save
+      await prefs.reload();
+
       if (!mounted) return;
-      
-      String errorMessage = "Network error. Please check your connection.";
-      
-      if (e.type == DioExceptionType.connectionTimeout) {
-        errorMessage = "Connection timeout. Please try again.";
-      } else if (e.type == DioExceptionType.receiveTimeout) {
-        errorMessage = "Server is taking too long. Please try again.";
-      } else if (e.response != null) {
-        errorMessage = "Server error: ${e.response?.statusCode}";
-      }
-      
+
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 4),
+        const SnackBar(
+          content: Text("Registration successful!"),
+          backgroundColor: Colors.green,
         ),
       );
+
+      // Close the welcome dialog
+      Navigator.of(context).pop();
       
-    } catch (e) {
-      debugPrint("❌ Unexpected error: $e");
-      
-      // Close loading dialog
-      if (mounted) Navigator.pop(context);
-      
+      // Call callback to refresh home screen
+      widget.onGetStarted?.call();
+    } else {
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("An error occurred. Please try again."),
+        const SnackBar(
+          content: Text("Registration failed. Please try again."),
           backgroundColor: Colors.red,
         ),
       );
     }
+  } catch (e) {
+    debugPrint("❌ Error: $e");
+
+    // Close loading dialog if open
+    if (mounted) {
+      Navigator.pop(context); // close loading
+    }
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Something went wrong. Please try again."),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -481,7 +447,7 @@ TextFormField(
                       keyboardType: TextInputType.number,
                       maxLength: 4,
                       decoration: InputDecoration(
-                        labelText: 'Dealer ID (Optional - 4 digits)',
+                        labelText: 'VD ID (Optional - 4 digits)',
                         labelStyle: const TextStyle(color: Colors.white70),
                         prefixIcon: const Icon(Icons.badge, color: Colors.yellow),
                         filled: true,

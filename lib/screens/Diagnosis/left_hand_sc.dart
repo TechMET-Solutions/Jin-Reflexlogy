@@ -198,52 +198,35 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
 
   /// --------------------------------------------------
   /// SCREENSHOT
- Future<String?> captureScreenshot() async {
-  try {
-    await Future.delayed(const Duration(milliseconds: 100));
+  Future<String?> captureScreenshot() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 100));
 
-    final boundary =
-        screenshotKey.currentContext?.findRenderObject()
-            as RenderRepaintBoundary?;
+      final boundary =
+          screenshotKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
 
-    if (boundary == null) {
-      debugPrint("Screenshot: boundary null");
+      if (boundary == null) {
+        debugPrint("Screenshot: boundary null");
+        return null;
+      }
+
+      // High quality
+      final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
+
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+
+      if (byteData == null) return null;
+
+      final bytes = byteData.buffer.asUint8List();
+
+      return base64Encode(bytes);
+    } catch (e, st) {
+      debugPrint("Screenshot error: $e");
+      debugPrint("$st");
       return null;
     }
-
-    // ⭐ Medium quality (fast + stable)
-    final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
-
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    final paint = Paint();
-
-    // ✅ FIX: Vertical flip (upside-down bug)
-    canvas.translate(0, image.height.toDouble());
-    canvas.scale(1, -1);
-
-    canvas.drawImage(image, Offset.zero, paint);
-
-    final picture = recorder.endRecording();
-
-    final fixedImage =
-        await picture.toImage(image.width, image.height);
-
-    final byteData =
-        await fixedImage.toByteData(format: ui.ImageByteFormat.png);
-
-    if (byteData == null) return null;
-
-    final bytes = byteData.buffer.asUint8List();
-
-    return base64Encode(bytes);
-  } catch (e, st) {
-    debugPrint("Screenshot error: $e");
-    debugPrint("$st");
-    return null;
   }
-}
-
 
   /// --------------------------------------------------
   /// SAVE & EXIT
@@ -273,12 +256,11 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
         setState(() {
           p.state = (p.state + 1) % 3;
         });
-               ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).clearSnackBars();
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(p.tag), duration: Duration(milliseconds: 500)),
         );
-
       },
 
       /// 👉 DRAG MOVE
@@ -341,15 +323,15 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
                       key: screenshotKey,
                       child: Stack(
                         children: [
-                         Positioned.fill(
-  child: Transform.rotate(
-    angle: 3.1416, // 180 degree
-    child: Image.asset(
-      "assets/images/lf_hand.png",
-      fit: BoxFit.contain,
-    ),
-  ),
-),
+                          Positioned.fill(
+                            child: Transform.rotate(
+                              angle: 3.1416, // 180 degree
+                              child: Image.asset(
+                                "assets/images/lf_hand.png",
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
 
                           ...points.map(
                             (p) => Positioned(
