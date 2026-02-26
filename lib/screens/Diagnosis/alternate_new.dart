@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -26,6 +28,7 @@ class altTreatmentAddV2Screen extends StatefulWidget {
 
 class _altTreatmentAddV2ScreenState extends State<altTreatmentAddV2Screen> {
   final TextEditingController resultController = TextEditingController();
+  late final WebViewController _webController;
 
   bool isLoading = true;
 
@@ -47,6 +50,24 @@ class _altTreatmentAddV2ScreenState extends State<altTreatmentAddV2Screen> {
 
     lifestyleUrl =
         "https://jinreflexology.in/api1/new/patient_lifestyle_history.php?diagnosisId=${widget.diagnosisId}";
+
+    _webController =
+        WebViewController()
+          ..setJavaScriptMode(JavaScriptMode.unrestricted)
+          ..enableZoom(true)
+          ..setNavigationDelegate(
+            NavigationDelegate(
+              onPageFinished: (url) {
+                _webController.runJavaScript("""
+          var meta = document.createElement('meta');
+          meta.name='viewport';
+          meta.content='width=device-width, initial-scale=1.0';
+          document.head.appendChild(meta);
+        """);
+              },
+            ),
+          )
+          ..loadRequest(Uri.parse(lifestyleUrl));
 
     _fetchTreatment();
   }
@@ -158,7 +179,7 @@ class _altTreatmentAddV2ScreenState extends State<altTreatmentAddV2Screen> {
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
-    print("sdsdsd ${widget.diagnosisId}"  );
+    print("sdsdsd ${widget.diagnosisId}");
     return Scaffold(
       appBar: AppBar(
         title: const Text("Jin Reflexology"),
@@ -176,30 +197,43 @@ class _altTreatmentAddV2ScreenState extends State<altTreatmentAddV2Screen> {
       body:
           isLoading
               ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
+              : ListView(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 10,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _headerCard(),
-                    _outlinedSection("Boyle Magnet", boyleMagnet),
-                    _outlinedSection("Chakra Magnet", chakraMagnet),
-                    _outlinedSection("4G High Power Magnet", highPower),
-                    _outlinedSection("4G Low Power Magnet", lowPower),
-                    _outlinedSection("White Spinal", whiteSpinal),
-                    _outlinedSection("Yellow Spinal", yellowSpinal),
-                    _outlinedSection("Suffering Problems", sufferingProblems),
-                    _resultsSection(),
-                    const SizedBox(height: 20),
-                    _submitButton(),
-                    SizedBox(height: 10,),
-                    Text("LifeStyle",style: TextStyle(fontSize: 18,color: Colors.black,fontWeight: FontWeight.bold),),
-                    _lifestyleWebView(),
-                  ],
-                ),
+                children: [
+                  _headerCard(),
+                  _outlinedSection("Boyle Magnet", boyleMagnet),
+                  _outlinedSection("Chakra Magnet", chakraMagnet),
+                  _outlinedSection("4G High Power Magnet", highPower),
+                  _outlinedSection("4G Low Power Magnet", lowPower),
+                  _outlinedSection("White Spinal", whiteSpinal),
+                  _outlinedSection("Yellow Spinal", yellowSpinal),
+                  _outlinedSection("Suffering Problems", sufferingProblems),
+                  _resultsSection(),
+                  const SizedBox(height: 20),
+                  _submitButton(),
+                  const SizedBox(height: 10),
+                  const Text(
+                    "LifeStyle",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+
+                  /// ⭐ WEBVIEW
+                  SizedBox(
+                    height: 500,
+                    child: WebViewWidget(
+                      controller: _webController,
+                      gestureRecognizers: {
+                        Factory<VerticalDragGestureRecognizer>(
+                          () => VerticalDragGestureRecognizer(),
+                        ),
+                      },
+                    ),
+                  ),
+                ],
               ),
     );
   }
@@ -207,47 +241,43 @@ class _altTreatmentAddV2ScreenState extends State<altTreatmentAddV2Screen> {
   // ================= UI WIDGETS =================
 
   Widget _headerCard() {
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.symmetric(vertical: 10),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.amber,
-            border: Border.all(color: borderYellow, width: 2),
-            borderRadius: BorderRadius.circular(14),
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.amber,
+        border: Border.all(color: borderYellow, width: 2),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Patient Name : ${widget.patientName}",
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Text("Patient ID : ${widget.patientId}"),
+              Text("Diagnosis ID : ${widget.diagnosisId}"),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Treatment ID : ${widget.id}"),
               Text(
-                "Patient Name : ${widget.patientName}",
+                "Day ${(int.tryParse(treatmentDay) ?? 0) + 1}",
                 style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Patient ID : ${widget.patientId}"),
-                  Text("Diagnosis ID : ${widget.diagnosisId}"),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Treatment ID : ${widget.id}"),
-                  Text(
-                    "Day ${(int.tryParse(treatmentDay) ?? 0) + 1}",
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -321,21 +351,38 @@ class _altTreatmentAddV2ScreenState extends State<altTreatmentAddV2Screen> {
     );
   }
 
+  // ================= FIXED LIFESTYLE WEBVIEW =================
   Widget _lifestyleWebView() {
+    final controller = WebViewController();
+
     return Container(
-      height: 400, // adjust height
-      margin: const EdgeInsets.only(top: 15),
+      margin: const EdgeInsets.only(top: 15, bottom: 20),
+      height: 500,
       decoration: BoxDecoration(
         border: Border.all(color: borderYellow, width: 2),
         borderRadius: BorderRadius.circular(14),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: WebViewWidget(
-          controller:
-              WebViewController()
-                ..setJavaScriptMode(JavaScriptMode.unrestricted)
-                ..loadRequest(Uri.parse(lifestyleUrl)),
+        child: Stack(
+          children: [
+            WebViewWidget(controller: controller),
+            Positioned(
+              right: 5,
+              bottom: 5,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  "⇅ Scroll",
+                  style: TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

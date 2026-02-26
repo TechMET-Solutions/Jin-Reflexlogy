@@ -33,8 +33,8 @@ class _RazorpayDemoScreenState extends State<RazorpayDemoScreen> {
 
   void openCheckout() {
     var options = {
-      'key': 'rzp_test_RvkSLd55D0e5sj', // 🔴 तुमचा TEST KEY इथे टाका
-      'amount': 10000, // ₹100 = 10000 paise
+      'key': 'rzp_test_RvkSLd55D0e5sj',
+      'amount': 10000, 
       'name': 'Test App',
       'description': 'Razorpay Test Payment',
       'prefill': {

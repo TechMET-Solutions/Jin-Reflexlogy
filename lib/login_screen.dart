@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jin_reflex_new/auth/forget_passworld_screen.dart';
 import 'package:jin_reflex_new/auth/login_notifier.dart';
 import 'package:jin_reflex_new/auth/sign_up_screen.dart';
+import 'package:http/http.dart' as http;
 
 class JinLoginScreen extends ConsumerStatefulWidget {
   const JinLoginScreen({
@@ -28,27 +32,652 @@ class JinLoginScreen extends ConsumerStatefulWidget {
 class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  // Controllers for shop signup popup
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _mobileController = TextEditingController();
+
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
+  bool _isApiLoading = false;
+
   @override
   void initState() {
     super.initState();
-    // Optional: For testing
-    // _idController.text = "rushikesh";
-    // _passwordController.text = "Pass@123";
+    // // Test data
+    // _nameController.text = "mayur";
+    // _emailController.text = "testmayur99@gmail.com";
+    // _mobileController.text = "9542385236";
   }
 
   @override
   void dispose() {
     _idController.dispose();
     _passwordController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _mobileController.dispose();
     super.dispose();
+  }
+
+  // Method to show Shop Registration Popup
+  void _showShopRegistrationPopup() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: _buildShopRegistrationForm(),
+        );
+      },
+    );
+  }
+
+  // Shop Registration Form Widget
+  Widget _buildShopRegistrationForm() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(25),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.3),
+            spreadRadius: 5,
+            blurRadius: 7,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with gradient
+          Container(
+            margin: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color.fromARGB(255, 19, 4, 66),
+                  Color.fromARGB(255, 88, 72, 137),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.store, color: Colors.white, size: 24),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    "Registration",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    // Clear fields when closing
+                    _nameController.clear();
+                    _emailController.clear();
+                    _mobileController.clear();
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          // Name Field
+          TextField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              hintText: "Enter Name",
+              labelText: "Name",
+              prefixIcon: const Icon(
+                Icons.person,
+                color: Color.fromARGB(255, 19, 4, 66),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+              contentPadding: const EdgeInsets.symmetric(vertical: 15),
+            ),
+          ),
+          const SizedBox(height: 15),
+
+          // Email Field
+          TextField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(
+              hintText: "Enter Email",
+              labelText: "Email",
+              prefixIcon: const Icon(
+                Icons.email,
+                color: Color.fromARGB(255, 19, 4, 66),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+              contentPadding: const EdgeInsets.symmetric(vertical: 15),
+            ),
+          ),
+          const SizedBox(height: 15),
+
+          // Mobile Field
+          TextField(
+            controller: _mobileController,
+            keyboardType: TextInputType.phone,
+            maxLength: 10,
+            decoration: InputDecoration(
+              hintText: "Enter Mobile",
+              labelText: "Mobile",
+              prefixIcon: const Icon(
+                Icons.phone,
+                color: Color.fromARGB(255, 19, 4, 66),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+              contentPadding: const EdgeInsets.symmetric(vertical: 15),
+              counterText: "",
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // API Info Text
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.blue[100]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info, color: Colors.blue[700], size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Data will be sent to: ${Uri.parse('https://jinreflexology.in/api1/new/signUpPatient.php').host}",
+                    style: TextStyle(fontSize: 12, color: Colors.blue[700]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Buttons Row
+          Row(
+            children: [
+              // Cancel Button
+              Expanded(
+                child: OutlinedButton(
+                  onPressed:
+                      _isApiLoading
+                          ? null
+                          : () {
+                            Navigator.of(context).pop();
+                            _nameController.clear();
+                            _emailController.clear();
+                            _mobileController.clear();
+                          },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey[700],
+                    side: BorderSide(color: Colors.grey[300]!),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                  ),
+                  child: const Text("Cancel"),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // API Submit Button
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isApiLoading ? null : _callSignUpApi,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                  ),
+                  child:
+                      _isApiLoading
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.api, size: 18),
+                              SizedBox(width: 5),
+                              Text(
+                                "Submit",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Method to call API - FIXED VERSION
+  Future<void> _callSignUpApi() async {
+    // Validate fields
+    if (_nameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _mobileController.text.isEmpty) {
+      _showSnackBar("Please fill all fields", Colors.red);
+      return;
+    }
+
+    // Validate email
+    if (!_emailController.text.contains('@')) {
+      _showSnackBar("Please enter valid email", Colors.red);
+      return;
+    }
+
+    // Validate mobile (10 digits)
+    if (_mobileController.text.length != 10) {
+      _showSnackBar("Mobile number must be 10 digits", Colors.red);
+      return;
+    }
+
+    // Set loading true BEFORE showing dialog
+    setState(() {
+      _isApiLoading = true;
+    });
+
+    try {
+      // API URL
+      final url = Uri.parse(
+        'https://jinreflexology.in/api1/new/signUpPatient.php',
+      );
+
+      // Prepare request
+      var request = http.MultipartRequest('POST', url);
+
+      // Add fields
+      request.fields['name'] = _nameController.text.trim();
+      request.fields['email'] = _emailController.text.trim();
+      request.fields['mobile'] = _mobileController.text.trim();
+
+      // Send request
+      var response = await request.send();
+      var responseBody = await response.stream.bytesToString();
+
+      // Parse JSON response
+      var jsonResponse = jsonDecode(responseBody);
+      String message = jsonResponse['message'];
+
+      // Close the popup first
+      Navigator.of(context).pop();
+
+      if (response.statusCode == 200) {
+        // Success - Show only message in popup
+        _showMessageDialog(message);
+      } else {
+        // Error
+        _showSnackBar("API Error: ${response.statusCode}", Colors.red);
+      }
+    } catch (e) {
+      Navigator.of(context).pop();
+      _showSnackBar("Error: $e", Colors.red);
+    } finally {
+      // Clear loading state
+      if (mounted) {
+        setState(() {
+          _isApiLoading = false;
+        });
+      }
+      // Clear fields
+      _nameController.clear();
+      _emailController.clear();
+      _mobileController.clear();
+    }
+  }
+
+  // New method to show only message dialog
+  void _showMessageDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(25),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.3),
+                  spreadRadius: 5,
+                  blurRadius: 7,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon based on message type
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color:
+                        message.contains("exists")
+                            ? Colors.orange.withOpacity(0.1)
+                            : Colors.green.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    message.contains("exists")
+                        ? Icons.info_outline
+                        : Icons.check_circle,
+                    color:
+                        message.contains("exists")
+                            ? Colors.orange
+                            : Colors.green,
+                    size: 50,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Message
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color.fromARGB(255, 19, 4, 66),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 25),
+
+                // OK Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 19, 4, 66),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    child: const Text(
+                      "OK",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Show API Response Dialog
+  void _showApiResponseDialog(String responseBody) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.3),
+                  spreadRadius: 5,
+                  blurRadius: 7,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Success Icon
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle,
+                    color: Colors.green,
+                    size: 50,
+                  ),
+                ),
+                const SizedBox(height: 15),
+
+                // Title
+                const Text(
+                  "API Call Successful!",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromARGB(255, 19, 4, 66),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Sent Parameters
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "📤 Sent Parameters:",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color.fromARGB(255, 19, 4, 66),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildParamRow("Name", _nameController.text),
+                      _buildParamRow("Email", _emailController.text),
+                      _buildParamRow("Mobile", _mobileController.text),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 15),
+
+                // Response
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue[100]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "📥 Server Response:",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        "${responseBody}",
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Close Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 19, 4, 66),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    child: const Text(
+                      "CLOSE",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Helper method for parameter row
+  Widget _buildParamRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: const TextStyle(color: Color.fromARGB(255, 19, 4, 66)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Show SnackBar
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final loginState = ref.watch(loginProvider);
     final size = MediaQuery.of(context).size;
+
     return SingleChildScrollView(
       child: Material(
         child: SizedBox(
@@ -77,7 +706,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                 ),
               ),
 
-              /// 🔵 Logo/Title
+              /// Logo/Title
               Positioned(
                 top: size.height * 0.12,
                 left: 0,
@@ -113,7 +742,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                 ),
               ),
 
-              /// 🔵 Login Form Card
+              /// Login Form Card
               Positioned(
                 top: size.height * 0.25,
                 left: 20,
@@ -135,7 +764,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      /// 🔹 Welcome Back Title
+                      /// Welcome Back Title
                       Center(
                         child: Column(
                           children: [
@@ -162,7 +791,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
 
                       const SizedBox(height: 30),
 
-                      /// 🔹 ID Field
+                      /// ID Field
                       TextField(
                         controller: _idController,
                         style: const TextStyle(fontSize: 16),
@@ -188,7 +817,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
 
                       const SizedBox(height: 20),
 
-                      /// 🔹 Password Field
+                      /// Password Field
                       TextField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
@@ -228,7 +857,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
 
                       const SizedBox(height: 30),
 
-                      /// 🔹 Login Button
+                      /// Login Button
                       Material(
                         borderRadius: BorderRadius.circular(12),
                         elevation: 5,
@@ -243,15 +872,9 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                                         _passwordController.text.trim();
 
                                     if (username.isEmpty || password.isEmpty) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Please fill all fields',
-                                          ),
-                                          backgroundColor: Colors.red,
-                                        ),
+                                      _showSnackBar(
+                                        'Please fill all fields',
+                                        Colors.red,
                                       );
                                       return;
                                     }
@@ -276,8 +899,8 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                               borderRadius: BorderRadius.circular(12),
                               gradient: const LinearGradient(
                                 colors: [
-                                  const Color.fromARGB(255, 19, 4, 66),
-                                  const Color.fromARGB(255, 88, 72, 137),
+                                  Color.fromARGB(255, 19, 4, 66),
+                                  Color.fromARGB(255, 88, 72, 137),
                                 ],
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
@@ -312,7 +935,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
 
                       const SizedBox(height: 30),
 
-                      /// 🔹 Divider
+                      /// Divider
                       Row(
                         children: [
                           Expanded(
@@ -343,8 +966,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
 
                       const SizedBox(height: 20),
 
-                      /// 🔹 Sign Up Link
-                      ///
+                      /// Regular Sign Up
                       if (widget.registershow == true)
                         Center(
                           child: Row(
@@ -370,7 +992,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                                   "Sign Up",
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: const Color.fromARGB(255, 19, 4, 66),
+                                    color: const Color.fromARGB(255, 143, 138, 160),
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -379,36 +1001,148 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                           ),
                         ),
 
-                      if (widget.shop == true)
+                      if (widget.registershow == true)
                         Center(
-                          child: Row(
+                          child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                "Don't have an account? ",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
+                              // const Divider(),
+                              const SizedBox(height: 10),
                               GestureDetector(
                                 onTap: () {
-                                  Navigator.pushReplacement(
+                                  // Navigate to Forgot Password Screen
+                                  Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => SignUpScreen(),
+                                      builder:
+                                          (context) => const ForgotPasswordScreen(
+                                            userType: "therapist",
+                                          ),
                                     ),
                                   );
                                 },
                                 child: Text(
-                                  "Sign Up",
+                                  'Forgot Password?',
                                   style: TextStyle(
-                                    fontSize: 14,
-                                    color: const Color.fromARGB(255, 19, 4, 66),
-                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade700,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    decoration: TextDecoration.underline,
                                   ),
                                 ),
                               ),
+                            ],
+                          ),
+                        ),
+
+                      if (widget.registershow != true && widget.shop == true)
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) =>
+                                              const ForgotPasswordScreen(
+                                                userType: "patient",
+                                              ),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'Forgot Password?',
+                                  style: TextStyle(
+                                    color: Colors.blue.shade700,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                            ],
+                          ),
+                        ),
+
+                      /// SHOP SIGN UP LINK - OPENS POPUP
+                      if (widget.shop == true)
+                        Center(
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(15),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.amber),
+                                ),
+                                child: Column(
+                                  children: [
+                                    // const Icon(
+                                    //   Icons.store,
+                                    //   color: Color.fromARGB(255, 19, 4, 66),
+                                    //   size: 30,
+                                    // ),
+                                    // const SizedBox(height: 8),
+                                    // const Text(
+                                    //   "Shop Account",
+                                    //   style: TextStyle(
+                                    //     fontSize: 16,
+                                    //     fontWeight: FontWeight.bold,
+                                    //     color: Color.fromARGB(255, 19, 4, 66),
+                                    //   ),
+                                    // ),
+                                    // const SizedBox(height: 5),
+                                    // Text(
+                                    //   "Click below to register your shop",
+                                    //   style: TextStyle(
+                                    //     fontSize: 12,
+                                    //     color: Colors.grey[600],
+                                    //   ),
+                                    // ),
+                                    const SizedBox(height: 15),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        onPressed: _showShopRegistrationPopup,
+                                        icon: const Icon(
+                                          Icons.app_registration,
+                                        ),
+                                        label: const Text(
+                                          "Register Shop",
+                                          style: TextStyle(fontSize: 16),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color.fromARGB(
+                                            255,
+                                            19,
+                                            4,
+                                            66,
+                                          ),
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 15),
+
+
                             ],
                           ),
                         ),
@@ -424,16 +1158,13 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
   }
 }
 
-/// 🔵 Top Wave Clipper
+/// Top Wave Clipper
 class TopWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
-
-    // Start from top-left
     path.lineTo(0, size.height * 0.8);
 
-    // First wave curve
     final firstControlPoint = Offset(size.width * 0.25, size.height * 0.9);
     final firstEndPoint = Offset(size.width * 0.5, size.height * 0.8);
     path.quadraticBezierTo(
@@ -443,7 +1174,6 @@ class TopWaveClipper extends CustomClipper<Path> {
       firstEndPoint.dy,
     );
 
-    // Second wave curve
     final secondControlPoint = Offset(size.width * 0.75, size.height * 0.7);
     final secondEndPoint = Offset(size.width, size.height * 0.85);
     path.quadraticBezierTo(
@@ -453,11 +1183,9 @@ class TopWaveClipper extends CustomClipper<Path> {
       secondEndPoint.dy,
     );
 
-    // Complete the shape
     path.lineTo(size.width, 0);
     path.lineTo(0, 0);
     path.close();
-
     return path;
   }
 

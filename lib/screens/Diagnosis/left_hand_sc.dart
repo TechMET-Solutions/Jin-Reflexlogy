@@ -8,7 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:jin_reflex_new/api_service/global/utils.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
-
+import 'package:image/image.dart' as img;
 /// --------------------------------------------------
 /// MODEL
 /// --------------------------------------------------
@@ -196,40 +196,82 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
     return tags.join("|");
   }
 
-  /// --------------------------------------------------
-  /// SCREENSHOT
+  // Future<String?> captureScreenshot() async {
+  //   try {
+  //     await Future.delayed(const Duration(milliseconds: 120));
+  //     final boundary =
+  //         screenshotKey.currentContext?.findRenderObject()
+  //             as RenderRepaintBoundary?;
+  //     if (boundary == null) return null;
+  //     final ui.Image rawImage = await boundary.toImage(pixelRatio: 2.0);
+  //     final recorder = ui.PictureRecorder();
+  //     final canvas = Canvas(recorder);
+  //     final paint = Paint();
+  //     final w = rawImage.width.toDouble();
+  //     final h = rawImage.height.toDouble();
+  //     canvas.drawImageRect(
+  //       rawImage,
+  //       Rect.fromLTWH(0, 0, w, h),
+  //       Rect.fromLTWH(0, 0, w, h),
+  //       paint,
+  //     );
+
+  //     final picture = recorder.endRecording();
+  //     final finalImage = await picture.toImage(rawImage.width, rawImage.height);
+  //     final byteData = await finalImage.toByteData(
+  //       format: ui.ImageByteFormat.png,
+  //     );
+  //     if (byteData == null) return null;
+  //     return base64Encode(byteData.buffer.asUint8List());
+  //   } catch (e) {
+  //     debugPrint("Screenshot error: $e");
+  //     return null;
+  //   }
+  // }
+
   Future<String?> captureScreenshot() async {
     try {
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 120));
 
       final boundary =
           screenshotKey.currentContext?.findRenderObject()
               as RenderRepaintBoundary?;
 
-      if (boundary == null) {
-        debugPrint("Screenshot: boundary null");
-        return null;
-      }
+      if (boundary == null) return null;
 
-      // High quality
-      final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
+      // ⭐ FIXED RATIO (NEVER devicePixelRatio)
+      final ui.Image rawImage = await boundary.toImage(pixelRatio: 2.0);
 
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final paint = Paint();
+
+      final w = rawImage.width.toDouble();
+      final h = rawImage.height.toDouble();
+
+      // ⭐ SAFE DRAW METHOD
+      canvas.drawImageRect(
+        rawImage,
+        Rect.fromLTWH(0, 0, w, h),
+        Rect.fromLTWH(0, 0, w, h),
+        paint,
+      );
+
+      final picture = recorder.endRecording();
+      final finalImage =
+          await picture.toImage(rawImage.width, rawImage.height);
+
+      final byteData =
+          await finalImage.toByteData(format: ui.ImageByteFormat.png);
 
       if (byteData == null) return null;
 
-      final bytes = byteData.buffer.asUint8List();
-
-      return base64Encode(bytes);
-    } catch (e, st) {
+      return base64Encode(byteData.buffer.asUint8List());
+    } catch (e) {
       debugPrint("Screenshot error: $e");
-      debugPrint("$st");
       return null;
     }
   }
-
-  /// --------------------------------------------------
-  /// SAVE & EXIT
   Future<void> _saveAndExit() async {
     await saveAllPointsFast();
     final base64 = await captureScreenshot();
@@ -241,53 +283,47 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
     });
   }
 
-  /// --------------------------------------------------
-  /// DOT UI
-  Widget _buildDot(PointData p, double scaleX, double scaleY) {
-    Color color =
-        p.state == 1
-            ? const Color(0xFF8B0000)
-            : p.state == 2
-            ? Colors.green
-            : Colors.white;
+Widget _buildDot(PointData p, double scaleX, double scaleY) {
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          p.state = (p.state + 1) % 3;
-        });
-        ScaffoldMessenger.of(context).clearSnackBars();
+  final double dotSize = 25 * ((scaleX + scaleY) / 2);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(p.tag), duration: Duration(milliseconds: 500)),
-        );
-      },
+  Color color =
+      p.state == 1
+          ? const Color(0xFF8B0000)
+          : p.state == 2
+              ? Colors.green
+              : Colors.white;
 
-      /// 👉 DRAG MOVE
-      onPanUpdate: (details) {
-        setState(() {
-          p.x += details.delta.dx / scaleX;
-          p.y += details.delta.dy / scaleY;
+  return GestureDetector(
+    onTap: () {
+      setState(() {
+        p.state = (p.state + 1) % 3;
+      });
 
-          // boundary
-          // p.x = p.x.clamp(0.0, baseWidth - 20);
-          // p.y = p.y.clamp(0.0, baseHeight - 20);
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(p.tag), duration: Duration(milliseconds: 500)),
+      );
+    },
 
-          debugPrint("LH DOT => id:${p.index}, x:${p.x}, y:${p.y}");
-        });
-      },
+    onPanUpdate: (details) {
+      setState(() {
+        p.x += details.delta.dx / scaleX;
+        p.y += details.delta.dy / scaleY;
+      });
+    },
 
-      child: Container(
-        width: 25,
-        height: 25,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.black, width: 2),
-        ),
+    child: Container(
+      width: dotSize,
+      height: dotSize,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.black, width: 2),
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// --------------------------------------------------
   /// UI
@@ -324,12 +360,9 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
                       child: Stack(
                         children: [
                           Positioned.fill(
-                            child: Transform.rotate(
-                              angle: 3.1416, // 180 degree
-                              child: Image.asset(
-                                "assets/images/lf_hand.png",
-                                fit: BoxFit.contain,
-                              ),
+                            child: Image.asset(
+                              "assets/images/Hand_Left_final.png",
+                              fit: BoxFit.contain,
                             ),
                           ),
 

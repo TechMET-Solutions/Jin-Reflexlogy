@@ -68,8 +68,9 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
       );
 
       setState(() => isSubmitting = false);
-
-      if (response.statusCode == 200) {
+      print("Response Status: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+      if (response.statusCode == 201) {
         final res = jsonDecode(response.body);
         if (res['success'] == true) {
           firstNameCtrl.clear();
@@ -77,28 +78,26 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
           emailCtrl.clear();
           phoneCtrl.clear();
           detailsCtrl.clear();
-          ScaffoldMessenger.of(
-            context,
-            
-          ).showSnackBar(SnackBar(
-            backgroundColor: Colors.red,
-            content: Text(res['message'])));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.green,
+              content: Text(res['message']),
+            ),
+          );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              backgroundColor: Colors.red,
-            content: Text("Failed to submit enquiry")),
+            backgroundColor: Colors.red,
+            content: Text("Failed to submit enquiry"),
+          ),
         );
       }
     } catch (e) {
       setState(() => isSubmitting = false);
-      ScaffoldMessenger.of(
-        context,
-        
-      ).showSnackBar(SnackBar(
-          backgroundColor: Colors.red,
-        content: Text("Error: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.red, content: Text("Error: $e")),
+      );
     }
   }
 
@@ -199,39 +198,39 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
               _textField("Phone", phoneCtrl),
               _textField("Details", detailsCtrl, maxLines: 4),
               const SizedBox(height: 20),
-             SizedBox(
-  width: double.infinity,
-  height: 48,
-  child: ElevatedButton(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: const Color(0xFF1A73E8), // Blue color
-      foregroundColor: Colors.white, // Text + icon white
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-    ),
-    onPressed: isSubmitting ? null : submitTreatmentEnquiry,
-    child: isSubmitting
-        ? const SizedBox(
-            height: 20,
-            width: 20,
-            child: CircularProgressIndicator(
-              color: Colors.white,
-              strokeWidth: 2,
-            ),
-          )
-        : const Text(
-            "SUBMIT ENQUIRY",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600, 
-              color: Colors.white,
-            ),
-          ),
-  ),
-),
-
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A73E8), // Blue color
+                    foregroundColor: Colors.white, // Text + icon white
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: isSubmitting ? null : submitTreatmentEnquiry,
+                  child:
+                      isSubmitting
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : const Text(
+                            "SUBMIT ENQUIRY",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                ),
+              ),
             ],
           ),
         ),
@@ -304,7 +303,7 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      
+
       itemCount: images.length,
       itemBuilder: (context, index) {
         return Padding(

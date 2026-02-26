@@ -168,7 +168,6 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
       if (search.isNotEmpty) {
         body['search'] = search;
       }
-
       print("🌐 API Request Details:");
       print("   URL: $url");
       print("   Body: $body");

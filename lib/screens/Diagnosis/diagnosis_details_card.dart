@@ -136,8 +136,8 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF3DD),
-      appBar: CommonAppBar(title: "title"),
+      backgroundColor: const Color.fromARGB(255, 185, 176, 156),
+      appBar: CommonAppBar(title: "${widget.title} Details"),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

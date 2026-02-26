@@ -99,7 +99,7 @@ class _TreatmentAddV2ScreenState extends State<TreatmentAddV2Screen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Past Treatment"),
+        title: const Text("PastTreatment"),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 1,

@@ -2,13 +2,13 @@ name: jin_reflex_new
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.0+3
+version: 1.0.0+9
 
 environment:
   sdk: ^3.7.0
 
 dependencies:
-  flutter:
+  flutter:  
     sdk: flutter
 
   cupertino_icons: ^1.0.8

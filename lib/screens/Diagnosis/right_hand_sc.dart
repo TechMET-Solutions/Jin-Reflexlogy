@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:jin_reflex_new/api_service/global/utils.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
+import 'package:image/image.dart' as img;
 
 /// --------------------------------------------------
 /// MODEL
@@ -76,39 +77,40 @@ class _RightHandScreenState extends State<RightHandScreen> {
   void initState() {
     super.initState();
     debugPrint("👤 RH Gender: ${widget.gender}");
-     loadPoints();
+    loadPoints();
   }
 
   /// --------------------------------------------------
   /// LOAD POINTS BASED ON GENDER
- bool _loadedOnce = false;
+  bool _loadedOnce = false;
 
-Future<void> loadPoints() async {
-  if (_loadedOnce) return; // ✅ HOT RELOAD SAFE
-  _loadedOnce = true;
+  Future<void> loadPoints() async {
+    if (_loadedOnce) return; // ✅ HOT RELOAD SAFE
+    _loadedOnce = true;
 
-  try {
-    final jsonPath =
-        widget.gender?.toLowerCase() == "female"
-            ? "assets/right_handf_btn.json"
-            : "assets/right_hand_btn.json";
+    try {
+      final jsonPath =
+          widget.gender?.toLowerCase() == "female"
+              ? "assets/right_handf_btn.json"
+              : "assets/right_hand_btn.json";
 
-    final jsonString = await rootBundle.loadString(jsonPath);
-    final jsonMap = jsonDecode(jsonString);
+      final jsonString = await rootBundle.loadString(jsonPath);
+      final jsonMap = jsonDecode(jsonString);
 
-    points = (jsonMap["RightHand"] as List)
-        .map((e) => PointData.fromJson(e))
-        .toList();
+      points =
+          (jsonMap["RightHand"] as List)
+              .map((e) => PointData.fromJson(e))
+              .toList();
 
-    loadSavedState();
-    await fetchServer();
+      loadSavedState();
+      await fetchServer();
 
-    setState(() => isLoading = false);
-  } catch (e) {
-    debugPrint("❌ RH LOAD ERROR: $e");
-    setState(() => isLoading = false);
+      setState(() => isLoading = false);
+    } catch (e) {
+      debugPrint("❌ RH LOAD ERROR: $e");
+      setState(() => isLoading = false);
+    }
   }
-}
 
   /// --------------------------------------------------
   /// LOAD SAVED STATE (LOCAL)
@@ -118,14 +120,14 @@ Future<void> loadPoints() async {
     if (raw.isEmpty) return;
 
     final decoded = jsonDecode(raw) as Map<String, dynamic>;
-  decoded.forEach((idx, val) {
-  final parts = val.split(",");
-  final p = points.firstWhere((e) => e.index.toString() == idx);
+    decoded.forEach((idx, val) {
+      final parts = val.split(",");
+      final p = points.firstWhere((e) => e.index.toString() == idx);
 
-  p.x = double.parse(parts[0]); // ✅ restore X
-  p.y = double.parse(parts[1]); // ✅ restore Y
-  p.state = int.parse(parts[2]);
-});
+      p.x = double.parse(parts[0]); // ✅ restore X
+      p.y = double.parse(parts[1]); // ✅ restore Y
+      p.state = int.parse(parts[2]);
+    });
   }
 
   /// --------------------------------------------------
@@ -203,38 +205,82 @@ Future<void> loadPoints() async {
 
   /// --------------------------------------------------
   /// SCREENSHOT
-Future<String?> captureScreenshot() async {
-  try {
-    await Future.delayed(const Duration(milliseconds: 100));
+  Future<String?> captureScreenshot() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 120));
 
-    final boundary =
-        screenshotKey.currentContext?.findRenderObject()
-            as RenderRepaintBoundary?;
+      final boundary =
+          screenshotKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
 
-    if (boundary == null) {
-      debugPrint("Screenshot: boundary null");
+      if (boundary == null) return null;
+
+      // ⭐ FIXED RATIO (NEVER devicePixelRatio)
+      final ui.Image rawImage = await boundary.toImage(pixelRatio: 2.0);
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final paint = Paint();
+
+      final w = rawImage.width.toDouble();
+      final h = rawImage.height.toDouble();
+
+      // ⭐ SAFE DRAW METHOD
+      canvas.drawImageRect(
+        rawImage,
+        Rect.fromLTWH(0, 0, w, h),
+        Rect.fromLTWH(0, 0, w, h),
+        paint,
+      );
+
+      final picture = recorder.endRecording();
+      final finalImage =
+          await picture.toImage(rawImage.width, rawImage.height);
+
+      final byteData =
+          await finalImage.toByteData(format: ui.ImageByteFormat.png);
+
+      if (byteData == null) return null;
+
+      return base64Encode(byteData.buffer.asUint8List());
+    } catch (e) {
+      debugPrint("Screenshot error: $e");
       return null;
     }
-
-    // High quality
-    final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
-
-    final byteData = await image.toByteData(
-      format: ui.ImageByteFormat.png,
-    );
-
-    if (byteData == null) return null;
-
-    final bytes = byteData.buffer.asUint8List();
-
-    return base64Encode(bytes);
-  } catch (e, st) {
-    debugPrint("Screenshot error: $e");
-    debugPrint("$st");
-    return null;
   }
-}
 
+  // Future<String?> captureScreenshot() async {
+  //   try {
+  //     await WidgetsBinding.instance.endOfFrame;
+  //     await Future.delayed(const Duration(milliseconds: 80));
+
+  //     final boundary =
+  //         screenshotKey.currentContext?.findRenderObject()
+  //             as RenderRepaintBoundary?;
+
+  //     if (boundary == null) return null;
+
+  //     final image = await boundary.toImage(
+  //       pixelRatio: MediaQuery.of(context).devicePixelRatio,
+  //     );
+
+  //     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+  //     if (byteData == null) return null;
+
+  //     final bytes = byteData.buffer.asUint8List();
+
+  //     final decoded = img.decodeImage(bytes);
+  //     if (decoded == null) return null;
+
+  //     /// ⭐ ALWAYS fix orientation (NO detection needed)
+  //     final fixed = img.flipVertical(decoded); // ← main fix
+
+  //     return base64Encode(img.encodePng(fixed));
+  //   } catch (e) {
+  //     debugPrint("Screenshot error: $e");
+  //     return null;
+  //   }
+  // }
 
   /// --------------------------------------------------
   /// SAVE & EXIT
@@ -250,62 +296,54 @@ Future<String?> captureScreenshot() async {
     });
   }
 
-  /// --------------------------------------------------
-  /// DOT UI
-  Widget _buildDot(PointData p, double scaleX, double scaleY) {
-    Color color =
-        p.state == 1
-            ? const Color(0xFF8B0000)
-            : p.state == 2
-            ? Colors.green
-            : Colors.white;
+Widget _buildDot(PointData p, double scaleX, double scaleY) {
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          p.state = (p.state + 1) % 3;
-        });
-                ScaffoldMessenger.of(context).clearSnackBars();
+  final double dotSize = 25 * ((scaleX + scaleY) / 2);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(p.tag), duration: Duration(milliseconds: 500)),
-        );
+  Color color =
+      p.state == 1
+          ? const Color(0xFF8B0000)
+          : p.state == 2
+              ? Colors.green
+              : Colors.white;
 
-      },
+  return GestureDetector(
+    onTap: () {
+      setState(() {
+        p.state = (p.state + 1) % 3;
+      });
 
-      /// 👉 DOT MOVE (DRAG)
-      onPanUpdate: (details) {
-        setState(() {
-          p.x += details.delta.dx / scaleX;
-          p.y += details.delta.dy / scaleY;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(p.tag), duration: Duration(milliseconds: 500)),
+      );
+    },
 
-          // / Optional: boundary check
-          p.x = p.x.clamp(0.0, baseWidth - 25);
-          p.y = p.y.clamp(0.0, baseHeight - 25);
-          debugPrint("DOT => id:${p.index}, x:${p.x}, y:${p.y}");
-        });
-      },
+    onPanUpdate: (details) {
+      setState(() {
+        p.x += details.delta.dx / scaleX;
+        p.y += details.delta.dy / scaleY;
+      });
+    },
 
-      child: Container(
-        width: 25,
-        height: 25,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.black, width: 2),
-        ),
+    child: Container(
+      width: dotSize,
+      height: dotSize,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.black, width: 2),
       ),
-    );
-  }
-
+    ),
+  );
+}
   /// --------------------------------------------------
   /// UI
   @override
   Widget build(BuildContext context) {
     double desiredAspect = baseWidth / baseHeight;
     double screenW = MediaQuery.of(context).size.width * 0.90;
-   double screenH = MediaQuery.of(context).size.height * 10;
-
+    double screenH = MediaQuery.of(context).size.height * 10;
 
     double containerW = math.min(screenW, screenH * desiredAspect);
     double containerH = containerW / desiredAspect;
@@ -333,16 +371,12 @@ Future<String?> captureScreenshot() async {
                       key: screenshotKey,
                       child: Stack(
                         children: [
-                        Positioned.fill(
-  child: Transform.rotate(
-    angle: 3.1416, // 180 degree
-    child: Image.asset(
-      "assets/images/rh_hand.png",
-      fit: BoxFit.contain,
-    ),
-  ),
-),
-
+                          Positioned.fill(
+                            child: Image.asset(
+                              "assets/images/HandRight_final.png",
+                              fit: BoxFit.contain,
+                            ),
+                          ),
 
                           ...points.map(
                             (p) => Positioned(

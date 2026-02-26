@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:jin_reflex_new/api_service/global/utils.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
+import 'package:image/image.dart' as img;
 
 class PointData {
   final String id;
@@ -330,24 +331,20 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
     }
   }
 
-  // --------------------------------------------------
-  // CAPTURE SCREENSHOT
-  // --------------------------------------------------
   Future<String?> captureScreenshot() async {
     try {
-      await Future.delayed(const Duration(milliseconds: 100));
+      await WidgetsBinding.instance.endOfFrame;
+      await Future.delayed(const Duration(milliseconds: 80));
 
       final boundary =
           screenshotKey.currentContext?.findRenderObject()
               as RenderRepaintBoundary?;
 
-      if (boundary == null) {
-        debugPrint("Screenshot: boundary null");
-        return null;
-      }
+      if (boundary == null) return null;
 
-      // High quality
-      final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
+      final ui.Image image = await boundary.toImage(
+        pixelRatio: MediaQuery.of(context).devicePixelRatio,
+      );
 
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
@@ -355,14 +352,65 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
 
       final bytes = byteData.buffer.asUint8List();
 
-      return base64Encode(bytes);
-    } catch (e, st) {
+      final decoded = img.decodeImage(bytes);
+      if (decoded == null) return null;
+
+      img.Image fixed = decoded;
+
+      /// ⭐ AUTO FLIP DETECTION LOGIC
+      /// top pixel vs bottom pixel compare
+      /// काही device मध्ये buffer उलटा असतो
+
+      final topPixel = decoded.getPixel(10, 10);
+      final bottomPixel = decoded.getPixel(10, decoded.height - 10);
+
+      // जर top खूप dark आणि bottom light असेल → उलटा आहे
+      if (img.getLuminance(topPixel) < img.getLuminance(bottomPixel)) {
+        fixed = img.flipVertical(decoded);
+      }
+
+      final fixedBytes = img.encodePng(fixed);
+
+      return base64Encode(fixedBytes);
+    } catch (e) {
       debugPrint("Screenshot error: $e");
-      debugPrint("$st");
       return null;
     }
   }
 
+  // Future<String?> captureScreenshot() async {
+  //   try {
+  //     await WidgetsBinding.instance.endOfFrame;
+  //     await Future.delayed(const Duration(milliseconds: 80));
+
+  //     final boundary =
+  //         screenshotKey.currentContext?.findRenderObject()
+  //             as RenderRepaintBoundary?;
+
+  //     if (boundary == null) return null;
+
+  //     final image = await boundary.toImage(
+  //       pixelRatio: MediaQuery.of(context).devicePixelRatio,
+  //     );
+
+  //     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+  //     if (byteData == null) return null;
+
+  //     final bytes = byteData.buffer.asUint8List();
+
+  //     final decoded = img.decodeImage(bytes);
+  //     if (decoded == null) return null;
+
+  //     /// ⭐ ALWAYS fix orientation (NO detection needed)
+  //     final fixed = img.flipVertical(decoded);   // ← main fix
+
+  //     return base64Encode(img.encodePng(fixed));
+
+  //   } catch (e) {
+  //     debugPrint("Screenshot error: $e");
+  //     return null;
+  //   }
+  // }
   // --------------------------------------------------
   // ENCODE TAGS FOR SERVER (if_result FORMAT)
   // --------------------------------------------------
@@ -628,6 +676,7 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
                   child: RepaintBoundary(
                     key: screenshotKey,
                     child: Stack(
+                      alignment: Alignment.topLeft,
                       children: [
                         Image.asset(
                           'assets/images/image.png',

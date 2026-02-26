@@ -22,10 +22,7 @@ class _HealthMeterScreenState extends State<HealthMeterScreen> {
       appBar: AppBar(
         title: const Text(
           'Health Meter',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         elevation: 0,
@@ -49,7 +46,7 @@ class _HealthMeterScreenState extends State<HealthMeterScreen> {
               ),
             ),
           ),
-          
+
           // Rest of your existing code remains same...
           // Slider and other UI components
         ],
@@ -107,10 +104,10 @@ class _HealthMeterWidgetState extends State<HealthMeterWidget>
         curve: widget.animationCurve,
       ),
     )..addListener(() {
-        setState(() {
-          _currentValue = _animation.value;
-        });
+      setState(() {
+        _currentValue = _animation.value;
       });
+    });
 
     _animationController.forward();
   }
@@ -141,9 +138,11 @@ class _HealthMeterWidgetState extends State<HealthMeterWidget>
 
   double _getRotationAngle(double value) {
     final v = value.clamp(0.0, 100.0);
-    // Convert 0-100 to -180 to 0 degrees (half circle)
-    final degrees = (v / 100.0) * 180.0 - 180.0;
-    return degrees * (pi / 180); // Convert to radians
+
+    // half circle → -90° to +90°
+    final degrees = (v / 100) * 180 - 90;
+
+    return degrees * pi / 180;
   }
 
   String _getHealthStatus(double value) {
@@ -163,77 +162,70 @@ class _HealthMeterWidgetState extends State<HealthMeterWidget>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: widget.width,
-      height: widget.height,
+      width: double.infinity,
+      height: 200,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Background meter image
-          Container(
-            width: widget.width * 0.9,
-            height: widget.height * 0.9,
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(widget.meterBackgroundImage),
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-
+       Positioned.fill(
+  child: Image.asset(
+    widget.meterBackgroundImage,
+    fit: BoxFit.fill,   // 🔥 FULL FILL
+  ),
+),
           // Needle with rotation
-          Positioned(
-            top: widget.height * 0.1,
-            child: Transform.rotate(
-              angle: _getRotationAngle(_currentValue),
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                width: 4,
-                height: widget.height * 0.35,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF8B0000),
-                  borderRadius: BorderRadius.circular(2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+          
+          Positioned.fill(
+            child: Align(
+               alignment: Alignment(0, 0.70),
+              child: Transform.rotate(
+                angle: _getRotationAngle(_currentValue),
+                alignment: Alignment.bottomCenter,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    /// NEEDLE LINE
+                    Container(
+                      width: 5,
+                      height: widget.height * 0.38, // ⭐ needle मोठी
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF8B0000),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+
+                    /// PIVOT GAP
+                    const SizedBox(height: 2),
+
+                    /// CENTER DOT
+                    Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black, width: 2),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
           ),
-
-          // Center pivot circle
-          Positioned(
-            top: widget.height * 0.45,
-            child: Container(
-              width: 16,
-              height: 16,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                border: Border.all(color: Colors.grey[800]!, width: 2),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-            ),
+          const Center(
+            child: CircleAvatar(radius: 8, backgroundColor: Colors.white),
           ),
 
           // Value and status display
           Positioned(
-            top: widget.height * 0.65,
+            top: widget.height * 0.38,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   '${_currentValue.round()}%',
-                  style: widget.valueTextStyle ??
+                  style:
+                      widget.valueTextStyle ??
                       TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,

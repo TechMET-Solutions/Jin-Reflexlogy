@@ -9,6 +9,7 @@ import 'package:get/get.dart' hide FormData;
 import 'package:http/http.dart' as http;
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
+import 'package:jin_reflex_new/dashbord_forlder/CourseDetailScreen.dart';
 import 'package:jin_reflex_new/dashbord_forlder/freddback_list.dart';
 import 'package:jin_reflex_new/dashbord_forlder/training_coureses.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_screen_list.dart';
@@ -252,6 +253,12 @@ void _navigate(BuildContext context, String text, dynamic DeliveryType) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => PointFinderScreen()),
+      );
+      break;
+          case "CourseDetailScreen":
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => CourseDetailScreen(course: {}, deliveryType: DeliveryType)),
       );
       break;
 

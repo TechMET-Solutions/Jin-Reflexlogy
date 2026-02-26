@@ -233,74 +233,70 @@ class BodyCellOverlayPainter extends CustomPainter {
 
 // Screenshot utility class
 class ScreenshotHelper {
+
   static Future<File?> captureWidget(GlobalKey key) async {
     try {
+
       final boundary =
           key.currentContext!.findRenderObject() as RenderRepaintBoundary;
 
-      // 1. पहिले original image सेव्ह करू
-      final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
-      final ByteData? byteData = await image.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
-      if (byteData == null) return null;
-
-      // 2. ORIGINAL IMAGE सेव्ह (डिबगging साठी)
-      Uint8List originalBytes = byteData.buffer.asUint8List();
-      final originalDir = await getTemporaryDirectory();
-      final originalPath = '${originalDir.path}/original_${DateTime.now().millisecondsSinceEpoch}.png';
-      final originalFile = File(originalPath);
-      await originalFile.writeAsBytes(originalBytes);
-      debugPrint('📸 ORIGINAL image saved: $originalPath');
-
-      // 3. IMAGE PROCESSING
-      final decoded = img.decodeImage(originalBytes);
-      if (decoded == null) {
-        debugPrint('❌ Decode failed');
-        return null;
+      // ✅ wait for paint (VERY IMPORTANT)
+      if (boundary.debugNeedsPaint) {
+        await Future.delayed(const Duration(milliseconds: 20));
+        return captureWidget(key);
       }
 
-      debugPrint('📏 Original size: ${decoded.width}x${decoded.height}');
+      // ✅ capture image (NO rotation / NO flip)
+      final ui.Image image = await boundary.toImage(
+        pixelRatio: ui.window.devicePixelRatio,   // ⭐ correct ratio
+      );
 
-      // Try different combinations
-      img.Image processed;
-      
-      // 🔥 OPTION 1: फक्त rotate 180
-      // processed = img.copyRotate(decoded, angle: 180);
-      
-      // 🔥 OPTION 2: rotate 180 + flip horizontal (तुझा current कोड)
-      processed = img.copyRotate(decoded, angle: 180);
-      processed = img.flipHorizontal(processed);
-      
-      // 🔥 OPTION 3: rotate 90
-      // processed = img.copyRotate(decoded, angle: 90);
-      
-      // 🔥 OPTION 4: rotate 270
-      // processed = img.copyRotate(decoded, angle: 270);
-      
-      // 🔥 OPTION 5: फक्त flip vertical
-      // processed = img.flipVertical(decoded);
-      
-      // 🔥 OPTION 6: फक्त flip horizontal
-      // processed = img.flipHorizontal(decoded);
+      final ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
 
-      final fixedBytes = Uint8List.fromList(img.encodePng(processed));
+      if (byteData == null) return null;
 
-      // 4. PROCESSED IMAGE सेव्ह
+      final Uint8List bytes = byteData.buffer.asUint8List();
+
+      // ✅ save file
       final dir = await getTemporaryDirectory();
-      final path = '${dir.path}/fixed_${DateTime.now().millisecondsSinceEpoch}.png';
+      final path =
+          '${dir.path}/body_${DateTime.now().millisecondsSinceEpoch}.png';
+
       final file = File(path);
-      await file.writeAsBytes(fixedBytes);
-      
-      debugPrint('✅ FIXED image saved: $path');
-      debugPrint('📤 Uploading file: ${file.path}');
+      await file.writeAsBytes(bytes);
+
+      debugPrint("✅ Screenshot saved: $path");
 
       return file;
+
     } catch (e) {
-      debugPrint('❌ Screenshot Error: $e');
+      debugPrint("❌ Screenshot error: $e");
       return null;
     }
   }
+static Future<File> rotateForServer(File file) async {
+
+  final bytes = await file.readAsBytes();
+
+  final decoded = img.decodeImage(bytes);
+  if (decoded == null) return file;
+
+  // ⭐ server fix → rotate 180 only
+  final rotated = img.copyRotate(decoded, angle: 180);
+
+  final newBytes = Uint8List.fromList(img.encodePng(rotated));
+
+  final dir = await getTemporaryDirectory();
+  final newPath =
+      '${dir.path}/upload_${DateTime.now().millisecondsSinceEpoch}.png';
+
+  final newFile = File(newPath);
+  await newFile.writeAsBytes(newBytes);
+
+  return newFile;
+}
+
 
   static Future<bool> submitBodyMapData({
     required String therapistId,
@@ -352,7 +348,7 @@ class ScreenshotHelper {
           validateStatus: (s) => s != null && s < 500,
         ),
       );
-print(response.data);
+      print(response.data);
       final body = response.data.toString();
 
       if (response.statusCode == 200) {

@@ -8,6 +8,8 @@ import 'package:dio/dio.dart';
 import 'package:jin_reflex_new/api_service/global/utils.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
+import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
+import 'package:image/image.dart' as img;
 
 class PointData {
   final String id;
@@ -144,7 +146,7 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
           }
         }
       }
-      
+
       debugPrint("Loaded ${decoded.length} points from local storage");
     } catch (e) {
       debugPrint("Error decoding saved JSON for RF: $e");
@@ -186,7 +188,7 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
       final form = FormData.fromMap({
         "diagnosisId": widget.diagnosisId,
         "pid": widget.patientId,
-        "which": "rf",  // Change to "rf" for right foot
+        "which": "rf", // Change to "rf" for right foot
       });
 
       debugPrint("FETCH SERVER STATES -> ${form.fields}");
@@ -305,7 +307,7 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
           validateStatus: (status) => status! < 500,
         ),
       );
-      
+
       debugPrint("✅ Saved RF to server -> response: ${response.data}");
       Utils().showToastMessage("Data saved to server");
     } catch (e) {
@@ -317,37 +319,82 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
   // --------------------------------------------------
   // CAPTURE SCREENSHOT
   // --------------------------------------------------
-Future<String?> captureScreenshot() async {
-  try {
-    await Future.delayed(const Duration(milliseconds: 100));
+   Future<String?> captureScreenshot() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 120));
 
-    final boundary =
-        screenshotKey.currentContext?.findRenderObject()
-            as RenderRepaintBoundary?;
+      final boundary =
+          screenshotKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
 
-    if (boundary == null) {
-      debugPrint("Screenshot: boundary null");
+      if (boundary == null) return null;
+
+      // ⭐ FIXED RATIO (NEVER devicePixelRatio)
+      final ui.Image rawImage = await boundary.toImage(pixelRatio: 2.0);
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final paint = Paint();
+
+      final w = rawImage.width.toDouble();
+      final h = rawImage.height.toDouble();
+
+      // ⭐ SAFE DRAW METHOD
+      canvas.drawImageRect(
+        rawImage,
+        Rect.fromLTWH(0, 0, w, h),
+        Rect.fromLTWH(0, 0, w, h),
+        paint,
+      );
+
+      final picture = recorder.endRecording();
+      final finalImage =
+          await picture.toImage(rawImage.width, rawImage.height);
+
+      final byteData =
+          await finalImage.toByteData(format: ui.ImageByteFormat.png);
+
+      if (byteData == null) return null;
+
+      return base64Encode(byteData.buffer.asUint8List());
+    } catch (e) {
+      debugPrint("Screenshot error: $e");
       return null;
     }
-
-    // High quality
-    final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
-
-    final byteData = await image.toByteData(
-      format: ui.ImageByteFormat.png,
-    );
-
-    if (byteData == null) return null;
-
-    final bytes = byteData.buffer.asUint8List();
-
-    return base64Encode(bytes);
-  } catch (e, st) {
-    debugPrint("Screenshot error: $e");
-    debugPrint("$st");
-    return null;
   }
-}
+
+  // Future<String?> captureScreenshot() async {
+  //   try {
+  //     await WidgetsBinding.instance.endOfFrame;
+  //     await Future.delayed(const Duration(milliseconds: 80));
+
+  //     final boundary =
+  //         screenshotKey.currentContext?.findRenderObject()
+  //             as RenderRepaintBoundary?;
+
+  //     if (boundary == null) return null;
+
+  //     final image = await boundary.toImage(
+  //       pixelRatio: MediaQuery.of(context).devicePixelRatio,
+  //     );
+
+  //     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+  //     if (byteData == null) return null;
+
+  //     final bytes = byteData.buffer.asUint8List();
+
+  //     final decoded = img.decodeImage(bytes);
+  //     if (decoded == null) return null;
+
+  //     /// ⭐ ALWAYS fix orientation (NO detection needed)
+  //     final fixed = img.flipVertical(decoded); // ← main fix
+
+  //     return base64Encode(img.encodePng(fixed));
+  //   } catch (e) {
+  //     debugPrint("Screenshot error: $e");
+  //     return null;
+  //   }
+  // }
 
   // --------------------------------------------------
   // ENCODE TAGS FOR SERVER (rf_result FORMAT)
@@ -385,9 +432,6 @@ Future<String?> captureScreenshot() async {
     return resultBuffer.toString();
   }
 
-  // --------------------------------------------------
-  // DOT UI WITH DRAG FUNCTIONALITY
-  // --------------------------------------------------
   Widget _buildDot(PointData p, double scale) {
     Color color;
     if (p.state == 1) {
@@ -395,29 +439,31 @@ Future<String?> captureScreenshot() async {
     } else if (p.state == 2) {
       color = Colors.green;
     } else {
-      color = Colors.white
-      ;
+      color = Colors.white.withOpacity(0.8);
     }
- bool _isDisabledIndex(PointData p) {
-    const disabledIndexes = {286, 287, 288, 289, 312, 291, 292};
 
-    return disabledIndexes.contains(p.index);
-  }
+    bool isDisabled(PointData p) {
+      const disabledIndexes = {286, 287, 288, 289, 312, 291, 292};
+      return disabledIndexes.contains(p.index);
+    }
+
     return GestureDetector(
- onTap: () {
-        if (_isDisabledIndex(p)) {
-          ScaffoldMessenger.of(context).clearSnackBars();
+      /// CLICK (same logic)
+      onTap: () {
+        if (isDisabled(p)) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("This point is not selectable"),
-              duration: Duration(milliseconds: 400),
-            ),
+            const SnackBar(content: Text("This point is not selectable")),
           );
           return;
         }
+
         safeSetState(() {
           p.state = (p.state + 1) % 3;
         });
+        print("ssssds${p.tag}");
+        print(
+          "RF CLICK => ID:${p.id}, Index:${p.index}, X:${p.x}, Y:${p.y}, State:${p.state}",
+        );
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -425,19 +471,26 @@ Future<String?> captureScreenshot() async {
             duration: const Duration(milliseconds: 500),
           ),
         );
-        print("ssssds${p.tag}");
-        print(
-          "RF CLICK => ID:${p.id}, Index:${p.index}, X:${p.x}, Y:${p.y}, State:${p.state}",
-        );
       },
-      
+
+      //'/ 🔥 MOVE DOT
+      onPanUpdate: (details) {
+        if (isDisabled(p)) return;
+
+        safeSetState(() {
+          /// MOVE BY DRAG DELTA
+          p.x += details.delta.dx;
+          p.y += details.delta.dy;
+        });
+      },
+
       child: Container(
         width: 14.5 * scale,
         height: 14.5 * scale,
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.black, width: 1),
+          border: Border.all(color: Colors.transparent, width: 1),
         ),
       ),
     );
@@ -468,7 +521,8 @@ Future<String?> captureScreenshot() async {
       debugPrint("❌ Error saving RF tags: $e");
     }
   }
-bool _isSaving = false;
+
+  bool _isSaving = false;
 
   String _encodeRfData() {
     final List<String> items = [];
@@ -492,102 +546,98 @@ bool _isSaving = false;
   // --------------------------------------------------
   // SAVE & EXIT BUTTON - FIXED VERSION
   // --------------------------------------------------
- Future<void> _saveAndExit() async {
-  // Prevent double click
-  if (_isSaving) return;
-  _isSaving = true;
+  Future<void> _saveAndExit() async {
+    // Prevent double click
+    if (_isSaving) return;
+    _isSaving = true;
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text("Saving data..."),
-      duration: Duration(seconds: 2),
-    ),
-  );
-
-  try {
-    // 1. Encode tags
-    final encodedTags = _encodeTagsForServer();
-
-    // 2. Encode data
-    final encodedRfData = _encodeRfData();
-
-    // 3. Save locally
-    await saveAllPointsFast();
-
-    // 4. Capture screenshot
-    final base64 = await captureScreenshot();
-
-    // ❗ If image failed → stop
-    if (base64 == null) {
-      Utils().showToastMessage("❌ Image capture failed. Try again.");
-      _isSaving = false;
-      return;
-    }
-
-    // 5. Save image in preference
-    final imageKey =
-        "RF_IMG_${widget.diagnosisId}_${widget.patientId}";
-
-    await AppPreference().setString(imageKey, base64);
-
-    debugPrint(
-      "✅ Image Saved: key=$imageKey length=${base64.length}",
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Saving data..."),
+        duration: Duration(seconds: 2),
+      ),
     );
 
-    // 6. Mark completed
-    await AppPreference().setBool(
-      "RF_SAVED_${widget.diagnosisId}_${widget.patientId}",
-      true,
-    );
+    try {
+      // 1. Encode tags
+      final encodedTags = _encodeTagsForServer();
 
-    // 7. Debug logs
-    debugPrint("=== RF COMPLETE DATA ===");
-    debugPrint("rf_result: $encodedTags");
-    debugPrint("rf_data: $encodedRfData");
-    debugPrint(
-        "Selected: ${points.where((p) => p.state != 0).length}/${points.length}");
-    debugPrint("=========================");
+      // 2. Encode data
+      final encodedRfData = _encodeRfData();
 
-    // 8. Prepare result
-    final Map<String, dynamic> resultData = {
-      'rf_result': encodedTags,
-      'rf_data': encodedRfData,
-      'rf_img': base64,
-      'points_count': points.length,
-      'selected_points': points.where((p) => p.state != 0).length,
-      'timestamp': DateTime.now().toString(),
-    };
+      // 3. Save locally
+      await saveAllPointsFast();
 
-    // 9. Background server save
-    Future.microtask(() async {
-      try {
-        await saveAllToServer();
-        await _saveTagsToServer(encodedTags);
+      // 4. Capture screenshot
+      final base64 = await captureScreenshot();
 
-        debugPrint("✅ Server save done");
-      } catch (e) {
-        debugPrint("❌ Server save error: $e");
+      // ❗ If image failed → stop
+      if (base64 == null) {
+        Utils().showToastMessage("❌ Image capture failed. Try again.");
+        _isSaving = false;
+        return;
       }
-    });
 
-    // 10. Return result
-    if (mounted) {
-      Navigator.pop(context, resultData);
+      // 5. Save image in preference
+      final imageKey = "RF_IMG_${widget.diagnosisId}_${widget.patientId}";
+
+      await AppPreference().setString(imageKey, base64);
+
+      debugPrint("✅ Image Saved: key=$imageKey length=${base64.length}");
+
+      // 6. Mark completed
+      await AppPreference().setBool(
+        "RF_SAVED_${widget.diagnosisId}_${widget.patientId}",
+        true,
+      );
+
+      // 7. Debug logs
+      debugPrint("=== RF COMPLETE DATA ===");
+      debugPrint("rf_result: $encodedTags");
+      debugPrint("rf_data: $encodedRfData");
+      debugPrint(
+        "Selected: ${points.where((p) => p.state != 0).length}/${points.length}",
+      );
+      debugPrint("=========================");
+
+      // 8. Prepare result
+      final Map<String, dynamic> resultData = {
+        'rf_result': encodedTags,
+        'rf_data': encodedRfData,
+        'rf_img': base64,
+        'points_count': points.length,
+        'selected_points': points.where((p) => p.state != 0).length,
+        'timestamp': DateTime.now().toString(),
+      };
+
+      // 9. Background server save
+      Future.microtask(() async {
+        try {
+          await saveAllToServer();
+          await _saveTagsToServer(encodedTags);
+
+          debugPrint("✅ Server save done");
+        } catch (e) {
+          debugPrint("❌ Server save error: $e");
+        }
+      });
+
+      // 10. Return result
+      if (mounted) {
+        Navigator.pop(context, resultData);
+      }
+
+      Utils().showToastMessage("✅ Data saved successfully!");
+    } catch (e, st) {
+      debugPrint("❌ Save Error: $e");
+      debugPrint("$st");
+
+      Utils().showToastMessage("Error while saving!");
+    } finally {
+      // Always unlock button
+      _isSaving = false;
     }
-
-    Utils().showToastMessage("✅ Data saved successfully!");
-
-  } catch (e, st) {
-    debugPrint("❌ Save Error: $e");
-    debugPrint("$st");
-
-    Utils().showToastMessage("Error while saving!");
-
-  } finally {
-    // Always unlock button
-    _isSaving = false;
   }
-}
 
   // --------------------------------------------------
   // TEST BUTTON - Save button kaam न करे तो यह टेस्ट करें
@@ -621,50 +671,53 @@ bool _isSaving = false;
     double scale = math.min(scaleX, scaleY);
 
     return Scaffold(
-     
       appBar: CommonAppBar(title: " Right Foot"),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _saveAndExit,
         icon: const Icon(Icons.save, color: Colors.white),
-        label: const Text("SAVE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        label: const Text(
+          "SAVE",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.green,
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Stack(
-              children: [
-                Center(
-                  child: Container(
-                    width: containerW,
-                    height: containerH,
-                    child: RepaintBoundary(
-                      key: screenshotKey,
-                      
-                      child: Stack(
-                        children: [
-                          // Right foot image
-                          Image.asset(
-                            'assets/images/foot_right.png',
-                            width: containerW,
-                            height: containerH,
-                            fit: BoxFit.contain,
-                          ),
-                          ...points.map((p) {
-                            return Positioned(
-                              left: p.x * scaleX,
-                              top: p.y * scaleY,
-                              child: _buildDot(p, scale),
-                            );
-                          }).toList(),
-                        ],
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Stack(
+                children: [
+                  Center(
+                    child: Container(
+                      width: containerW,
+                      height: containerH,
+                      child: RepaintBoundary(
+                        key: screenshotKey,
+
+                        child: Stack(
+                          children: [
+                            // Right foot image
+                            Image.asset(
+                              'assets/images/foot_right.png',
+                              width: containerW,
+                              height: containerH,
+                              fit: BoxFit.contain,
+                            ),
+                            ...points.map((p) {
+                              return Positioned(
+                                left: p.x * scaleX,
+                                top: p.y * scaleY,
+                                child: _buildDot(p, scale),
+                              );
+                            }).toList(),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                // Test button
-                _buildTestButton(),
-              ],
-            ),
+                  // Test button
+                  _buildTestButton(),
+                ],
+              ),
     );
   }
 }

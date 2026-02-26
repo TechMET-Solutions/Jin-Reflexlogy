@@ -29,6 +29,7 @@ class _CourseScreenState extends State<CourseScreen> {
   int? selectedIndex;
   Map<String, dynamic>? selectedCourse;
   late Razorpay _razorpay;
+  bool _isLoginInProgress = false;
 
   // Text controllers for user details
   final TextEditingController _firstNameController = TextEditingController();
@@ -56,6 +57,48 @@ class _CourseScreenState extends State<CourseScreen> {
     _emailController.dispose();
     _mobileController.dispose();
     super.dispose();
+  }
+
+  // Helper method to refresh user data from SharedPreferences
+  Future<Map<String, String>> _refreshUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = {
+      'token': prefs.getString(PreferencesKey.token) ?? '',
+      'userId': prefs.getString(PreferencesKey.userId) ?? '',
+      'type': prefs.getString(PreferencesKey.type) ?? '',
+      'name': prefs.getString(PreferencesKey.name) ?? '',
+      'email': prefs.getString(PreferencesKey.email) ?? '',
+      'contact': prefs.getString(PreferencesKey.contactNumber) ?? '',
+    };
+    
+    print("📱 Refreshed User Data:");
+    print("Token: ${data['token']}");
+    print("UserId: ${data['userId']}");
+    print("Type: ${data['type']}");
+    
+    return data;
+  }
+
+  // Check login status with fresh data
+  Future<bool> _isUserLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    final token = prefs.getString(PreferencesKey.token) ?? '';
+    final userId = prefs.getString(PreferencesKey.userId) ?? '';
+    final type = prefs.getString(PreferencesKey.type) ?? '';
+    
+    // Allow both patient AND therapist to enroll
+    final isLoggedIn = token.isNotEmpty && 
+                       userId.isNotEmpty && 
+                       (type == "patient" || type == "therapist");
+    
+    print("📱 Login Status Check (Fresh):");
+    print("Token: $token");
+    print("UserId: $userId");
+    print("Type: $type");
+    print("Is Logged In: $isLoggedIn");
+    
+    return isLoggedIn;
   }
 
   Future<String> getCountryCode() async {
@@ -140,7 +183,7 @@ class _CourseScreenState extends State<CourseScreen> {
       ),
     );
 
-    // ✅ Payment successful झाल्यानंतर enrollment API call करा
+    // Call enrollment API on success
     _callSubmitEnrollmentAPI(
       paymentId: response.paymentId,
       orderId: response.orderId,
@@ -157,7 +200,7 @@ class _CourseScreenState extends State<CourseScreen> {
       ),
     );
 
-    // ✅ Payment failed असल्यास enrollment API call करा (failed status सह)
+    // Call enrollment API on failure
     await _callSubmitEnrollmentAPI(
       paymentId: null,
       orderId: null,
@@ -166,16 +209,16 @@ class _CourseScreenState extends State<CourseScreen> {
     );
   }
 
-  // ✅ MAIN ENROLLMENT API CALL FUNCTION
+  // MAIN ENROLLMENT API CALL FUNCTION
   Future<void> _callSubmitEnrollmentAPI({
-    required String status, // success / failed
+    required String status,
     String? paymentId,
     String? orderId,
-    String? paymentGateway, // razorpay / paypal
+    String? paymentGateway,
   }) async {
     if (selectedCourse == null) return;
 
-    // ✅ Check if course is borrowed - जर borrowed असेल तर API call करू नये
+    // Check if course is borrowed
     if (selectedCourse!['borrowed'] == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -196,7 +239,9 @@ class _CourseScreenState extends State<CourseScreen> {
         builder: (_) => const Center(child: CircularProgressIndicator()),
       );
 
-      final therapistId = AppPreference().getString(PreferencesKey.userId);
+      // Get FRESH user data
+      final userData = await _refreshUserData();
+      final therapistId = userData['userId'];
 
       final body = {
         "therapistId": therapistId,
@@ -205,9 +250,9 @@ class _CourseScreenState extends State<CourseScreen> {
         "orderId": orderId ?? "",
         "amount": selectedCourse!['total'].toString(),
         "status": status,
-        "email": AppPreference().getString(PreferencesKey.email),
-        "name": AppPreference().getString(PreferencesKey.name),
-        "contact": AppPreference().getString(PreferencesKey.contactNumber),
+        "email": userData['email'],
+        "name": userData['name'],
+        "contact": userData['contact'],
         "paymentGateway":
             paymentGateway ??
             (widget.deliveryType == "india" ? "razorpay" : "paypal"),
@@ -229,16 +274,19 @@ class _CourseScreenState extends State<CourseScreen> {
         final res = jsonDecode(response.body);
         print("Enrollment Response: $res");
         fetchCourses();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              status == "success"
-                  ? "✅ Course enrolled successfully"
-                  : "❌ Enrollment failed",
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                status == "success"
+                    ? "✅ Course enrolled successfully"
+                    : "❌ Enrollment failed",
+              ),
+              backgroundColor: status == "success" ? Colors.green : Colors.red,
             ),
-            backgroundColor: status == "success" ? Colors.green : Colors.red,
-          ),
-        );
+          );
+        }
 
         setState(() {
           selectedCourse = null;
@@ -249,26 +297,19 @@ class _CourseScreenState extends State<CourseScreen> {
       }
     } catch (e) {
       if (mounted) Navigator.pop(context);
-
       debugPrint("❌ Enrollment API Error: $e");
-
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text("Something went wrong: $e"),
-      //     backgroundColor: Colors.red,
-      //   ),
-      // );
     }
   }
 
   Future<void> submitEnrollment() async {
     if (selectedCourse == null) return;
 
-    final token = AppPreference().getString(PreferencesKey.token);
-    final userId = AppPreference().getString(PreferencesKey.userId);
-    final type = AppPreference().getString(PreferencesKey.type);
+    // Prevent multiple login attempts
+    if (_isLoginInProgress) {
+      return;
+    }
 
-    // 🔒 Already borrowed course check
+    // Check if course is borrowed
     if (selectedCourse!['borrowed'] == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -281,47 +322,80 @@ class _CourseScreenState extends State<CourseScreen> {
       return;
     }
 
-    // 🔐 USER NOT LOGGED IN → LOGIN / REGISTER SCREEN
-    if (token.isEmpty || userId.isEmpty || type != "patient"|| type == "prouser") {
-      Navigator.push(
+    // Check login status with fresh data
+    final isLoggedIn = await _isUserLoggedIn();
+
+    if (!isLoggedIn) {
+      setState(() => _isLoginInProgress = true);
+      
+      print("🚀 Redirecting to login screen...");
+      
+      // Navigate to login screen and wait for result
+      await Navigator.push(
         context,
         MaterialPageRoute(
-          builder:
-              (_) => JinLoginScreen(
-                text: "CourseScreen",
-                type: "therapist",
-                diliveryType: widget.deliveryType,
-                registershow: true,
-                onTab: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => MemberListScreen()),
-                  );
-                },
-              ),
+          builder: (_) => JinLoginScreen(
+            text: "CourseScreen",
+            type: "therapist",
+            diliveryType: widget.deliveryType,
+            registershow: true,
+            onTab: () {
+              // This will navigate to MemberListScreen
+            },
+          ),
         ),
       );
+
+      setState(() => _isLoginInProgress = false);
+
+      // Give time for SharedPreferences to update
+      await Future.delayed(const Duration(milliseconds: 1000));
+      
+      // Check login status again
+      final isNowLoggedIn = await _isUserLoggedIn();
+      
+      if (isNowLoggedIn) {
+        print("✅ Login successful! Retrying enrollment...");
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        if (mounted) {
+          submitEnrollment(); // Retry enrollment
+        }
+      } else {
+        print("❌ Login failed or cancelled");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Please login to enroll in this course"),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
       return;
     }
 
-    // 🟢 FREE COURSE (price = 0)
+    // User is logged in, proceed with enrollment
+    print("✅ User is logged in. Proceeding with enrollment...");
+
+    // FREE COURSE
     if ((selectedCourse!['total'] ?? 0) == 0) {
       await _callSubmitEnrollmentAPI(status: "success", paymentGateway: "free");
       return;
     }
 
-    // 💳 PAID COURSE → START PAYMENT
+    // PAID COURSE
     if (widget.deliveryType == "india") {
-      _startPayment(); // Razorpay
+      _startPayment();
     } else {
-      _startPayPalPayment(context); // PayPal
+      _startPayPalPayment(context);
     }
   }
 
   void _startPayPalPayment(BuildContext context) {
     if (selectedCourse == null) return;
 
-    // ✅ Check if course is borrowed
+    // Check if course is borrowed
     if (selectedCourse!['borrowed'] == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -335,7 +409,7 @@ class _CourseScreenState extends State<CourseScreen> {
     }
 
     final userId = AppPreference().getString(PreferencesKey.userId);
-    final double amount = selectedCourse!['total']; // USD amount
+    final double amount = selectedCourse!['total'];
 
     Navigator.push(
       context,
@@ -376,7 +450,7 @@ class _CourseScreenState extends State<CourseScreen> {
                   ),
                 );
 
-                Navigator.pop(context); // close PayPal screen
+                Navigator.pop(context);
               },
               onError: (error) async {
                 await sendPaymentToBackend(
@@ -413,7 +487,7 @@ class _CourseScreenState extends State<CourseScreen> {
     );
   }
 
-  // ✅ Payment Dialog for non-logged in users
+  // Payment Dialog for non-logged in users
   Future<void> _showPaymentDialog() async {
     return showDialog(
       context: context,
@@ -473,7 +547,6 @@ class _CourseScreenState extends State<CourseScreen> {
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      // Validate required fields
                       if (_firstNameController.text.trim().isEmpty ||
                           _emailController.text.trim().isEmpty ||
                           _mobileController.text.trim().isEmpty) {
@@ -500,11 +573,10 @@ class _CourseScreenState extends State<CourseScreen> {
     );
   }
 
-  // ✅ Start Payment Function
+  // Start Payment Function
   void _startPayment() {
     if (selectedCourse == null) return;
 
-    // ✅ Check if course is borrowed
     if (selectedCourse!['borrowed'] == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -517,11 +589,10 @@ class _CourseScreenState extends State<CourseScreen> {
       return;
     }
 
-    final amount = (selectedCourse!['total'] * 100).toInt(); // Convert to paise
+    final amount = (selectedCourse!['total'] * 100).toInt();
 
     var options = {
-      'key':
-          'rzp_test_1DP5mmOlF5G5ag', // 🔴 Replace with your actual Razorpay key
+      'key': 'rzp_test_1DP5mmOlF5G5ag',
       'amount': amount.toString(),
       'name': 'Jin Reflexology',
       'description': selectedCourse!['title'],
@@ -558,7 +629,7 @@ class _CourseScreenState extends State<CourseScreen> {
     }
   }
 
-  // ✅ Send Payment Callback to Backend
+  // Send Payment Callback to Backend
   Future<void> sendPaymentToBackend({
     required String userId,
     required String status,
@@ -592,25 +663,26 @@ class _CourseScreenState extends State<CourseScreen> {
     }
   }
 
-  // ✅ Navigate to Course Detail Screen
-  void _navigateToCourseDetail(Map<String, dynamic> course) {
-    Navigator.push(
+  // Navigate to Course Detail Screen
+  void _navigateToCourseDetail(Map<String, dynamic> course) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (_) => CourseDetailScreen(
-              course: course,
-              deliveryType: widget.deliveryType,
-            ),
+        builder: (_) => CourseDetailScreen(
+          course: course,
+          deliveryType: widget.deliveryType,
+        ),
       ),
     );
+    
+    // Refresh courses if enrollment was successful
+    if (result == true) {
+      fetchCourses();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final token = AppPreference().getString(PreferencesKey.userId);
-    final type = AppPreference().getString(PreferencesKey.type);
-
     return Scaffold(
       appBar: CommonAppBar(
         title:
@@ -620,7 +692,7 @@ class _CourseScreenState extends State<CourseScreen> {
       ),
       body: Column(
         children: [
-          // 🔹 Header Section
+          // Header Section
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -682,7 +754,7 @@ class _CourseScreenState extends State<CourseScreen> {
             ),
           ),
 
-          // 🔹 Selected Course Bar (if any)
+          // Selected Course Bar
           if (selectedCourse != null && selectedCourse!['borrowed'] != true)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -724,7 +796,7 @@ class _CourseScreenState extends State<CourseScreen> {
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: submitEnrollment,
+                    onPressed: _isLoginInProgress ? null : submitEnrollment,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
@@ -737,13 +809,22 @@ class _CourseScreenState extends State<CourseScreen> {
                       ),
                       elevation: 2,
                     ),
-                    child: const Text(
-                      "Enroll Now",
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: _isLoginInProgress
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            "Enroll Now",
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ],
               ),
@@ -963,7 +1044,7 @@ class _CourseScreenState extends State<CourseScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 🔹 Top Row: Badges
+                          // Top Row: Badges
                           Row(
                             children: [
                               // Popular Badge
@@ -1074,7 +1155,7 @@ class _CourseScreenState extends State<CourseScreen> {
 
                           SizedBox(height: 12),
 
-                          // 🔹 Course Title
+                          // Course Title
                           Text(
                             course['title'],
                             style: TextStyle(
@@ -1089,7 +1170,7 @@ class _CourseScreenState extends State<CourseScreen> {
 
                           SizedBox(height: 8),
 
-                          // 🔹 Course Description
+                          // Course Description
                           Text(
                             course['description'],
                             style: TextStyle(
@@ -1103,7 +1184,7 @@ class _CourseScreenState extends State<CourseScreen> {
 
                           SizedBox(height: 16),
 
-                          // 🔹 Image and Details Row
+                          // Image and Details Row
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1185,20 +1266,22 @@ class _CourseScreenState extends State<CourseScreen> {
 
                                     SizedBox(height: 12),
 
-                                    // Select Button (for non-borrowed courses)
+                                    // Select Button
                                     if (!isBorrowed)
                                       ElevatedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            if (selectedIndex == index) {
-                                              selectedIndex = null;
-                                              selectedCourse = null;
-                                            } else {
-                                              selectedIndex = index;
-                                              selectedCourse = course;
-                                            }
-                                          });
-                                        },
+                                        onPressed: _isLoginInProgress
+                                            ? null
+                                            : () {
+                                                setState(() {
+                                                  if (selectedIndex == index) {
+                                                    selectedIndex = null;
+                                                    selectedCourse = null;
+                                                  } else {
+                                                    selectedIndex = index;
+                                                    selectedCourse = course;
+                                                  }
+                                                });
+                                              },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor:
                                               isSelected

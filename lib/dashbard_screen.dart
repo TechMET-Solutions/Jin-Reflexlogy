@@ -1289,6 +1289,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.star, color: Colors.orange),
+              title: const Text('Rate Us'),
+              onTap: () async {
+                final Uri url = Uri.parse(
+                  "https://play.google.com/store/apps/details?id=com.jin.reflexology",
+                );
+
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                }
+              },
+            ),
             Container(
               alignment: Alignment.bottomCenter,
               margin: const EdgeInsets.only(bottom: 20),
@@ -1503,52 +1516,44 @@ void _showLogoutDialog(BuildContext context) {
           ),
           TextButton(
             onPressed: () async {
-              try {
-                var request = http.MultipartRequest(
-                  'POST',
-                  Uri.parse('https://jinreflexology.in/api1/new/logout.php'),
-                );
+              final userId = AppPreference().getString(PreferencesKey.userId);
+              final type = AppPreference().getString(PreferencesKey.type);
 
-                request.fields['id'] = AppPreference().getString(
-                  PreferencesKey.userId,
-                );
-                request.fields['type'] = AppPreference().getString(
-                  PreferencesKey.type,
-                );
-                ;
+              try {
+                final url = 'https://jinreflexology.in/api1/new/logout.php';
+                var request = http.MultipartRequest('POST', Uri.parse(url));
+
+                request.fields['id'] = userId.toString();
+                request.fields['type'] = type.toString();
+
+                print("------------ LOGOUT API DEBUG ------------");
+                print("URL: $url");
+                print("FIELDS: id => $userId, type => $type");
 
                 var response = await request.send();
-
                 var responseBody = await response.stream.bytesToString();
 
-                print("Logout Response: $responseBody");
+                print("STATUS CODE => ${response.statusCode}");
+                print("RESPONSE BODY => $responseBody");
 
-                if (response.statusCode == 200) {
-                  // /// Clear Local Data
-                  // await AppPreference().clearSharedPreferences();
+                final decoded = jsonDecode(responseBody);
 
-                  /// Go To Login Screen
-                  // Navigator.pushAndRemoveUntil(
-                  //   context,
-                  //   MaterialPageRoute(builder: (_) => LoginScreen()),
-                  //   (route) => false,
-                  // );
-                  AppPreference().clearSharedPreferences();
-                  Navigator.pop(context);
+                ScaffoldMessenger.of(context).clearSnackBars();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(decoded["message"] ?? "Logout success"),
+                    duration: const Duration(milliseconds: 800),
+                  ),
+                );
 
-                  print("Logout Success");
-                } else {
-                  print("Logout Failed: ${response.statusCode}");
-                }
+                await AppPreference().clearSharedPreferences();
+
+                Navigator.pop(context);
               } catch (e) {
-                print("Logout Error: $e");
+                print("Logout API Error (ignored): $e");
               }
 
-              // Navigator.pop(context); // Close dialog
-              // Add your logout logic here
-
-              // Example: Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
-              print('User logged out');
+              print('User logged out successfully');
             },
             child: const Text('Logout', style: TextStyle(color: Colors.red)),
           ),

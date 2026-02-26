@@ -3,11 +3,13 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
+import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/dashbord_forlder/image_fedback_selected.dart';
 import 'package:jin_reflex_new/login_screen.dart';
-import 'package:jin_reflex_new/prefs/app_preference.dart';
+
+
 import 'body_map_with_screenshot.dart';
-import 'validate_diagnosis_data.dart';
+
 
 class BodyPartItem {
   final String name;
@@ -287,6 +289,7 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
   }
 
   Future<void> submitData() async {
+    /// रोक जर आधी file upload आहे
     if (hasDayFile == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -300,42 +303,20 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
       return;
     }
 
+    /// ✅ SHOW LOADING DIALOG
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder:
-          (_) => const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(color: Colors.white),
-                SizedBox(height: 16),
-                Text(
-                  'Capturing screenshot...',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ],
-            ),
-          ),
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
     try {
+      /// ✅ CAPTURE SCREENSHOT
       final screenshotFile = await ScreenshotHelper.captureWidget(
         _repaintBoundaryKey,
       );
 
-      if (mounted) Navigator.pop(context);
-
-      if (screenshotFile == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to capture screenshot'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
+      /// ✅ BUILD JSON LIST
       List<Map<String, String>> diagnosisList = [];
 
       for (final item in items) {
@@ -351,10 +332,9 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
         diagnosisList.add({"bodyPart": item.name.trim(), "pain": pain});
       }
 
-      final diagnosisJson = jsonEncode(diagnosisList);
+      debugPrint("FINAL JSON => ${jsonEncode(diagnosisList)}");
 
-      debugPrint("FINAL JSON => $diagnosisJson");
-
+      /// ✅ API CALL
       final success = await ScreenshotHelper.submitBodyMapData(
         therapistId: AppPreference().getString(PreferencesKey.userId),
         patientId: widget.pId,
@@ -363,6 +343,12 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
         feedbackImage: screenshotFile,
       );
 
+      /// ✅ CLOSE LOADING (SAFE)
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+
+      /// SUCCESS
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -386,25 +372,32 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
         if (mounted) {
           setState(() {
             selectedCellIds.clear();
-            checkDayFile();
           });
+          checkDayFile();
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Submission failed. Try again."),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(
+        //     content: Text("Submission failed. Try again."),
+        //     backgroundColor: Colors.red,
+        //   ),
+        // );
+
         checkDayFile();
       }
     } catch (e) {
-      if (mounted) Navigator.pop(context);
-      checkDayFile();
+      /// CLOSE LOADING SAFE
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+
       debugPrint('Submit Error => $e');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
       );
+
+      checkDayFile();
     }
   }
 
@@ -489,17 +482,11 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
           ? JinLoginScreen(
             text: "BodyPartScreen",
             type: "patient",
+            // registershow: true,
             onTab: () {
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder:
-                      (context) => BodyPartScreen(
-                        day: widget.day,
-                        pId: widget.pId,
-                        dId: widget.dId,
-                      ),
-                ),
+                MaterialPageRoute(builder: (context) => BodyPartScreen()),
               );
             },
           )

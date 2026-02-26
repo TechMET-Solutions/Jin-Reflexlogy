@@ -3,7 +3,6 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'PreferencesKey.dart';
 
 
 class AppPreference {
@@ -52,17 +51,24 @@ Future<void> clearSharedPreferences() async {
     _preferences = await SharedPreferences.getInstance();
   }
   
-  // Save welcome dialog data before clearing
+  // ✅ Save welcome dialog data before clearing (these should persist forever)
+  final welcomeName = _preferences!.getString('welcome_name');
   final welcomeMobile = _preferences!.getString('welcome_mobile');
   final welcomeEmail = _preferences!.getString('welcome_email');
   final welcomeDealerId = _preferences!.getString('welcome_dealer_id');
+  final dealerCompleted = _preferences!.getBool('dealer_completed'); // ✅ KEY FLAG
   final isFirstTime = _preferences!.getBool('is_first_time_user');
   final welcomeShown = _preferences!.getBool('welcome_dialog_shown');
+  
+  debugPrint("🔍 Before clear - dealer_completed: $dealerCompleted");
   
   // Clear all data
   await _preferences!.clear();
   
-  // Restore welcome dialog data (should persist across logout)
+  // ✅ Restore welcome dialog data (should persist across logout)
+  if (welcomeName != null) {
+    await _preferences!.setString('welcome_name', welcomeName);
+  }
   if (welcomeMobile != null) {
     await _preferences!.setString('welcome_mobile', welcomeMobile);
   }
@@ -72,6 +78,9 @@ Future<void> clearSharedPreferences() async {
   if (welcomeDealerId != null) {
     await _preferences!.setString('welcome_dealer_id', welcomeDealerId);
   }
+  if (dealerCompleted != null) {
+    await _preferences!.setBool('dealer_completed', dealerCompleted);
+  }
   if (isFirstTime != null) {
     await _preferences!.setBool('is_first_time_user', isFirstTime);
   }
@@ -79,6 +88,7 @@ Future<void> clearSharedPreferences() async {
     await _preferences!.setBool('welcome_dialog_shown', welcomeShown);
   }
   
+  debugPrint("✅ After restore - dealer_completed: ${_preferences!.getBool('dealer_completed')}");
   debugPrint("✅ Logout: Cleared session data but preserved welcome dialog data");
 }
 

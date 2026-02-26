@@ -3,7 +3,7 @@ import 'package:jin_reflex_new/services/first_time_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 
-/// Welcome dialog shown to first-time users
+
 class WelcomeDialog extends StatefulWidget {
   final VoidCallback? onGetStarted;
 
@@ -14,8 +14,6 @@ class WelcomeDialog extends StatefulWidget {
 
   @override
   State<WelcomeDialog> createState() => _WelcomeDialogState();
-
-  /// Show the welcome dialog
   static Future<void> show(BuildContext context, {VoidCallback? onGetStarted}) async {
     debugPrint("🎯 WelcomeDialog: show() called");
     return showDialog(

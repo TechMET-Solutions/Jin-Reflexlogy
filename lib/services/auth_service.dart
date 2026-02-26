@@ -93,6 +93,6 @@ class AuthService {
   /// Logout user
   Future<void> logout() async {
     await AppPreference().clearSharedPreferences();
-    debugPrint("✅ User logged out successfully");
+    debugPrint("✅ User logged out successfully (welcome dialog data preserved)");
   }
 }

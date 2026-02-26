@@ -23,39 +23,36 @@ class _MainHomeScreenDashBoardState extends State<MainHomeScreenDashBoard> {
   void initState() {
     super.initState();
     _getDeliveryType();
-    _checkAndShowWelcomeDialog();
+WidgetsBinding.instance.addPostFrameCallback((_) {
+  _checkAndShowWelcomeDialog();
+});
+
   }
 
-  Future<void> _checkAndShowWelcomeDialog() async {
-    await Future.delayed(const Duration(milliseconds: 500));
+Future<void> _checkAndShowWelcomeDialog() async {
 
-    debugPrint("🔍 Home: Checking if dealer completed...");
+  debugPrint("🔍 Checking dealer status");
 
-    final prefs = await SharedPreferences.getInstance();
-    final dealerCompleted = prefs.getBool('dealer_completed') ?? false;
+  final prefs = await SharedPreferences.getInstance();
+  final dealerCompleted = prefs.getBool('dealer_completed') ?? false;
 
-    debugPrint("📊 Home: dealer_completed = $dealerCompleted");
+  debugPrint("dealer_completed = $dealerCompleted");
+  if (dealerCompleted == true) return;
 
-    // If dealer is completed, don't show dialog
-    if (dealerCompleted) {
-      debugPrint("⏭️ Home: Dealer completed, skipping popup");
-      return;
-    }
+  if (!mounted) return;
 
-    if (!mounted) return;
+  await WelcomeDialog.show(
+    context,
+    onGetStarted: () {
+      if (mounted) {
+        setState(() {
+          _homeScreenKey++;
+        });
+      }
+    },
+  );
+}
 
-    await WelcomeDialog.show(
-      context,
-      onGetStarted: () {
-        debugPrint("🔄 Home: Dialog closed, refreshing...");
-        if (mounted) {
-          setState(() {
-            _homeScreenKey++;
-          });
-        }
-      },
-    );
-  }
 
   /// 🔹 Get latest delivery type
   Future<String> _getDeliveryType() async {

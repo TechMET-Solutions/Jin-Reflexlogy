@@ -32,21 +32,20 @@ class _LifestyleScreenState extends State<LifestyleScreen> {
   }
 
   void _initPlatformSettings() {
-    // For Android
+ 
     if (Platform.isAndroid) {
-      // Android specific settings
-      // No need to set WebView.platform explicitly in newer versions
+    
     }
 
-    // For iOS
+ 
     if (Platform.isIOS) {
-      // iOS specific settings
+     
     }
   }
 
   Future<void> _initWebView() async {
     try {
-      // Get patient ID from parameter or preferences
+      
       String patientId = widget.patientId ?? await _getPatientId();
 
       print("🟢 Loading WebView for patient ID: $patientId");
