@@ -1,4 +1,6 @@
-final String paypalClientId = "Aa-t5qPKfuLGWj-ZRbOfUFECWrlgkwCYJpMXAe_fGI6i0LH3wdoW-bWWxa2WRDY-eDKaij4-6smAqsTu";
-final String paypalSecret = "EG-0tCL62enXJ2DolLLQ_dJCiO4yyJY1z-ptjp1_06oHGnXfLul7yHWyIwAd1sqmtRoS0wqutCwwEikd";
-final bool isSandboxMode = true; 
+final String paypalClientId =
+    "AfjIFWRXocspD7CrHB0wkcUpK9n4niI-yzPYa-ta7KfaullE1-u4ju5XkxV-vnIqok7-VdWHiT2f5v09";
+final String paypalSecret =
+    "ENWjMESfhbDFJUz-tSLJ25SFj4mAu5Gg7BiWtQaqtVqF68UcE6LHNHZ6ZTo1ZKY_JMjD-1i-tgfLUK8h";
+final bool isSandboxMode = false;
 final String razorpayKey = "rzp_live_SC4hJgIcCj6VCP";

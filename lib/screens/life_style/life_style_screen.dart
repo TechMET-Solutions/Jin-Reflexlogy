@@ -4,6 +4,7 @@ import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/dashbard_screen.dart';
 import 'package:jin_reflex_new/login_screen.dart';
+import 'package:jin_reflex_new/screens/main_home_dashoabrd_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
 import 'package:webview_flutter/webview_flutter.dart';
@@ -184,7 +185,7 @@ class _LifestyleScreenState extends State<LifestyleScreen> {
         onBack: () {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
+            MaterialPageRoute(builder: (context) => MainHomeScreenDashBoard()),
           );
         },
       ),

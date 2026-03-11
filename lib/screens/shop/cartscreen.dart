@@ -22,12 +22,14 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
   final _formKey = GlobalKey<FormState>();
   List<CartItem> cartItems = [];
   bool isLoading = true;
-  bool isUpdating = false; // For individual item updates
+  final Set<int> _updatingCartIds = <int>{};
 
   int userId = 0;
   double subtotal = 0;
   double discount = 0;
   double total = 0;
+
+  bool _isItemUpdating(int cartId) => _updatingCartIds.contains(cartId);
 
   @override
   void initState() {
@@ -78,16 +80,13 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
           "Accept": "application/json",
         },
       );
+
       debugPrint("STATUS: ${response.statusCode}");
       debugPrint("BODY: ${response.body}");
 
-      if (response.statusCode != 200) {
-        throw "HTTP ${response.statusCode}";
-      }
-
       final decoded = jsonDecode(response.body);
 
-      if (decoded["success"] == true) {
+      if (response.statusCode == 200 && decoded["success"] == true) {
         final List list = decoded["data"] ?? [];
         final totals = decoded["totals"] ?? {};
 
@@ -99,26 +98,35 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
           isLoading = false;
         });
       } else {
-        throw decoded["message"];
+        // API message dynamic
+        String errorMessage = decoded["message"] ?? "Something went wrong";
+
+        _showError(errorMessage);
+        setState(() => isLoading = false);
       }
     } catch (e) {
       debugPrint("❌ CART ERROR: $e");
-      _showError("Failed to load cart items");
+
+      // network / parsing error dynamic
+      _showError(e.toString());
+
       setState(() => isLoading = false);
     }
   }
 
-  // ================= UPDATE QUANTITY API =================
   Future<void> updateQuantity(int cartId, int newQuantity) async {
     setState(() {
-      isUpdating = true;
+      _updatingCartIds.add(cartId);
     });
+
     final prefs = AppPreference();
     final type = prefs.getString(PreferencesKey.type);
+
     final String url =
         "https://admin.jinreflexology.in/api/cart/update-quantity";
-    final String country = widget.deliveryType == "india" ? "in" : "us";
 
+    final String country = widget.deliveryType == "india" ? "in" : "us";
+    print(country);
     final Map<String, dynamic> body = {
       "cart_id": cartId,
       "quantity": newQuantity,
@@ -145,36 +153,37 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
+
         if (decoded["success"] == true) {
-          // If new quantity is 0, remove item from cart
+          // API response message
+          String message = decoded["message"] ?? "Success";
+
+          // quantity 0 असेल तर cart मधून remove
           if (newQuantity == 0) {
-            // Remove from local list immediately
             setState(() {
               cartItems.removeWhere((item) => item.id == cartId);
             });
-            _showSuccess("Item removed from cart");
-          } else {
-            _showSuccess("Quantity updated successfully");
           }
 
-          // Refresh cart to get updated totals
+          _showSuccess(message);
+
+          // cart refresh
           await fetchCartItems();
         } else {
           _showError(decoded["message"] ?? "Failed to update quantity");
-          // Revert UI changes by refreshing
-          fetchCartItems();
+          await fetchCartItems();
         }
       } else {
         _showError("Server error: ${response.statusCode}");
-        fetchCartItems(); // Revert UI
+        await fetchCartItems();
       }
     } catch (e) {
       debugPrint("❌ UPDATE QUANTITY ERROR: $e");
       _showError("Network error");
-      fetchCartItems(); // Revert UI
+      await fetchCartItems();
     } finally {
       setState(() {
-        isUpdating = false;
+        _updatingCartIds.remove(cartId);
       });
     }
   }
@@ -359,7 +368,7 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
                       // DECREASE BUTTON
                       IconButton(
                         onPressed:
-                            isUpdating
+                            _isItemUpdating(item.id)
                                 ? null
                                 : () => _handleDecreaseQuantity(
                                   item.id,
@@ -386,7 +395,7 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
                       // INCREASE BUTTON
                       IconButton(
                         onPressed:
-                            isUpdating
+                            _isItemUpdating(item.id)
                                 ? null
                                 : () =>
                                     updateQuantity(item.id, item.quantity + 1),

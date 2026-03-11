@@ -408,7 +408,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     final amount = (coursePrice * 100).toInt(); // Convert to paise
 
     var options = {
-      'key': 'rzp_test_1DP5mmOlF5G5ag', 
+      'key': razorpayKey, 
       'amount': amount.toString(),
       'name': 'Jin Reflexology',
       'description': widget.course['title'],
@@ -417,12 +417,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             _mobileController.text.trim().isNotEmpty
                 ? _mobileController.text.trim()
                 : AppPreference().getString(PreferencesKey.contactNumber) ??
-                    '9999999999',
+                    '',
         'email':
             _emailController.text.trim().isNotEmpty
                 ? _emailController.text.trim()
                 : AppPreference().getString(PreferencesKey.email) ??
-                    'user@example.com',
+                    '',
         'name':
             _firstNameController.text.trim().isNotEmpty
                 ? "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}"

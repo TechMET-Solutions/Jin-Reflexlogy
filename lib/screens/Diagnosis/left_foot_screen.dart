@@ -447,13 +447,8 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
     return resultBuffer.toString();
   }
 
-  // --------------------------------------------------
-  // DOT UI
-  // --------------------------------------------------
-
   bool _isDisabledIndex(PointData p) {
     const disabledIndexes = {98, 99, 100, 101, 102, 103, 104};
-
     return disabledIndexes.contains(p.index);
   }
 
@@ -539,11 +534,11 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
     for (var point in points) {
       int serverValue;
       if (point.state == 2) {
-        serverValue = 1; // green
+        serverValue = 1;
       } else if (point.state == 1) {
-        serverValue = 0; // red
+        serverValue = 0;
       } else {
-        serverValue = -1; // white/unselected
+        serverValue = -1;
       }
 
       items.add("${point.index}:$serverValue");

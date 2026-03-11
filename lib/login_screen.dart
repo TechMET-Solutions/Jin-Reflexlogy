@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jin_reflex_new/auth/forget_passworld_screen.dart';
@@ -37,18 +36,17 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
+  final TextEditingController _regPasswordController = TextEditingController();
 
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
   bool _isApiLoading = false;
+  bool _isRegisterLoading = false; // Separate loading for register
 
   @override
   void initState() {
     super.initState();
-    // // Test data
-    // _nameController.text = "mayur";
-    // _emailController.text = "testmayur99@gmail.com";
-    // _mobileController.text = "9542385236";
+    print("JinLoginScreen initState - _isRegisterLoading: $_isRegisterLoading");
   }
 
   @override
@@ -58,11 +56,18 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _mobileController.dispose();
+    _regPasswordController.dispose();
     super.dispose();
   }
 
   // Method to show Shop Registration Popup
   void _showShopRegistrationPopup() {
+    print("Opening Shop Registration Popup");
+    // Reset loading state before showing popup
+    setState(() {
+      _isRegisterLoading = false;
+    });
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -79,7 +84,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
     );
   }
 
-  // Shop Registration Form Widget
+  // Shop Registration Form Widget with Password Field
   Widget _buildShopRegistrationForm() {
     return Container(
       width: double.infinity,
@@ -128,7 +133,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
-                    "Registration",
+                    "Shop Registration",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -138,13 +143,18 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    // Clear fields when closing
-                    _nameController.clear();
-                    _emailController.clear();
-                    _mobileController.clear();
-                  },
+                  onPressed:
+                      _isRegisterLoading
+                          ? null
+                          : () {
+                            print("Closing popup via close button");
+                            Navigator.of(context).pop();
+                            // Clear fields when closing
+                            _nameController.clear();
+                            _emailController.clear();
+                            _mobileController.clear();
+                            _regPasswordController.clear();
+                          },
                 ),
               ],
             ),
@@ -153,6 +163,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
           // Name Field
           TextField(
             controller: _nameController,
+            enabled: !_isRegisterLoading,
             decoration: InputDecoration(
               hintText: "Enter Name",
               labelText: "Name",
@@ -174,6 +185,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
           // Email Field
           TextField(
             controller: _emailController,
+            enabled: !_isRegisterLoading,
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
               hintText: "Enter Email",
@@ -196,6 +208,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
           // Mobile Field
           TextField(
             controller: _mobileController,
+            enabled: !_isRegisterLoading,
             keyboardType: TextInputType.phone,
             maxLength: 10,
             decoration: InputDecoration(
@@ -215,29 +228,30 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
               counterText: "",
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 15),
 
-          // API Info Text
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue[50],
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.blue[100]!),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info, color: Colors.blue[700], size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "Data will be sent to: ${Uri.parse('https://jinreflexology.in/api1/new/signUpPatient.php').host}",
-                    style: TextStyle(fontSize: 12, color: Colors.blue[700]),
-                  ),
-                ),
-              ],
+          // Password Field
+          TextField(
+            controller: _regPasswordController,
+            enabled: !_isRegisterLoading,
+            obscureText: true,
+            decoration: InputDecoration(
+              hintText: "Enter Password",
+              labelText: "Password",
+              prefixIcon: const Icon(
+                Icons.lock,
+                color: Color.fromARGB(255, 19, 4, 66),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+              contentPadding: const EdgeInsets.symmetric(vertical: 15),
             ),
           ),
+          const SizedBox(height: 10),
           const SizedBox(height: 20),
 
           // Buttons Row
@@ -247,13 +261,15 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
               Expanded(
                 child: OutlinedButton(
                   onPressed:
-                      _isApiLoading
+                      _isRegisterLoading
                           ? null
                           : () {
+                            print("Canceling registration");
                             Navigator.of(context).pop();
                             _nameController.clear();
                             _emailController.clear();
                             _mobileController.clear();
+                            _regPasswordController.clear();
                           },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.grey[700],
@@ -268,10 +284,18 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
               ),
               const SizedBox(width: 12),
 
-              // API Submit Button
+              // Register Button with Loader
               Expanded(
                 child: ElevatedButton(
-                  onPressed: _isApiLoading ? null : _callSignUpApi,
+                  onPressed:
+                      _isRegisterLoading
+                          ? null
+                          : () {
+                            print(
+                              "REGISTER BUTTON CLICKED - Starting registration",
+                            );
+                            _callSignUpApi();
+                          },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
@@ -281,7 +305,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 15),
                   ),
                   child:
-                      _isApiLoading
+                      _isRegisterLoading
                           ? const SizedBox(
                             height: 20,
                             width: 20,
@@ -293,10 +317,10 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                           : const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.api, size: 18),
+                              Icon(Icons.app_registration, size: 18),
                               SizedBox(width: 5),
                               Text(
-                                "Submit",
+                                "Register",
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -313,31 +337,56 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
     );
   }
 
-  // Method to call API - FIXED VERSION
+  // Method to call API - FIXED WITHOUT StateSetter parameter
   Future<void> _callSignUpApi() async {
+    print("✅ _callSignUpApi() called");
+    print("Current _isRegisterLoading: $_isRegisterLoading");
+
     // Validate fields
     if (_nameController.text.isEmpty ||
         _emailController.text.isEmpty ||
-        _mobileController.text.isEmpty) {
+        _mobileController.text.isEmpty ||
+        _regPasswordController.text.isEmpty) {
+      print("❌ Validation failed: Empty fields");
       _showSnackBar("Please fill all fields", Colors.red);
       return;
     }
 
     // Validate email
     if (!_emailController.text.contains('@')) {
+      print("❌ Validation failed: Invalid email");
       _showSnackBar("Please enter valid email", Colors.red);
       return;
     }
 
     // Validate mobile (10 digits)
     if (_mobileController.text.length != 10) {
+      print(
+        "❌ Validation failed: Mobile not 10 digits - ${_mobileController.text.length}",
+      );
       _showSnackBar("Mobile number must be 10 digits", Colors.red);
       return;
     }
 
-    // Set loading true BEFORE showing dialog
+    // Validate password (minimum 6 characters)
+    if (_regPasswordController.text.length < 6) {
+      print("❌ Validation failed: Password too short");
+      _showSnackBar("Password must be at least 6 characters", Colors.red);
+      return;
+    }
+
+    print("✅ All validations passed");
+    print("Name: ${_nameController.text}");
+    print("Email: ${_emailController.text}");
+    print("Mobile: ${_mobileController.text}");
+    print("Password: ${_regPasswordController.text}");
+
+    // Show loader - using main setState
+    if (!mounted) return;
+
     setState(() {
-      _isApiLoading = true;
+      _isRegisterLoading = true;
+      print("✅ Loader started - _isRegisterLoading: $_isRegisterLoading");
     });
 
     try {
@@ -346,51 +395,87 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
         'https://jinreflexology.in/api1/new/signUpPatient.php',
       );
 
-      // Prepare request
-      var request = http.MultipartRequest('POST', url);
+      print("📡 Making API call to: $url");
 
-      // Add fields
-      request.fields['name'] = _nameController.text.trim();
-      request.fields['email'] = _emailController.text.trim();
-      request.fields['mobile'] = _mobileController.text.trim();
+      // Prepare request - SIMPLE POST
+      var request = http.Request('POST', url);
+
+      // Set headers
+      request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+
+      // Add fields as body
+      request.bodyFields = {
+        'name': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'mobile': _mobileController.text.trim(),
+        'password': _regPasswordController.text.trim(),
+      };
+
+      // Print request data
+      print('------------ SIGN UP API DEBUG ------------');
+      print('URL: $url');
+      print('Method: POST');
+      print('Headers: ${request.headers}');
+      print('Body Fields: ${request.bodyFields}');
 
       // Send request
       var response = await request.send();
       var responseBody = await response.stream.bytesToString();
 
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: $responseBody');
+
+      // Hide loader - using main setState
+      if (!mounted) return;
+
+      setState(() {
+        _isRegisterLoading = false;
+        print("✅ Loader stopped - _isRegisterLoading: $_isRegisterLoading");
+      });
+
       // Parse JSON response
       var jsonResponse = jsonDecode(responseBody);
-      String message = jsonResponse['message'];
 
-      // Close the popup first
-      Navigator.of(context).pop();
+      String message = jsonResponse['message'] ?? 'Unknown response';
 
       if (response.statusCode == 200) {
-        // Success - Show only message in popup
-        _showMessageDialog(message);
+        // Check success flag
+        if (jsonResponse['success'] == 1) {
+          // Success case
+          print("✅ API Success: $message");
+          _showMessageDialog(message, isSuccess: true);
+        } else {
+          // Error case from API
+          print("⚠️ API Error: $message");
+          _showMessageDialog(message, isSuccess: false);
+        }
       } else {
-        // Error
+        // HTTP Error
+        print("❌ HTTP Error: ${response.statusCode}");
         _showSnackBar("API Error: ${response.statusCode}", Colors.red);
       }
     } catch (e) {
-      Navigator.of(context).pop();
-      _showSnackBar("Error: $e", Colors.red);
-    } finally {
-      // Clear loading state
-      if (mounted) {
-        setState(() {
-          _isApiLoading = false;
-        });
-      }
-      // Clear fields
-      _nameController.clear();
-      _emailController.clear();
-      _mobileController.clear();
+      print("❌ Exception caught: $e");
+
+      // Hide loader on error - using main setState
+      if (!mounted) return;
+
+      setState(() {
+        _isRegisterLoading = false;
+        print("✅ Loader stopped due to error");
+      });
+
+      _showSnackBar("Connection Error: $e", Colors.red);
     }
   }
 
-  // New method to show only message dialog
-  void _showMessageDialog(String message) {
+  // Updated message dialog with success/error differentiation
+  void _showMessageDialog(String message, {required bool isSuccess}) {
+    print("Showing message dialog: $message, isSuccess: $isSuccess");
+
+    // Close the registration popup first
+    Navigator.of(context).pop();
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -418,28 +503,34 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Icon based on message type
+                // Icon based on success/error
                 Container(
                   padding: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
                     color:
-                        message.contains("exists")
-                            ? Colors.orange.withOpacity(0.1)
-                            : Colors.green.withOpacity(0.1),
+                        isSuccess
+                            ? Colors.green.withOpacity(0.1)
+                            : Colors.orange.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    message.contains("exists")
-                        ? Icons.info_outline
-                        : Icons.check_circle,
-                    color:
-                        message.contains("exists")
-                            ? Colors.orange
-                            : Colors.green,
+                    isSuccess ? Icons.check_circle : Icons.info_outline,
+                    color: isSuccess ? Colors.green : Colors.orange,
                     size: 50,
                   ),
                 ),
                 const SizedBox(height: 20),
+
+                // Title
+                Text(
+                  isSuccess ? "Success!" : "Information",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isSuccess ? Colors.green : Colors.orange,
+                  ),
+                ),
+                const SizedBox(height: 10),
 
                 // Message
                 Text(
@@ -459,7 +550,15 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
+                      print("Closing message dialog");
                       Navigator.of(context).pop();
+                      // Clear fields on success
+                      if (isSuccess) {
+                        _nameController.clear();
+                        _emailController.clear();
+                        _mobileController.clear();
+                        _regPasswordController.clear();
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color.fromARGB(255, 19, 4, 66),
@@ -565,6 +664,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                       _buildParamRow("Name", _nameController.text),
                       _buildParamRow("Email", _emailController.text),
                       _buildParamRow("Mobile", _mobileController.text),
+                      _buildParamRow("Password", "********"),
                     ],
                   ),
                 ),
@@ -592,10 +692,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Text(
-                        "${responseBody}",
-                        style: const TextStyle(fontSize: 14),
-                      ),
+                      Text(responseBody, style: const TextStyle(fontSize: 14)),
                     ],
                   ),
                 ),
@@ -992,7 +1089,12 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                                   "Sign Up",
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: const Color.fromARGB(255, 143, 138, 160),
+                                    color: const Color.fromARGB(
+                                      255,
+                                      143,
+                                      138,
+                                      160,
+                                    ),
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -1006,7 +1108,6 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // const Divider(),
                               const SizedBox(height: 10),
                               GestureDetector(
                                 onTap: () {
@@ -1015,9 +1116,10 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                                     context,
                                     MaterialPageRoute(
                                       builder:
-                                          (context) => const ForgotPasswordScreen(
-                                            userType: "therapist",
-                                          ),
+                                          (context) =>
+                                              const ForgotPasswordScreen(
+                                                userType: "therapist",
+                                              ),
                                     ),
                                   );
                                 },
@@ -1064,7 +1166,7 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                                   ),
                                 ),
                               ),
-                              SizedBox(height: 5),
+                              const SizedBox(height: 5),
                             ],
                           ),
                         ),
@@ -1083,33 +1185,20 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                                 ),
                                 child: Column(
                                   children: [
-                                    // const Icon(
-                                    //   Icons.store,
-                                    //   color: Color.fromARGB(255, 19, 4, 66),
-                                    //   size: 30,
-                                    // ),
-                                    // const SizedBox(height: 8),
-                                    // const Text(
-                                    //   "Shop Account",
-                                    //   style: TextStyle(
-                                    //     fontSize: 16,
-                                    //     fontWeight: FontWeight.bold,
-                                    //     color: Color.fromARGB(255, 19, 4, 66),
-                                    //   ),
-                                    // ),
-                                    // const SizedBox(height: 5),
-                                    // Text(
-                                    //   "Click below to register your shop",
-                                    //   style: TextStyle(
-                                    //     fontSize: 12,
-                                    //     color: Colors.grey[600],
-                                    //   ),
-                                    // ),
                                     const SizedBox(height: 15),
                                     SizedBox(
                                       width: double.infinity,
                                       child: ElevatedButton.icon(
-                                        onPressed: _showShopRegistrationPopup,
+                                        onPressed: () {
+                                          ShopRegisterPopup.show(
+                                            context: context,
+                                            onSuccess: () {
+                                              print(
+                                                "Shop Registered Successfully",
+                                              );
+                                            },
+                                          );
+                                        },
                                         icon: const Icon(
                                           Icons.app_registration,
                                         ),
@@ -1141,8 +1230,6 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                               ),
 
                               const SizedBox(height: 15),
-
-
                             ],
                           ),
                         ),
@@ -1191,4 +1278,483 @@ class TopWaveClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+class ShopRegisterPopup {
+  static void show({
+    required BuildContext context,
+    required VoidCallback onSuccess,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const ShopRegisterDialog();
+      },
+    );
+  }
+}
+
+class ShopRegisterDialog extends StatefulWidget {
+  const ShopRegisterDialog({super.key});
+
+  @override
+  State<ShopRegisterDialog> createState() => _ShopRegisterDialogState();
+}
+
+class _ShopRegisterDialogState extends State<ShopRegisterDialog> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _mobileController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  bool _isLoading = false;
+  bool _isPasswordVisible = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _mobileController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(25),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              spreadRadius: 5,
+              blurRadius: 7,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            _buildHeader(),
+            const SizedBox(height: 20),
+
+            // Form Fields
+            _buildNameField(),
+            const SizedBox(height: 15),
+
+            _buildEmailField(),
+            const SizedBox(height: 15),
+
+            _buildMobileField(),
+            const SizedBox(height: 15),
+
+            _buildPasswordField(),
+            const SizedBox(height: 20),
+
+            // Buttons
+            _buildButtons(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color.fromARGB(255, 19, 4, 66),
+            Color.fromARGB(255, 88, 72, 137),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.store, color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              "Shop Registration",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNameField() {
+    return TextField(
+      controller: _nameController,
+      enabled: !_isLoading,
+      decoration: InputDecoration(
+        hintText: "Enter Name",
+        labelText: "Name",
+        prefixIcon: const Icon(
+          Icons.person,
+          color: Color.fromARGB(255, 19, 4, 66),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.grey[50],
+        contentPadding: const EdgeInsets.symmetric(vertical: 15),
+      ),
+    );
+  }
+
+  Widget _buildEmailField() {
+    return TextField(
+      controller: _emailController,
+      enabled: !_isLoading,
+      keyboardType: TextInputType.emailAddress,
+      decoration: InputDecoration(
+        hintText: "Enter Email",
+        labelText: "Email",
+        prefixIcon: const Icon(
+          Icons.email,
+          color: Color.fromARGB(255, 19, 4, 66),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.grey[50],
+        contentPadding: const EdgeInsets.symmetric(vertical: 15),
+      ),
+    );
+  }
+
+  Widget _buildMobileField() {
+    return TextField(
+      controller: _mobileController,
+      enabled: !_isLoading,
+      keyboardType: TextInputType.phone,
+      maxLength: 10,
+      decoration: InputDecoration(
+        hintText: "Enter Mobile",
+        labelText: "Mobile",
+        prefixIcon: const Icon(
+          Icons.phone,
+          color: Color.fromARGB(255, 19, 4, 66),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.grey[50],
+        contentPadding: const EdgeInsets.symmetric(vertical: 15),
+        counterText: "",
+      ),
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return TextField(
+      controller: _passwordController,
+      enabled: !_isLoading,
+      obscureText: !_isPasswordVisible,
+      decoration: InputDecoration(
+        hintText: "Enter Password",
+        labelText: "Password",
+        prefixIcon: const Icon(
+          Icons.lock,
+          color: Color.fromARGB(255, 19, 4, 66),
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+            color: Colors.grey[600],
+          ),
+          onPressed: () {
+            setState(() {
+              _isPasswordVisible = !_isPasswordVisible;
+            });
+          },
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.grey[50],
+        contentPadding: const EdgeInsets.symmetric(vertical: 15),
+      ),
+    );
+  }
+
+  Widget _buildButtons() {
+    return Row(
+      children: [
+        // Cancel Button
+        Expanded(
+          child: OutlinedButton(
+            onPressed:
+                _isLoading
+                    ? null
+                    : () {
+                      _clearFields();
+                      Navigator.of(context).pop();
+                    },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.grey[700],
+              side: BorderSide(color: Colors.grey[300]!),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 15),
+            ),
+            child: const Text("Cancel"),
+          ),
+        ),
+        const SizedBox(width: 12),
+
+        // Register Button
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _registerShop,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 15),
+            ),
+            child:
+                _isLoading
+                    ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                    : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.app_registration, size: 18),
+                        SizedBox(width: 5),
+                        Text(
+                          "Register",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _registerShop() async {
+    // Validation
+    if (_nameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _mobileController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      _showSnackBar("Please fill all fields", Colors.red);
+      return;
+    }
+
+    if (!_emailController.text.contains('@')) {
+      _showSnackBar("Please enter valid email", Colors.red);
+      return;
+    }
+
+    if (_mobileController.text.length != 10) {
+      _showSnackBar("Mobile number must be 10 digits", Colors.red);
+      return;
+    }
+
+    if (_passwordController.text.length < 6) {
+      _showSnackBar("Password must be at least 6 characters", Colors.red);
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final url = Uri.parse(
+        'https://jinreflexology.in/api1/new/signUpPatient.php',
+      );
+
+      final response = await http.post(
+        url,
+        body: {
+          'name': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'mobile': _mobileController.text.trim(),
+          'password': _passwordController.text.trim(),
+        },
+      );
+
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (response.statusCode == 200) {
+        try {
+          var jsonResponse = jsonDecode(response.body);
+          String message = jsonResponse['message'] ?? 'Registration successful';
+
+          // Show success message
+          _showSuccessDialog(message);
+        } catch (e) {
+          // If response is not JSON (like HTML error), still show success
+          _showSuccessDialog("Registration completed");
+        }
+      } else {
+        _showSnackBar("Server Error: ${response.statusCode}", Colors.red);
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      print('Error: $e');
+      _showSnackBar("Connection Error", Colors.red);
+    }
+  }
+
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(25),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle,
+                    color: Colors.green,
+                    size: 50,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "Success!",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color.fromARGB(255, 19, 4, 66),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 25),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close success dialog
+                      Navigator.of(context).pop(); // Close registration popup
+                      _clearFields();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 19, 4, 66),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    child: const Text("OK"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _clearFields() {
+    _nameController.clear();
+    _emailController.clear();
+    _mobileController.clear();
+    _passwordController.clear();
+  }
 }

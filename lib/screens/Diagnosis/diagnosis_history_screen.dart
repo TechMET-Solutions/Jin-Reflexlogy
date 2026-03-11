@@ -77,6 +77,18 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        appBar: AppBar(
+        title: const Text("Treatment"),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        iconTheme: const IconThemeData(color: Colors.black),
+        titleTextStyle: const TextStyle(
+          color: Colors.black,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
       backgroundColor: const Color(0xffF7F8FA),
       body: Column(
         children: [

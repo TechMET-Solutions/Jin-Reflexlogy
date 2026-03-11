@@ -196,7 +196,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       keyboardType: TextInputType.emailAddress,
                       enabled: !_isLoading, // Disable while loading
                       decoration: InputDecoration(
-                        hintText: 'Enter your email',
+                        hintText: 'Email or User ID',
                         prefixIcon: Icon(
                           Icons.email_outlined,
                           color: Colors.blue.shade400,
@@ -212,19 +212,24 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           vertical: 18,
                         ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        // More robust email validation
-                        final emailRegex = RegExp(
-                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                        );
-                        if (!emailRegex.hasMatch(value)) {
-                          return 'Please enter a valid email';
-                        }
-                        return null;
-                      },
+                    validator: (value) {
+  if (value == null || value.isEmpty) {
+    return 'Please enter email or ID';
+  }
+
+  final emailRegex = RegExp(
+    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+  );
+
+  final idRegex = RegExp(r'^[a-zA-Z0-9]+$'); // letters + numbers allow
+
+  if (!emailRegex.hasMatch(value) && !idRegex.hasMatch(value)) {
+    return 'Enter valid Email or ID';
+  }
+
+  return null;
+
+},
                     ),
                   ),
                   

@@ -19,7 +19,7 @@ class _HealthMeterExampleScreenState extends State<HealthMeterExampleScreen> {
       appBar: AppBar(
         title: const Text('Health Meter'),
         backgroundColor: Colors.teal,
-      ),
+      ), 
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20.0),

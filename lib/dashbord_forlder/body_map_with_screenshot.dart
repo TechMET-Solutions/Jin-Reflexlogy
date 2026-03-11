@@ -60,10 +60,7 @@ class _BodyMapWithScreenshotState extends State<BodyMapWithScreenshot> {
     debugPrint('Global position: ${details.globalPosition}');
     debugPrint('Local position: $localPosition');
     debugPrint('Image size: $imageSize');
-
-    // Detect which cell was tapped using body cell coordinates
     final tappedCell = BodyCellDetector.detectCell(localPosition, imageSize);
-
     if (tappedCell != null) {
       setState(() {
         if (selectedCells.contains(tappedCell.id)) {
@@ -233,32 +230,25 @@ class BodyCellOverlayPainter extends CustomPainter {
 
 // Screenshot utility class
 class ScreenshotHelper {
-
   static Future<File?> captureWidget(GlobalKey key) async {
     try {
+      await Future.delayed(const Duration(milliseconds: 200)); // ⭐ add this
 
       final boundary =
           key.currentContext!.findRenderObject() as RenderRepaintBoundary;
 
-      // ✅ wait for paint (VERY IMPORTANT)
-      if (boundary.debugNeedsPaint) {
-        await Future.delayed(const Duration(milliseconds: 20));
-        return captureWidget(key);
-      }
-
-      // ✅ capture image (NO rotation / NO flip)
       final ui.Image image = await boundary.toImage(
-        pixelRatio: ui.window.devicePixelRatio,   // ⭐ correct ratio
+        pixelRatio: ui.window.devicePixelRatio,
       );
 
-      final ByteData? byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
 
       if (byteData == null) return null;
 
       final Uint8List bytes = byteData.buffer.asUint8List();
 
-      // ✅ save file
       final dir = await getTemporaryDirectory();
       final path =
           '${dir.path}/body_${DateTime.now().millisecondsSinceEpoch}.png';
@@ -266,37 +256,33 @@ class ScreenshotHelper {
       final file = File(path);
       await file.writeAsBytes(bytes);
 
-      debugPrint("✅ Screenshot saved: $path");
-
       return file;
-
     } catch (e) {
       debugPrint("❌ Screenshot error: $e");
       return null;
     }
   }
-static Future<File> rotateForServer(File file) async {
 
-  final bytes = await file.readAsBytes();
+  static Future<File> rotateForServer(File file) async {
+    final bytes = await file.readAsBytes();
 
-  final decoded = img.decodeImage(bytes);
-  if (decoded == null) return file;
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) return file;
 
-  // ⭐ server fix → rotate 180 only
-  final rotated = img.copyRotate(decoded, angle: 180);
+    // ⭐ server fix → rotate 180 only
+    final rotated = img.copyRotate(decoded, angle: 180);
 
-  final newBytes = Uint8List.fromList(img.encodePng(rotated));
+    final newBytes = Uint8List.fromList(img.encodePng(rotated));
 
-  final dir = await getTemporaryDirectory();
-  final newPath =
-      '${dir.path}/upload_${DateTime.now().millisecondsSinceEpoch}.png';
+    final dir = await getTemporaryDirectory();
+    final newPath =
+        '${dir.path}/upload_${DateTime.now().millisecondsSinceEpoch}.png';
 
-  final newFile = File(newPath);
-  await newFile.writeAsBytes(newBytes);
+    final newFile = File(newPath);
+    await newFile.writeAsBytes(newBytes);
 
-  return newFile;
-}
-
+    return newFile;
+  }
 
   static Future<bool> submitBodyMapData({
     required String therapistId,
@@ -309,18 +295,10 @@ static Future<File> rotateForServer(File file) async {
       List<Map<String, String>> diagnosisList = [];
 
       for (final item in items) {
-        String pain = item.severity.toLowerCase().replaceAll(
-          RegExp(r'[0-9]'),
-          '',
-        );
-
-        if (!['mild25', 'moderate', 'severe'].contains(pain)) {
-          pain = 'severe';
-        }
+        String pain = (item.severity ?? '').toLowerCase();
 
         diagnosisList.add({"bodyPart": item.name.trim(), "pain": pain});
       }
-
       final diagnosisJson = jsonEncode(diagnosisList);
 
       debugPrint("FINAL JSON => $diagnosisJson");
@@ -348,9 +326,19 @@ static Future<File> rotateForServer(File file) async {
           validateStatus: (s) => s != null && s < 500,
         ),
       );
-      print(response.data);
-      final body = response.data.toString();
+      debugPrint("📤 SENDING DATA TO API");
 
+      for (var field in formData.fields) {
+        debugPrint("FIELD => ${field.key} : ${field.value}");
+      }
+
+      for (var file in formData.files) {
+        debugPrint("FILE => ${file.key} : ${file.value.filename}");
+      }
+      // print(response.data);
+      final body = response.data.toString();
+      debugPrint("📥 RESPONSE STATUS => ${response.statusCode}");
+      debugPrint("📥 RESPONSE DATA => ${response.data}");
       if (response.statusCode == 200) {
         final decoded = jsonDecode(body);
 

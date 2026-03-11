@@ -6,10 +6,7 @@ import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/dashbord_forlder/image_fedback_selected.dart';
 import 'package:jin_reflex_new/login_screen.dart';
-
-
 import 'body_map_with_screenshot.dart';
-
 
 class BodyPartItem {
   final String name;
@@ -22,8 +19,8 @@ class BodyPartItem {
 
 class BodyPartScreen extends StatefulWidget {
   final String day;
-  final pId;
-  final dId;
+  final dynamic pId;
+  final dynamic dId;
   final bool isShow;
 
   const BodyPartScreen({
@@ -39,6 +36,8 @@ class BodyPartScreen extends StatefulWidget {
 }
 
 class _BodyPartScreenState extends State<BodyPartScreen> {
+  // ==================== VARIABLES ====================
+  late String patientId;
   List<BodyPartItem> items = [];
   bool loading = true;
   bool? hasDayFile;
@@ -47,23 +46,21 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
   Uint8List? dayImageBytes;
   Uint8List? firstDayImageBytes;
   Set<String> selectedCellIds = {};
-  final GlobalKey _screenshotKey = GlobalKey();
+
   final GlobalKey _repaintBoundaryKey = GlobalKey();
 
-  List<String> get levels {
-    if (widget.day == 'first') {
-      return ["severe", "moderate", "mild25", "painful"];
-    } else {
-      return [
-        "mild50",
-        "recovered",
-        "temporary",
-        "miniMild",
-        "progressive",
-        "relax",
-      ];
-    }
-  }
+  // ==================== GETTERS ====================
+  List<String> get levels =>
+      widget.day == 'first'
+          ? ["severe", "moderate", "mild25", "painful"]
+          : [
+            "mild50",
+            "recovered",
+            "temporary",
+            "miniMild",
+            "progressive",
+            "relax",
+          ];
 
   Map<String, Color> get severityColors {
     if (widget.day == 'first') {
@@ -105,101 +102,91 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
     }
   }
 
+  // ==================== INIT ====================
   @override
   void initState() {
     super.initState();
+    _initializePatientId();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkDayFile();
     });
   }
 
+  void _initializePatientId() {
+    final prefUserId = AppPreference().getString(PreferencesKey.userId) ?? "";
+
+    // Safe conversion of widget.pId
+    String? widgetPid;
+    if (widget.pId != null) {
+      widgetPid = widget.pId.toString().trim();
+      if (widgetPid.isEmpty) widgetPid = null;
+    }
+
+    patientId = widgetPid ?? prefUserId;
+
+    // Debug logs
+    debugPrint("===== PATIENT ID INIT =====");
+    debugPrint("📦 widget.pId: ${widget.pId ?? 'null'}");
+    debugPrint("💾 prefs userId: '$prefUserId'");
+    debugPrint("✅ FINAL patientId: '$patientId'");
+    debugPrint("===========================");
+  }
+
+  // ==================== API CALLS ====================
   Future<void> checkDayFile() async {
     try {
       final res = await Dio().post(
         "https://jinreflexology.in/api1/new/checkPatientHistoryFiles.php",
-        data: FormData.fromMap({"patientID": widget.pId}),
+        data: FormData.fromMap({"patientID": patientId}),
       );
 
       final Map<String, dynamic> data = res.data;
-      debugPrint("File check response: ${res.data}");
+      debugPrint("📁 File check response: ${res.data}");
 
       if (data["success"] == 1) {
-        if (mounted) {
-          setState(() {
-            if (widget.day == 'first') {
-              hasDayFile = data["firstDayFileFound"] == true;
-              dayFileName = data["firstDayFileName"];
-              dayFileBase64 = data["firstDayFileBase64"];
-
-              if (dayFileBase64 != null && dayFileBase64!.isNotEmpty) {
-                try {
-                  dayImageBytes = base64.decode(dayFileBase64!);
-                  debugPrint("✅ ${widget.day} day image decoded successfully");
-                } catch (e) {
-                  debugPrint("❌ Error decoding base64 image: $e");
-                  dayImageBytes = null;
-                }
-              }
-            } else {
-              hasDayFile = data["lastDayFileFound"] == true;
-              dayFileName = data["lastDayFileName"];
-              dayFileBase64 = data["lastDayFileBase64"];
-
-              if (data["firstDayFileBase64"] != null &&
-                  data["firstDayFileBase64"].isNotEmpty) {
-                try {
-                  firstDayImageBytes = base64.decode(
-                    data["firstDayFileBase64"],
-                  );
-                  debugPrint("✅ First day image loaded for reference");
-                } catch (e) {
-                  debugPrint("❌ Error decoding first day base64 image: $e");
-                  firstDayImageBytes = null;
-                }
-              }
-
-              if (dayFileBase64 != null && dayFileBase64!.isNotEmpty) {
-                try {
-                  dayImageBytes = base64.decode(dayFileBase64!);
-                  debugPrint("✅ Last day image decoded successfully");
-                } catch (e) {
-                  debugPrint("❌ Error decoding last day base64 image: $e");
-                  dayImageBytes = null;
-                }
-              }
-            }
-          });
-        }
-
+        _processFileResponse(data);
         await fetchBodyParts();
       } else {
-        if (mounted) {
-          setState(() => loading = false);
-        }
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                "Failed to check files: ${data["message"] ?? "Unknown error"}",
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e, st) {
-      debugPrint("File check error: $e\n$st");
-      if (mounted) {
-        setState(() => loading = false);
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Network error: ${e.toString()}"),
-            backgroundColor: Colors.red,
-          ),
+        if (mounted) setState(() => loading = false);
+        _showSnackBar(
+          "Failed to check files: ${data["message"] ?? "Unknown error"}",
+          Colors.red,
         );
       }
+    } catch (e, st) {
+      debugPrint("❌ File check error: $e\n$st");
+      if (mounted) setState(() => loading = false);
+      _showSnackBar("Network error: ${e.toString()}", Colors.red);
+    }
+  }
+
+  void _processFileResponse(Map<String, dynamic> data) {
+    if (!mounted) return;
+
+    setState(() {
+      if (widget.day == 'first') {
+        hasDayFile = data["firstDayFileFound"] == true;
+        dayFileName = data["firstDayFileName"];
+        dayFileBase64 = data["firstDayFileBase64"];
+        dayImageBytes = _decodeBase64(dayFileBase64);
+      } else {
+        hasDayFile = data["lastDayFileFound"] == true;
+        dayFileName = data["lastDayFileName"];
+        dayFileBase64 = data["lastDayFileBase64"];
+        dayImageBytes = _decodeBase64(dayFileBase64);
+        firstDayImageBytes = _decodeBase64(data["firstDayFileBase64"]);
+      }
+    });
+  }
+
+  Uint8List? _decodeBase64(String? base64String) {
+    if (base64String == null || base64String.isEmpty) return null;
+    try {
+      return base64.decode(base64String);
+    } catch (e) {
+      debugPrint("❌ Base64 decode error: $e");
+      return null;
     }
   }
 
@@ -209,16 +196,15 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
         "https://jinreflexology.in/api1/new/bodyParts.php",
         data: FormData.fromMap({
           "diagnosisID": widget.dId,
-          "patientID": widget.pId,
+          "patientID": patientId,
         }),
         options: Options(responseType: ResponseType.plain),
       );
 
-      debugPrint("this...........DId${widget.dId}");
-      debugPrint("this..........Pid${widget.pId}");
+      debugPrint("📥 BodyParts API - DId: ${widget.dId}, PId: $patientId");
+
       final String raw = res.data.toString();
       final Map<String, dynamic> data = jsonDecode(raw);
-      debugPrint(res.data.toString());
 
       if (data["success"] == true) {
         final List list = data["bodyParts"];
@@ -236,74 +222,43 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
           });
         }
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("No body parts found: ${data["message"] ?? ""}"),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
+        _showSnackBar("No body parts found", Colors.orange);
       }
     } catch (e, st) {
-      debugPrint("API Error: $e");
-      debugPrint("$st");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Failed to load body parts: ${e.toString()}"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-
-    if (mounted) {
-      setState(() => loading = false);
+      debugPrint("❌ API Error: $e\n$st");
+      _showSnackBar("Failed to load body parts", Colors.red);
+    } finally {
+      if (mounted) setState(() => loading = false);
     }
   }
 
   void _toggleCellSelection(String cellId) {
     if (hasDayFile == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            "${widget.day.capitalize()} day file already uploaded. Cannot edit body map.",
-          ),
-          backgroundColor: Colors.orange,
-        ),
+      _showSnackBar(
+        "${widget.day.capitalize()} day file already uploaded. Cannot edit.",
+        Colors.orange,
       );
       return;
     }
 
     if (mounted) {
       setState(() {
-        if (selectedCellIds.contains(cellId)) {
-          selectedCellIds.remove(cellId);
-        } else {
-          selectedCellIds.add(cellId);
-        }
-        debugPrint('Selected cells: ${selectedCellIds.toList()}');
+        selectedCellIds.contains(cellId)
+            ? selectedCellIds.remove(cellId)
+            : selectedCellIds.add(cellId);
       });
     }
   }
 
   Future<void> submitData() async {
-    /// रोक जर आधी file upload आहे
     if (hasDayFile == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${widget.day.capitalize()} day file already uploaded. Cannot submit again.',
-          ),
-          backgroundColor: Colors.orange,
-          duration: const Duration(seconds: 3),
-        ),
+      _showSnackBar(
+        '${widget.day.capitalize()} day file already uploaded.',
+        Colors.orange,
       );
       return;
     }
-
-    /// ✅ SHOW LOADING DIALOG
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -311,64 +266,36 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
     );
 
     try {
-      /// ✅ CAPTURE SCREENSHOT
       final screenshotFile = await ScreenshotHelper.captureWidget(
         _repaintBoundaryKey,
       );
+    List<Map<String, String>> diagnosisList = [];
 
-      /// ✅ BUILD JSON LIST
-      List<Map<String, String>> diagnosisList = [];
+for (final item in items) {
 
-      for (final item in items) {
-        String pain = item.severity.toLowerCase().replaceAll(
-          RegExp(r'[0-9]'),
-          '',
-        );
+  String pain = item.severity.toLowerCase();
 
-        if (!['mild', 'moderate', 'severe'].contains(pain)) {
-          pain = 'severe';
-        }
+  diagnosisList.add({
+    "bodyPart": item.name.trim(),
+    "pain": pain
+  });
 
-        diagnosisList.add({"bodyPart": item.name.trim(), "pain": pain});
-      }
+}
 
-      debugPrint("FINAL JSON => ${jsonEncode(diagnosisList)}");
-
-      /// ✅ API CALL
+      debugPrint("📤 Submitting: ${jsonEncode(diagnosisList)}");
       final success = await ScreenshotHelper.submitBodyMapData(
         therapistId: AppPreference().getString(PreferencesKey.userId),
-        patientId: widget.pId,
+        patientId: patientId,
         day: widget.day,
         items: items,
         feedbackImage: screenshotFile,
       );
-
-      /// ✅ CLOSE LOADING (SAFE)
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-
-      /// SUCCESS
+      if (mounted && Navigator.canPop(context)) Navigator.pop(context);
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "${widget.day.capitalize()} Day Assessment Submitted Successfully!",
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
+        _showSnackBar(
+          "${widget.day.capitalize()} Day Assessment Submitted!",
+          Colors.green,
         );
-
         if (mounted) {
           setState(() {
             selectedCellIds.clear();
@@ -376,34 +303,18 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
           checkDayFile();
         }
       } else {
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   const SnackBar(
-        //     content: Text("Submission failed. Try again."),
-        //     backgroundColor: Colors.red,
-        //   ),
-        // );
-
         checkDayFile();
       }
     } catch (e) {
-      /// CLOSE LOADING SAFE
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-
-      debugPrint('Submit Error => $e');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-      );
-
+      if (mounted && Navigator.canPop(context)) Navigator.pop(context);
+      debugPrint('❌ Submit Error: $e');
+      _showSnackBar("Error: $e", Colors.red);
       checkDayFile();
     }
   }
 
   void _showFullScreenImage(bool isFirstDayImage) {
-    Uint8List? imageBytes =
-        isFirstDayImage ? firstDayImageBytes : dayImageBytes;
+    final imageBytes = isFirstDayImage ? firstDayImageBytes : dayImageBytes;
     if (imageBytes == null) return;
 
     showDialog(
@@ -420,7 +331,7 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
                     scaleEnabled: true,
                     minScale: 0.5,
                     maxScale: 3,
-                    child: Image.memory(imageBytes!, fit: BoxFit.contain),
+                    child: Image.memory(imageBytes, fit: BoxFit.contain),
                   ),
                 ),
                 Positioned(
@@ -463,38 +374,44 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
     );
   }
 
+  void _showSnackBar(String message, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final type = AppPreference().getString(PreferencesKey.type);
+
     final token = AppPreference().getString(PreferencesKey.token) ?? "";
-    final type = AppPreference().getString(PreferencesKey.type) ?? "";
-    debugPrint("User Type: $type, Token empty: ${token.isEmpty}");
-    if (widget.isShow == false) {
-      debugPrint("✅ Showing BodyPartScreen - Patient is logged in");
-      return _buildBodyPartScreen();
-    } else {
-      debugPrint(
-        "❌ Showing LoginScreen - Type: $type, Token empty: ${token.isEmpty}",
+    if (token.isEmpty) {
+      debugPrint("🔐 Token empty - Showing LoginScreen");
+      return JinLoginScreen(
+        text: "BodyPartScreen",
+        type: "patient",
+        onTab: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => BodyPartScreen()),
+          );
+        },
       );
-      return type == "therapist" ||
-              type == "prouser" ||
-              type == "user" ||
-              token.isEmpty
-          ? JinLoginScreen(
-            text: "BodyPartScreen",
-            type: "patient",
-            // registershow: true,
-            onTab: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => BodyPartScreen()),
-              );
-            },
-          )
-          : _buildBodyPartScreen();
     }
+
+    debugPrint("✅ User logged in - Showing BodyPartScreen");
+    return _buildBodyPartScreen();
   }
 
   Widget _buildBodyPartScreen() {
+    final type = AppPreference().getString(PreferencesKey.type);
+
+    final token = AppPreference().getString(PreferencesKey.token) ?? "";
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -531,20 +448,13 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
                 color:
                     hasDayFile == true ? Colors.green[100] : Colors.orange[100],
               ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      hasDayFile == true
-                          ? "${widget.day.capitalize()} day file already uploaded: $dayFileName"
-                          : "No ${widget.day} day file found. Please upload.",
-                    ),
-                    backgroundColor:
-                        hasDayFile == true ? Colors.green : Colors.orange,
+              onPressed:
+                  () => _showSnackBar(
+                    hasDayFile == true
+                        ? "${widget.day.capitalize()} day file uploaded: $dayFileName"
+                        : "No ${widget.day} day file found",
+                    hasDayFile == true ? Colors.green : Colors.orange,
                   ),
-                );
-              },
-              tooltip: "File Status",
             ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -559,35 +469,40 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
               }
               checkDayFile();
             },
-            tooltip: "Refresh",
           ),
         ],
       ),
-      body: _buildBody(),
+      body:
+          widget.day == 'first'
+              ? _buildBody()
+              : type == "therapist" ||
+                  type == "prouser" ||
+                  type == "user" ||
+                  token.isEmpty
+              ? JinLoginScreen(
+                text: "BodyPartScreen",
+                type: "patient",
+                // registershow: true,
+                onTab: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => BodyPartScreen()),
+                  );
+                },
+              )
+              : _buildBody(),
       floatingActionButton: _buildFloatingActionButton(),
     );
   }
 
   Widget _buildBody() {
-    if (loading) {
-      return _buildLoadingState();
-    }
-
-    if (items.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return _buildSingleScrollView();
+    if (loading) return _buildLoadingState();
+    if (items.isEmpty) return _buildEmptyState();
+    return _buildMainContent();
   }
 
   Widget? _buildFloatingActionButton() {
-    if (loading || items.isEmpty) {
-      return null;
-    }
-
-    if (hasDayFile == true) {
-      return null;
-    }
+    if (loading || items.isEmpty || hasDayFile == true) return null;
 
     return FloatingActionButton.extended(
       onPressed: submitData,
@@ -677,9 +592,7 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
           const SizedBox(height: 20),
           ElevatedButton.icon(
             onPressed: () {
-              if (mounted) {
-                setState(() => loading = true);
-              }
+              if (mounted) setState(() => loading = true);
               fetchBodyParts();
             },
             icon: const Icon(Icons.refresh, size: 18),
@@ -695,385 +608,40 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
     );
   }
 
-  Widget _buildSingleScrollView() {
-    Map<String, int> count = {};
+  Widget _buildMainContent() {
+    final Map<String, int> count = {};
     for (var level in levels) {
       count[level] = items.where((item) => item.severity == level).length;
     }
-
     return SingleChildScrollView(
       child: Column(
         children: [
           if (widget.day == 'last' && firstDayImageBytes != null)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.blue[100]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.history, color: Colors.blue[800], size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          "First Day Image (Reference)",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[800],
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.fullscreen,
-                          color: Colors.blue[700],
-                          size: 20,
-                        ),
-                        onPressed: () => _showFullScreenImage(true),
-                        tooltip: "View Fullscreen",
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "First day body map for comparison",
-                    style: TextStyle(fontSize: 12, color: Colors.blue[700]),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => _showFullScreenImage(true),
-                    child: Container(
-                      height: 180,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue[200]!),
-                        image:
-                            firstDayImageBytes != null
-                                ? DecorationImage(
-                                  image: MemoryImage(firstDayImageBytes!),
-                                  fit: BoxFit.contain,
-                                )
-                                : null,
-                      ),
-                      child:
-                          firstDayImageBytes == null
-                              ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.broken_image,
-                                      color: Colors.grey[400],
-                                      size: 40,
-                                    ),
-                                    Text(
-                                      "First day image not available",
-                                      style: TextStyle(
-                                        color: Colors.grey[500],
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                              : Stack(
-                                children: [
-                                  Positioned(
-                                    bottom: 8,
-                                    right: 8,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black54,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Text(
-                                        "First Day",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Tap image to view fullscreen",
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
+            _buildReferenceImageCard(
+              title: "First Day Image (Reference)",
+              color: Colors.blue,
+              imageBytes: firstDayImageBytes!,
+              isFirstDay: true,
             ),
-
           if (widget.day == 'last' &&
               hasDayFile == true &&
               dayImageBytes != null)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green[50],
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.green[100]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.image, color: Colors.green[800], size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          "Uploaded Last Day Image",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green[800],
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.fullscreen,
-                          color: Colors.green[700],
-                          size: 20,
-                        ),
-                        onPressed: () => _showFullScreenImage(false),
-                        tooltip: "View Fullscreen",
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => _showFullScreenImage(false),
-                    child: Container(
-                      height: 180,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.green[200]!),
-                        image:
-                            dayImageBytes != null
-                                ? DecorationImage(
-                                  image: MemoryImage(dayImageBytes!),
-                                  fit: BoxFit.contain,
-                                )
-                                : null,
-                      ),
-                      child:
-                          dayImageBytes == null
-                              ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.broken_image,
-                                      color: Colors.grey[400],
-                                      size: 40,
-                                    ),
-                                    Text(
-                                      "Image not available",
-                                      style: TextStyle(
-                                        color: Colors.grey[500],
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                              : Stack(
-                                children: [
-                                  Positioned(
-                                    bottom: 8,
-                                    right: 8,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black54,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Text(
-                                        "Last Day",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Tap image to view fullscreen",
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
+            _buildReferenceImageCard(
+              title: "Uploaded Last Day Image",
+              color: Colors.green,
+              imageBytes: dayImageBytes!,
+              isFirstDay: false,
             ),
-
           if (widget.day == 'first' &&
               hasDayFile == true &&
               dayImageBytes != null)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green[50],
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.green[100]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.image, color: Colors.green[800], size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          "Uploaded First Day Image",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green[800],
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.fullscreen,
-                          color: Colors.green[700],
-                          size: 20,
-                        ),
-                        onPressed: () => _showFullScreenImage(false),
-                        tooltip: "View Fullscreen",
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => _showFullScreenImage(false),
-                    child: Container(
-                      height: 200,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.green[200]!),
-                        image:
-                            dayImageBytes != null
-                                ? DecorationImage(
-                                  image: MemoryImage(dayImageBytes!),
-                                  fit: BoxFit.contain,
-                                )
-                                : null,
-                      ),
-                      child:
-                          dayImageBytes == null
-                              ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.broken_image,
-                                      color: Colors.grey[400],
-                                      size: 40,
-                                    ),
-                                    Text(
-                                      "Image not available",
-                                      style: TextStyle(
-                                        color: Colors.grey[500],
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                              : null,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Tap image to view fullscreen",
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
+            _buildReferenceImageCard(
+              title: "Uploaded First Day Image",
+              color: Colors.green,
+              imageBytes: dayImageBytes!,
+              isFirstDay: false,
             ),
-
-          if (widget.day == 'first' && hasDayFile == false)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange[50],
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.orange[100]!),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.warning, color: Colors.orange[800], size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "No ${widget.day.capitalize()} Day File Found",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange[800],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Please upload a body map screenshot",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.orange[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
+          //  if (widget.day != 'first' && hasDayFile == false) _buildWarningCard(),
           RepaintBoundary(
             key: _repaintBoundaryKey,
             child: Column(
@@ -1084,388 +652,498 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
                   day: widget.day,
                   isReadOnly: hasDayFile == true,
                 ),
-                Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey[200]!),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            widget.day == 'first'
-                                ? Icons.calendar_today
-                                : Icons.event_available,
-                            size: 16,
-                            color:
-                                widget.day == 'first'
-                                    ? Colors.red[700]
-                                    : Colors.green[700],
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            widget.day == 'first'
-                                ? 'First Day Assessment'
-                                : 'Last Day Assessment',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color:
-                                  widget.day == 'first'
-                                      ? Colors.red[700]
-                                      : Colors.green[700],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
-                        children:
-                            levels.map((level) {
-                              return Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      color: severityColors[level],
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    severityLabels[level] ?? level,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[700],
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }).toList(),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildLegendCard(),
               ],
             ),
           ),
 
+          // Body Parts List
           ListView.builder(
             physics: const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
             padding: const EdgeInsets.all(16),
             itemCount: items.length,
-            itemBuilder: (context, i) {
-              final item = items[i];
-              final severityColor =
-                  severityColors[item.severity] ?? Colors.grey;
-              final bool isEditable = hasDayFile != true;
+            itemBuilder: (context, i) => _buildBodyPartItem(items[i], i),
+          ),
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.05),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: severityColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          _getBodyPartIcon(item.name),
-                          color: severityColor,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.name,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "Severity: ${item.severity}",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: severityColor,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (isEditable)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: severityColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: severityColor.withOpacity(0.3),
-                            ),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: item.severity,
-                              icon: Icon(
-                                Icons.arrow_drop_down,
-                                color: severityColor,
-                              ),
-                              iconSize: 24,
-                              elevation: 0,
-                              borderRadius: BorderRadius.circular(8),
-                              dropdownColor: Colors.white,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: severityColor,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              items:
-                                  levels.map((String value) {
-                                    final color =
-                                        severityColors[value] ?? Colors.grey;
-                                    final label =
-                                        severityLabels[value] ?? value;
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            width: 10,
-                                            height: 10,
-                                            decoration: BoxDecoration(
-                                              color: color,
-                                              shape: BoxShape.circle,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(label),
-                                        ],
-                                      ),
-                                    );
-                                  }).toList(),
-                              onChanged: (val) {
-                                if (isEditable && mounted) {
-                                  setState(() {
-                                    item.severity = val!;
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                        )
-                      else
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey[300]!),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: severityColor,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                severityLabels[item.severity] ?? item.severity,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[700],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.lock,
-                                size: 14,
-                                color: Colors.grey[500],
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
+          // Summary Card
+          _buildSummaryCard(count),
+
+          // Selected Areas Card
+          ///  if (selectedCellIds.isNotEmpty) _buildSelectedAreasCard(),
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReferenceImageCard({
+    required String title,
+    required MaterialColor color,
+    required Uint8List imageBytes,
+    required bool isFirstDay,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color[50],
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color[100]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.image, color: color[800], size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: color[800],
                   ),
-                ),
-              );
-            },
-          ),
-
-          Container(
-            padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Total Conditions",
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                    Text(
-                      "${items.length} items",
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children:
-                      levels.take(3).map((severity) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 16),
-                          child: _buildSeverityCount(
-                            severity,
-                            count[severity] ?? 0,
-                          ),
-                        );
-                      }).toList(),
-                ),
-              ],
-            ),
-          ),
-
-          if (selectedCellIds.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color:
-                    widget.day == 'first' ? Colors.blue[50] : Colors.green[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color:
-                      widget.day == 'first'
-                          ? Colors.blue[100]!
-                          : Colors.green[100]!,
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              IconButton(
+                icon: Icon(Icons.fullscreen, color: color[700], size: 20),
+                onPressed: () => _showFullScreenImage(isFirstDay),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => _showFullScreenImage(isFirstDay),
+            child: Container(
+              height: 180,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: color[200]!),
+                image: DecorationImage(
+                  image: MemoryImage(imageBytes),
+                  fit: BoxFit.contain,
+                ),
+              ),
+              child: Stack(
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        color:
-                            widget.day == 'first'
-                                ? Colors.blue[700]
-                                : Colors.green[700],
-                        size: 18,
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Selected Body Areas",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color:
-                              widget.day == 'first'
-                                  ? Colors.blue[700]
-                                  : Colors.green[700],
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        isFirstDay ? "First Day" : "Last Day",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
                         ),
                       ),
-                      if (hasDayFile == true)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: Icon(
-                            Icons.lock,
-                            size: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children:
-                        selectedCellIds.map((cellId) {
-                          return Chip(
-                            label: Text(cellId),
-                            backgroundColor:
-                                widget.day == 'first'
-                                    ? Colors.blue[100]
-                                    : Colors.green[100],
-                            labelStyle: TextStyle(
-                              color:
-                                  widget.day == 'first'
-                                      ? Colors.blue
-                                      : Colors.green,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          );
-                        }).toList(),
+                    ),
                   ),
                 ],
               ),
             ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Tap image to view fullscreen",
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          const SizedBox(height: 80),
+  Widget _buildWarningCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange[50],
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.orange[100]!),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning, color: Colors.orange[800], size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "No ${widget.day.capitalize()} Day File Found",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange[800],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Please upload a body map screenshot",
+                  style: TextStyle(fontSize: 12, color: Colors.orange[700]),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                widget.day == 'first'
+                    ? Icons.calendar_today
+                    : Icons.event_available,
+                size: 16,
+                color:
+                    widget.day == 'first' ? Colors.red[700] : Colors.green[700],
+              ),
+              const SizedBox(width: 8),
+              Text(
+                widget.day == 'first'
+                    ? 'First Day Assessment'
+                    : 'Last Day Assessment',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color:
+                      widget.day == 'first'
+                          ? Colors.red[700]
+                          : Colors.green[700],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children:
+                levels
+                    .map(
+                      (level) => Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: severityColors[level],
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            severityLabels[level] ?? level,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                    .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBodyPartItem(BodyPartItem item, int index) {
+    final severityColor = severityColors[item.severity] ?? Colors.grey;
+    final bool isEditable = hasDayFile != true;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: severityColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                _getBodyPartIcon(item.name),
+                color: severityColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Severity: ${item.severity}",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: severityColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isEditable)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: severityColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: severityColor.withOpacity(0.3)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: item.severity,
+                    icon: Icon(Icons.arrow_drop_down, color: severityColor),
+                    iconSize: 24,
+                    elevation: 0,
+                    borderRadius: BorderRadius.circular(8),
+                    dropdownColor: Colors.white,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: severityColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    items:
+                        levels.map((String value) {
+                          final color = severityColors[value] ?? Colors.grey;
+                          final label = severityLabels[value] ?? value;
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(label),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                    onChanged: (val) {
+                      if (isEditable && mounted) {
+                        setState(() => item.severity = val!);
+                      }
+                    },
+                  ),
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: severityColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      severityLabels[item.severity] ?? item.severity,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.lock, size: 14, color: Colors.grey[500]),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(Map<String, int> count) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Total Conditions",
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+              Text(
+                "${items.length} items",
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children:
+                levels.take(3).map((severity) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: _buildSeverityCount(severity, count[severity] ?? 0),
+                  );
+                }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectedAreasCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: widget.day == 'first' ? Colors.blue[50] : Colors.green[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: widget.day == 'first' ? Colors.blue[100]! : Colors.green[100]!,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.location_on,
+                color:
+                    widget.day == 'first'
+                        ? Colors.blue[700]
+                        : Colors.green[700],
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "Selected Body Areas",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color:
+                      widget.day == 'first'
+                          ? Colors.blue[700]
+                          : Colors.green[700],
+                ),
+              ),
+              if (hasDayFile == true)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Icon(Icons.lock, size: 16, color: Colors.grey[600]),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children:
+                selectedCellIds.map((cellId) {
+                  return Chip(
+                    label: Text(cellId),
+                    backgroundColor:
+                        widget.day == 'first'
+                            ? Colors.blue[100]
+                            : Colors.green[100],
+                    labelStyle: TextStyle(
+                      color: widget.day == 'first' ? Colors.blue : Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                }).toList(),
+          ),
         ],
       ),
     );
@@ -1522,6 +1200,7 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
 
 extension StringExtension on String {
   String capitalize() {
+    if (isEmpty) return this;
     return "${this[0].toUpperCase()}${substring(1)}";
   }
 }

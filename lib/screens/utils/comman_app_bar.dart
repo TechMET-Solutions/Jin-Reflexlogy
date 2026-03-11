@@ -102,7 +102,6 @@ class _CommonAppBarState extends State<CommonAppBar> {
       backgroundColor: const Color.fromARGB(255, 19, 4, 66),
       automaticallyImplyLeading: false,
       centerTitle: false,
-
       leading:
           widget.showBack
               ? IconButton(
@@ -111,7 +110,6 @@ class _CommonAppBarState extends State<CommonAppBar> {
                     widget.onBack ?? () => Navigator.of(context).maybePop(),
               )
               : null,
-
       title: Text(
         widget.title,
         style: const TextStyle(

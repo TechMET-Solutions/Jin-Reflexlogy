@@ -320,10 +320,10 @@ Widget _buildDot(PointData p, double scaleX, double scaleY) {
     },
 
     onPanUpdate: (details) {
-      setState(() {
-        p.x += details.delta.dx / scaleX;
-        p.y += details.delta.dy / scaleY;
-      });
+      // setState(() {
+      //   p.x += details.delta.dx / scaleX;
+      //   p.y += details.delta.dy / scaleY;
+      // });
     },
 
     child: Container(

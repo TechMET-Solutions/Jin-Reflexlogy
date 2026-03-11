@@ -9,6 +9,7 @@ import 'package:jin_reflex_new/api_service/global/utils.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:image/image.dart' as img;
+
 /// --------------------------------------------------
 /// MODEL
 /// --------------------------------------------------
@@ -258,11 +259,11 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
       );
 
       final picture = recorder.endRecording();
-      final finalImage =
-          await picture.toImage(rawImage.width, rawImage.height);
+      final finalImage = await picture.toImage(rawImage.width, rawImage.height);
 
-      final byteData =
-          await finalImage.toByteData(format: ui.ImageByteFormat.png);
+      final byteData = await finalImage.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
 
       if (byteData == null) return null;
 
@@ -272,6 +273,7 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
       return null;
     }
   }
+
   Future<void> _saveAndExit() async {
     await saveAllPointsFast();
     final base64 = await captureScreenshot();
@@ -283,47 +285,46 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
     });
   }
 
-Widget _buildDot(PointData p, double scaleX, double scaleY) {
+  Widget _buildDot(PointData p, double scaleX, double scaleY) {
+    final double dotSize = 25 * ((scaleX + scaleY) / 2);
 
-  final double dotSize = 25 * ((scaleX + scaleY) / 2);
+    Color color =
+        p.state == 1
+            ? const Color(0xFF8B0000)
+            : p.state == 2
+            ? Colors.green
+            : Colors.white;
 
-  Color color =
-      p.state == 1
-          ? const Color(0xFF8B0000)
-          : p.state == 2
-              ? Colors.green
-              : Colors.white;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          p.state = (p.state + 1) % 3;
+        });
 
-  return GestureDetector(
-    onTap: () {
-      setState(() {
-        p.state = (p.state + 1) % 3;
-      });
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(p.tag), duration: Duration(milliseconds: 500)),
+        );
+      },
 
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(p.tag), duration: Duration(milliseconds: 500)),
-      );
-    },
+      onPanUpdate: (details) {
+        // setState(() {
+        //   p.x += details.delta.dx / scaleX;
+        //   p.y += details.delta.dy / scaleY;
+        // });
+      },
 
-    onPanUpdate: (details) {
-      setState(() {
-        p.x += details.delta.dx / scaleX;
-        p.y += details.delta.dy / scaleY;
-      });
-    },
-
-    child: Container(
-      width: dotSize,
-      height: dotSize,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.black, width: 2),
+      child: Container(
+        width: dotSize,
+        height: dotSize,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.black, width: 2),
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   /// --------------------------------------------------
   /// UI

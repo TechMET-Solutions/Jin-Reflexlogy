@@ -94,12 +94,17 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
       );
 
       final raw = response.data.toString().trim();
+      var data = FormData.fromMap({
+        "id": id,
+        "password": password,
+        "type": type,
+      });
 
+      debugPrint(data.fields.toString());
       debugPrint("===== LOGIN RAW RESPONSE =====");
       debugPrint(raw);
       debugPrint("=============================");
 
-      // ================= VALIDATE RESPONSE =================
 
       if (!raw.startsWith("{")) {
         throw "Invalid server response";
@@ -160,6 +165,7 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
       }
 
       // ================= SAVE PREFS =================
+      await AppPreference().initialAppPreference();
 
       await AppPreference().setString(PreferencesKey.userId, userId.toString());
 
@@ -175,8 +181,6 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
       );
 
       await AppPreference().setString(PreferencesKey.type, finalType);
-
-      await AppPreference().initialAppPreference();
 
       state = const AsyncValue.data(null);
 
@@ -255,10 +259,13 @@ void _navigate(BuildContext context, String text, dynamic DeliveryType) {
         MaterialPageRoute(builder: (_) => PointFinderScreen()),
       );
       break;
-          case "CourseDetailScreen":
+    case "CourseDetailScreen":
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => CourseDetailScreen(course: {}, deliveryType: DeliveryType)),
+        MaterialPageRoute(
+          builder:
+              (_) => CourseDetailScreen(course: {}, deliveryType: DeliveryType),
+        ),
       );
       break;
 

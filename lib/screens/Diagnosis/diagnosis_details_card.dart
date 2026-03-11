@@ -118,7 +118,7 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
           const SizedBox(height: 10),
-
+  
           Container(
             width: double.infinity,
             color: Colors.white, // 👈 black काढण्यासाठी

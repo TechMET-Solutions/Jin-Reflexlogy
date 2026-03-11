@@ -8,6 +8,7 @@ import 'package:jin_reflex_new/login_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_screen_list.dart';
 import 'package:jin_reflex_new/screens/english_book_read_screen.dart';
 import 'package:jin_reflex_new/screens/hindi_screen.dart';
+import 'package:jin_reflex_new/screens/main_home_dashoabrd_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
 class EbookScreen extends StatelessWidget {
@@ -25,7 +26,7 @@ class EbookScreen extends StatelessWidget {
         onBack: () {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
+            MaterialPageRoute(builder: (context) => MainHomeScreenDashBoard()),
           );
         },
       ),

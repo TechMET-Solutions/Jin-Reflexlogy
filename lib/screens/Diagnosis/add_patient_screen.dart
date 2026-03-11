@@ -14,6 +14,7 @@ import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/api_service/urls.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_record_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
+import 'package:jin_reflex_new/widgets/offline_country_state_city_widget.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -661,8 +662,12 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
 
   Future<void> _loadCountries() async {
     try {
-      countries = await csc.getAllCountries();
-      setState(() {});
+      final allCountries = await csc.getAllCountries();
+      if (!mounted) return;
+
+      setState(() {
+        countries = allCountries;
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -686,27 +691,79 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
       selectedCity = null;
     });
     
-    // Set new timer with delay for debouncing
-    _statesTimer = Timer(const Duration(milliseconds: 300), () async {
-      try {
-        final newStates = await csc.getStatesOfCountry(selectedCountry!.isoCode);
-        if (mounted) {
-          setState(() {
-            states = newStates;
-            isLoadingStates = false;
-          });
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() {
-            isLoadingStates = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error loading states: $e")),
-          );
-        }
+    try {
+      final newStates = await csc.getStatesOfCountry(selectedCountry!.isoCode);
+      if (mounted) {
+        setState(() {
+          states = newStates;
+          isLoadingStates = false;
+        });
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoadingStates = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error loading states: $e")),
+        );
+      }
+    }
+  }
+
+  Widget buildOfflineLocationDropdown() {
+    return OfflineCountryStateCityWidget(
+      initialCountry: selectedCountry?.name,
+      initialState: selectedState?.name,
+      initialCity: selectedCity?.name,
+      onChanged: (country, state, city) {
+        setState(() {
+          if (country == null || country.isEmpty) {
+            selectedCountry = null;
+            selectedState = null;
+            selectedCity = null;
+            countryCode = "+91";
+            code.text = countryCode;
+            return;
+          }
+
+          final matchedCountry = countries.where((c) => c.name == country).toList();
+          if (matchedCountry.isNotEmpty) {
+            selectedCountry = matchedCountry.first;
+            countryCode = "+${selectedCountry!.phoneCode}";
+            code.text = countryCode;
+          } else {
+            selectedCountry = csc.Country(
+              name: country,
+              isoCode: '',
+              phoneCode: '91',
+              flag: '',
+              currency: '',
+              latitude: '',
+              longitude: '',
+            );
+            countryCode = "+91";
+            code.text = countryCode;
+          }
+
+          selectedState = (state == null || state.isEmpty)
+              ? null
+              : csc.State(
+                  name: state,
+                  countryCode: selectedCountry?.isoCode ?? '',
+                  isoCode: '',
+                );
+
+          selectedCity = (city == null || city.isEmpty)
+              ? null
+              : csc.City(
+                  name: city,
+                  countryCode: selectedCountry?.isoCode ?? '',
+                  stateCode: selectedState?.isoCode ?? '',
+                );
+        });
+      },
+    );
   }
 
   Future<void> _loadCities() async {
@@ -721,30 +778,41 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
       selectedCity = null;
     });
     
-    // Set new timer with delay for debouncing
-    _citiesTimer = Timer(const Duration(milliseconds: 300), () async {
-      try {
-        final newCities = await csc.getStateCities(
+    try {
+      // getStateCities can return empty on some datasets.
+      List<csc.City> newCities = await csc.getStateCities(
+        selectedCountry!.isoCode,
+        selectedState!.isoCode,
+      );
+
+      if (newCities.isEmpty) {
+        final allCountryCities = await csc.getCountryCities(
           selectedCountry!.isoCode,
-          selectedState!.isoCode,
         );
-        if (mounted) {
-          setState(() {
-            cities = newCities;
-            isLoadingCities = false;
-          });
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() {
-            isLoadingCities = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error loading cities: $e")),
-          );
-        }
+        final byStateCode = allCountryCities
+            .where((city) => city.stateCode == selectedState!.isoCode)
+            .toList();
+
+        // Last fallback: show all country cities if mapping is missing.
+        newCities = byStateCode.isNotEmpty ? byStateCode : allCountryCities;
       }
-    });
+
+      if (mounted) {
+        setState(() {
+          cities = newCities;
+          isLoadingCities = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoadingCities = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error loading cities: $e")),
+        );
+      }
+    }
   }
 
   Future<Map<String, String>?> addPatient() async {
@@ -775,6 +843,18 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
       return null;
     }
     debugPrint("SUCCESS: Marital status selected - $maritalStatus");
+
+    if (selectedCountry == null ||
+        selectedState == null ||
+        selectedCity == null ||
+        selectedCountry!.name.isEmpty ||
+        selectedState!.name.isEmpty ||
+        selectedCity!.name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Please select country, state and city")),
+      );
+      return null;
+    }
 
     setState(() {
       isLoading = true;
@@ -1064,9 +1144,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                       ],
                     ),
 
-                    buildCountryDropdown(),
-                    buildStateDropdown(),
-                    buildCityDropdown(),
+                    buildOfflineLocationDropdown(),
                     buildTextField("Address", address),
 
                     Row(

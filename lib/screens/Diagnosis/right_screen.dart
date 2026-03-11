@@ -319,7 +319,7 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
   // --------------------------------------------------
   // CAPTURE SCREENSHOT
   // --------------------------------------------------
-   Future<String?> captureScreenshot() async {
+  Future<String?> captureScreenshot() async {
     try {
       await Future.delayed(const Duration(milliseconds: 120));
 
@@ -348,11 +348,11 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
       );
 
       final picture = recorder.endRecording();
-      final finalImage =
-          await picture.toImage(rawImage.width, rawImage.height);
+      final finalImage = await picture.toImage(rawImage.width, rawImage.height);
 
-      final byteData =
-          await finalImage.toByteData(format: ui.ImageByteFormat.png);
+      final byteData = await finalImage.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
 
       if (byteData == null) return null;
 
@@ -439,7 +439,11 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
     } else if (p.state == 2) {
       color = Colors.green;
     } else {
-      color = Colors.white.withOpacity(0.8);
+      if (p.index == 377 || p.index == 302) {
+        color = Colors.white;
+      } else {
+        color = Colors.transparent;
+      }
     }
 
     bool isDisabled(PointData p) {
@@ -477,11 +481,11 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
       onPanUpdate: (details) {
         if (isDisabled(p)) return;
 
-        safeSetState(() {
-          /// MOVE BY DRAG DELTA
-          p.x += details.delta.dx;
-          p.y += details.delta.dy;
-        });
+        // safeSetState(() {
+        //   /// MOVE BY DRAG DELTA
+        //   p.x += details.delta.dx;
+        //   p.y += details.delta.dy;
+        // });
       },
 
       child: Container(

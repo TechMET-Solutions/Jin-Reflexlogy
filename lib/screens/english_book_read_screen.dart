@@ -14,34 +14,27 @@ class EnglishBookScreen extends StatefulWidget {
 }
 
 class _EnglishBookScreenState extends State<EnglishBookScreen> {
-  int pageIndex = 1;
-  int lastPage = 201;
-
-  // For page caching
+  int pageIndex = 0;
+  int lastPage = 273;
   final Map<int, ImageProvider> _pageCache = {};
 
   bool loading = false;
   ImageProvider? _currentPageImage;
 
   final TextEditingController searchController = TextEditingController();
-  final Dio _dio = Dio(); // Reuse Dio instance
+  final Dio _dio = Dio();
 
   @override
   void initState() {
     super.initState();
     _fetchPage(pageIndex);
-    // Preload next page
     _preloadNextPage();
   }
-
-  // Preloading
   void _preloadNextPage() {
     if (pageIndex < lastPage && !_pageCache.containsKey(pageIndex + 1)) {
       _fetchPageForCache(pageIndex + 1);
     }
   }
-
-  // Load page for cache (without refreshing UI)
   Future<void> _fetchPageForCache(int pageNo) async {
     try {
       FormData formData = FormData.fromMap({
@@ -54,7 +47,8 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
         data: formData,
         options: Options(contentType: "multipart/form-data"),
       );
-
+      print(widget.url);
+      print(formData.fields.map((e) => "${e.key}: ${e.value}").toList());
       dynamic jsonBody;
       if (response.data is String) {
         jsonBody = jsonDecode(response.data);

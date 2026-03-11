@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
-import 'package:jin_reflex_new/prefs/app_preference.dart';
+import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 
 /// Authentication Service
 /// Handles all login state checks and user session management

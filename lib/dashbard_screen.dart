@@ -15,6 +15,16 @@ import 'package:jin_reflex_new/dashbord_forlder/freddback_list.dart';
 import 'package:jin_reflex_new/dashbord_forlder/free_power_yoga.dart';
 import 'package:jin_reflex_new/dashbord_forlder/healthy_tips.dart';
 import 'package:jin_reflex_new/dashbord_forlder/food/food_screen.dart';
+import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2015.dart';
+import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2016.dart';
+import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2017.dart';
+import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2018.dart';
+import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2019.dart';
+import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2021.dart';
+import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2022.dart';
+import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2023.dart';
+import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2024.dart';
+import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2025.dart';
 import 'package:jin_reflex_new/dashbord_forlder/minerals/minerals.dart';
 import 'package:jin_reflex_new/dashbord_forlder/murdra/mudra.dart';
 import 'package:jin_reflex_new/dashbord_forlder/spine/spine_screen.dart';
@@ -25,7 +35,7 @@ import 'package:jin_reflex_new/dashbord_forlder/yoga/yoga.dart';
 import 'package:jin_reflex_new/foot_chart_screen.dart';
 import 'package:jin_reflex_new/hand_chart_screen.dart';
 import 'package:jin_reflex_new/marking_screen.dart';
-import 'package:jin_reflex_new/prefs/app_preference.dart';
+import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_screen_list.dart';
 import 'package:jin_reflex_new/screens/aboutUs%20copy.dart';
 import 'package:jin_reflex_new/screens/anil_jain_about_screen.dart';
@@ -69,11 +79,28 @@ class _HomeScreenState extends State<HomeScreen> {
   String _welcomeEmail = '';
   String _welcomeDealerId = '';
 
-  Future<void> _saveDeliveryType(String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("delivery_type", value);
+  String _normalizeDeliveryType(String? value) {
+    final normalized = (value ?? '').trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return 'india';
+    }
+    if (normalized == 'india' || normalized == 'in' || normalized == 'indian') {
+      return 'india';
+    }
+    if (normalized == 'outside' ||
+        normalized == 'us' ||
+        normalized == 'international') {
+      return 'outside';
+    }
+    return 'india';
+  }
 
-    debugPrint("✅ delivery_type saved = $value");
+  Future<void> _saveDeliveryType(String value) async {
+    final normalized = _normalizeDeliveryType(value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("delivery_type", normalized);
+
+    debugPrint("✅ delivery_type saved = $normalized");
   }
 
   @override
@@ -104,7 +131,13 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final userId = AppPreference().getString(PreferencesKey.userId);
 
+      /// 1️⃣ userId check
       if (userId == null || userId.isEmpty) return;
+
+      /// 2️⃣ type check
+      final userType = AppPreference().getString(PreferencesKey.type);
+
+      if (userType != "therapist") return;
 
       final response = await http.get(
         Uri.parse(
@@ -356,8 +389,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<String> _getSavedDeliveryType() async {
     final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getString("delivery_type");
-    return (value == null || value.isEmpty) ? "outside" : value;
+    return _normalizeDeliveryType(prefs.getString("delivery_type"));
   }
 
   Future<void> _refreshLocation() async {
@@ -751,9 +783,8 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(
             builder:
-                (context) => CommonWebView(
-                  url: "https://jinreflexology.in/wrw-event/wrw-2015/",
-                  title: "JIN Day 2015",
+                (context) => Wrw2015Screen(
+                
                 ),
           ),
         );
@@ -767,9 +798,8 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(
             builder:
-                (context) => CommonWebView(
-                  url: "https://jinreflexology.in/wrw-event/wrw-2016/",
-                  title: "JIN Day 2016",
+                (context) => Wrw2016Screen(
+                
                 ),
           ),
         );
@@ -783,9 +813,8 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(
             builder:
-                (context) => CommonWebView(
-                  url: "https://jinreflexology.in/wrw-event/wrw-2017/",
-                  title: "JIN Day 2017",
+                (context) => Wrw2017Screen(
+                
                 ),
           ),
         );
@@ -799,9 +828,8 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(
             builder:
-                (context) => CommonWebView(
-                  url: "https://jinreflexology.in/wrw-event/wrw-2018/",
-                  title: "JIN Day 2018",
+                (context) => Wrw2018Screen(
+              
                 ),
           ),
         );
@@ -815,9 +843,8 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(
             builder:
-                (context) => CommonWebView(
-                  url: "https://jinreflexology.in/wrw-event/wrw-2019/",
-                  title: "JIN Day 2019",
+                (context) => Wrw2019Screen(
+              
                 ),
           ),
         );
@@ -827,16 +854,15 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'JIN Day 2020',
       img: 'assets/jinImages/30.png',
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => CommonWebView(
-                  url: "https://jinreflexology.in/jin-day-2020/",
-                  title: "JIN Day 2020",
-                ),
-          ),
-        );
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder:
+        //         (_) => Wrw2020Screen(
+                
+        //         ),
+        //   ),
+        // );
       },
     ),
     CampaignItem(
@@ -847,9 +873,8 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(
             builder:
-                (_) => CommonWebView(
-                  url: "https://jinreflexology.in/jin2021/",
-                  title: "JIN Day 2021",
+                (_) => Wrw2021Screen(
+                 
                 ),
           ),
         );
@@ -864,9 +889,8 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(
             builder:
-                (_) => CommonWebView(
-                  url: "https://jinreflexology.in/jinday22/",
-                  title: "JIN Day 2022",
+                (_) => Wrw2022Screen(
+              
                 ),
           ),
         );
@@ -880,14 +904,46 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(
             builder:
-                (_) => CommonWebView(
-                  url: "https://jinreflexology.in/jin23/",
-                  title: "JIN Day 2023",
+                (_) => Wrw2023Screen(
+              
                 ),
           ),
         );
       },
     ),
+     CampaignItem(
+      title: 'JIN Day 2024',
+      img: 'assets/jinImages/27.png',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => Wrw2024Screen(
+              
+                ),
+          ),
+        );
+      },
+    ),
+     CampaignItem(
+      title: 'JIN Day 2025',
+      img: 'assets/jinImages/27.png',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => Wrw2025Screen(
+              
+                ),
+          ),
+        );
+      },
+    ),
+
+
+    
 
     // CampaignItem(title: '2019', img: 'assets/jinImages/31.png', onTap: () {}),
     // CampaignItem(title: '2018', img: 'assets/jinImages/31.png', onTap: () {}),
@@ -1236,7 +1292,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        "Dealer ID: $_welcomeDealerId",
+                        "VD ID: $_welcomeDealerId",
                         style: TextStyle(color: Colors.white, fontSize: 11),
                       ),
                     ),
@@ -1516,28 +1572,22 @@ void _showLogoutDialog(BuildContext context) {
           ),
           TextButton(
             onPressed: () async {
+              await AppPreference().initialAppPreference();
               final userId = AppPreference().getString(PreferencesKey.userId);
               final type = AppPreference().getString(PreferencesKey.type);
-
               try {
                 final url = 'https://jinreflexology.in/api1/new/logout.php';
                 var request = http.MultipartRequest('POST', Uri.parse(url));
-
                 request.fields['id'] = userId.toString();
                 request.fields['type'] = type.toString();
-
                 print("------------ LOGOUT API DEBUG ------------");
                 print("URL: $url");
                 print("FIELDS: id => $userId, type => $type");
-
                 var response = await request.send();
                 var responseBody = await response.stream.bytesToString();
-
                 print("STATUS CODE => ${response.statusCode}");
                 print("RESPONSE BODY => $responseBody");
-
                 final decoded = jsonDecode(responseBody);
-
                 ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

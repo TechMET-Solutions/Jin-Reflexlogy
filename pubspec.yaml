@@ -2,7 +2,7 @@ name: jin_reflex_new
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.0+9
+version: 1.0.0+14
 
 environment:
   sdk: ^3.7.0
@@ -12,7 +12,7 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-  carousel_slider: ^5.1.1
+  carousel_slider: ^5.1.1  
   webview_flutter: ^4.13.0
   animate_do: ^4.2.0
   google_fonts: ^6.3.2

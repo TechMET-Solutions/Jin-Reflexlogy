@@ -191,7 +191,7 @@ class _EbookJinLoginScreenState extends ConsumerState<EbookJinLoginScreen> {
               sandboxMode: isSandboxMode,
               clientId: paypalClientId,
               secretKey: paypalSecret,
-
+  
               transactions: [
                 {
                   "amount": {"total": "11", "currency": "USD"},
@@ -281,7 +281,6 @@ class _EbookJinLoginScreenState extends ConsumerState<EbookJinLoginScreen> {
     }
   }
 
-  // ✅ Show Payment Dialog (for guest users or to collect details)
   Future<void> _showPaymentDialog() async {
     final isIndia = await _isIndianUser();
 
@@ -402,22 +401,15 @@ class _EbookJinLoginScreenState extends ConsumerState<EbookJinLoginScreen> {
     );
   }
 
-  // ✅ Handle Ebook Purchase
   Future<void> _handleEbookPurchase() async {
     final token = AppPreference().getString(PreferencesKey.token);
     final userId = AppPreference().getString(PreferencesKey.userId);
-
     if (mounted) {
       setState(() => _isPaymentProcessing = true);
     }
-
-    // If user is logged in, check if they already have the ebook
     if (token.isNotEmpty && userId.isNotEmpty) {
-      // TODO: Check if user already purchased this ebook
-      // For now, proceed to payment
       await _showPaymentDialog();
     } else {
-      // Guest user - show payment dialog
       await _showPaymentDialog();
     }
 
@@ -816,10 +808,15 @@ class _EbookJinLoginScreenState extends ConsumerState<EbookJinLoginScreen> {
                       ),
 
                       const SizedBox(height: 16),
-
-                      /// 🔹 Divider with OR
-
-                      /// 🔹 Sign Up Link
+                      InkWell(
+                        onTap: () {
+                          _handleEbookPurchase();
+                        },
+                        child: Text(
+                          "Register-->",
+                          style: TextStyle(color: Colors.black, fontSize: 15),
+                        ),
+                      ),
                       const SizedBox(height: 10),
                     ],
                   ),

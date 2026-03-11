@@ -19,47 +19,58 @@ class _MainHomeScreenDashBoardState extends State<MainHomeScreenDashBoard> {
   int _currentIndex = 0;
   int _homeScreenKey = 0; // Key to force HomeScreen rebuild
 
+  String _normalizeDeliveryType(String? value) {
+    final normalized = (value ?? '').trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return 'india';
+    }
+    if (normalized == 'india' || normalized == 'in' || normalized == 'indian') {
+      return 'india';
+    }
+    if (normalized == 'outside' ||
+        normalized == 'us' ||
+        normalized == 'international') {
+      return 'outside';
+    }
+    return 'india';
+  }
+
   @override
   void initState() {
     super.initState();
     _getDeliveryType();
-WidgetsBinding.instance.addPostFrameCallback((_) {
-  _checkAndShowWelcomeDialog();
-});
-
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndShowWelcomeDialog();
+    });
   }
 
-Future<void> _checkAndShowWelcomeDialog() async {
+  Future<void> _checkAndShowWelcomeDialog() async {
+    debugPrint("🔍 Checking dealer status");
 
-  debugPrint("🔍 Checking dealer status");
+    final prefs = await SharedPreferences.getInstance();
+    final dealerCompleted = prefs.getBool('dealer_completed') ?? false;
 
-  final prefs = await SharedPreferences.getInstance();
-  final dealerCompleted = prefs.getBool('dealer_completed') ?? false;
+    debugPrint("dealer_completed = $dealerCompleted");
+    if (dealerCompleted == true) return;
 
-  debugPrint("dealer_completed = $dealerCompleted");
-  if (dealerCompleted == true) return;
+    if (!mounted) return;
 
-  if (!mounted) return;
-
-  await WelcomeDialog.show(
-    context,
-    onGetStarted: () {
-      if (mounted) {
-        setState(() {
-          _homeScreenKey++;
-        });
-      }
-    },
-  );
-}
-
+    await WelcomeDialog.show(
+      context,
+      onGetStarted: () {
+        if (mounted) {
+          setState(() {
+            _homeScreenKey++;
+          });
+        }
+      },
+    );
+  }
 
   /// 🔹 Get latest delivery type
   Future<String> _getDeliveryType() async {
     final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getString("delivery_type");
-
-    return (value == null || value.isEmpty) ? "india" : value;
+    return _normalizeDeliveryType(prefs.getString("delivery_type"));
   }
 
   @override
@@ -108,17 +119,28 @@ Future<void> _checkAndShowWelcomeDialog() async {
     );
   }
 
-  /// Only non-shop screens here
   Widget _buildBody() {
     switch (_currentIndex) {
       case 0:
-        return HomeScreen(
-          key: ValueKey(_homeScreenKey),
-        ); // Use key to force rebuild
+        return HomeScreen(key: ValueKey(_homeScreenKey));
+
       case 1:
         return MemberListScreen();
+
+      case 2:
+        return FutureBuilder<String>(
+          future: _getDeliveryType(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return ShopScreen(deliveryType: snapshot.data!);
+          },
+        );
+
       case 3:
         return EbookScreen();
+
       default:
         return HomeScreen(key: ValueKey(_homeScreenKey));
     }
