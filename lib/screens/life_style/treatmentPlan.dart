@@ -8,12 +8,12 @@ import 'package:url_launcher/url_launcher.dart';
 
 class TreatmentPlanScreen extends StatefulWidget {
   const TreatmentPlanScreen({super.key});
-
   @override
   State<TreatmentPlanScreen> createState() => _TreatmentPlanScreenState();
 }
 
 class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
+  static const String _diagnosisPdfAsset = 'assets/Diagnosisdetails12Page.pdf';
   final TextEditingController firstNameCtrl = TextEditingController();
   final TextEditingController lastNameCtrl = TextEditingController();
   final TextEditingController emailCtrl = TextEditingController();
@@ -280,10 +280,28 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
         const SizedBox(height: 20),
 
         // Responsive PDF Book Widget
-        Container(
-          height: isDesktop ? 600 : (isTablet ? 500 : 400),
+        SizedBox(
+          height: isDesktop ? 650 : (isTablet ? 540 : 420),
           width: double.infinity,
-          child: const PdfBookScreen(),
+          child: InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder:
+                      (context) => FullScreenPdfViewer(
+                        pdfAssetPath: _diagnosisPdfAsset,
+                        title: "Diagnosis Details PDF",
+                      ),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: AbsorbPointer(
+              child: PdfBookScreen(
+                pdfAssetPath: _diagnosisPdfAsset,
+              ),
+            ),
+          ),
         ),
 
         const SizedBox(height: 60),
@@ -663,24 +681,193 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
 
 // ========== RESPONSIVE PDF BOOK SCREEN ==========
 class PdfBookScreen extends StatelessWidget {
-  const PdfBookScreen({super.key});
+  const PdfBookScreen({
+    super.key,
+    required this.pdfAssetPath,
+    this.onOpenFullScreen,
+  });
+
+  final String pdfAssetPath;
+  final VoidCallback? onOpenFullScreen;
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final bool isTablet = screenWidth > 600;
     final bool isDesktop = screenWidth > 900;
 
-    return SfPdfViewer.asset(
-      'assets/Diagnosisdetails12Page.pdf',
-      pageLayoutMode:
-          isDesktop ? PdfPageLayoutMode.continuous : PdfPageLayoutMode.single,
-      scrollDirection:
-          isDesktop
-              ? PdfScrollDirection.vertical
-              : PdfScrollDirection.horizontal,
-      enableDoubleTapZooming: true,
-      initialZoomLevel: isDesktop ? 0.8 : 1.0,
+    return Stack(
+      children: [
+        SfPdfViewer.asset(
+          pdfAssetPath,
+          pageLayoutMode:
+              isDesktop ? PdfPageLayoutMode.continuous : PdfPageLayoutMode.single,
+          scrollDirection:
+              isDesktop
+                  ? PdfScrollDirection.vertical
+                  : PdfScrollDirection.horizontal,
+          enableDoubleTapZooming: true,
+          initialZoomLevel: isDesktop ? 0.8 : 1.0,
+        ),
+        Positioned(
+          top: 12,
+          right: 12,
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.65),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: const Icon(
+              Icons.fullscreen,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+        ),
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: 16,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.62),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.picture_as_pdf, color: Colors.white),
+                SizedBox(width: 10),
+                Text(
+                  "Tap to open full PDF",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class FullScreenPdfViewer extends StatefulWidget {
+  const FullScreenPdfViewer({
+    super.key,
+    required this.pdfAssetPath,
+    required this.title,
+  });
+
+  final String pdfAssetPath;
+  final String title;
+
+  @override
+  State<FullScreenPdfViewer> createState() => _FullScreenPdfViewerState();
+}
+
+class _FullScreenPdfViewerState extends State<FullScreenPdfViewer> {
+  final PdfViewerController _pdfViewerController = PdfViewerController();
+  int _currentPage = 1;
+  int _totalPages = 0;
+
+  void _goToPreviousPage() {
+    if (_currentPage > 1) {
+      _pdfViewerController.previousPage();
+    }
+  }
+
+  void _goToNextPage() {
+    if (_totalPages > 0 && _currentPage < _totalPages) {
+      _pdfViewerController.nextPage();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDesktop = MediaQuery.of(context).size.width > 900;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: CommonAppBar(title: widget.title),
+      body: Column(
+        children: [
+          Expanded(
+            child: SfPdfViewer.asset(
+              widget.pdfAssetPath,
+              controller: _pdfViewerController,
+              pageLayoutMode:
+                  isDesktop
+                      ? PdfPageLayoutMode.continuous
+                      : PdfPageLayoutMode.single,
+              scrollDirection:
+                  isDesktop
+                      ? PdfScrollDirection.vertical
+                      : PdfScrollDirection.horizontal,
+              canShowPaginationDialog: true,
+              canShowScrollHead: true,
+              enableDoubleTapZooming: true,
+              onDocumentLoaded: (details) {
+                setState(() {
+                  _totalPages = details.document.pages.count;
+                });
+              },
+              onPageChanged: (details) {
+                setState(() {
+                  _currentPage = details.newPageNumber;
+                });
+              },
+            ),
+          ),
+          Container(
+            color: Colors.black,
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _currentPage > 1 ? _goToPreviousPage : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text("Prev"),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    _totalPages == 0
+                        ? "Loading..."
+                        : "$_currentPage / $_totalPages",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed:
+                        (_totalPages > 0 && _currentPage < _totalPages)
+                            ? _goToNextPage
+                            : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text("Next"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,12 +1,10 @@
-import 'dart:convert';
-import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class AppPreference {
-  static final AppPreference _appPreference = AppPreference._internal(); 
+  static final AppPreference _appPreference = AppPreference._internal();
+
   factory AppPreference() {
     return _appPreference;
   }
@@ -19,114 +17,51 @@ class AppPreference {
     _preferences = await SharedPreferences.getInstance();
   }
 
-  Future setString(String key, String value) async {
-    await _preferences?.setString(key, value);
+  Future<void> setString(String key, String value) async {
+    _preferences ??= await SharedPreferences.getInstance();
+    await _preferences!.setString(key, value);
   }
 
   String getString(String key, {String defValue = ''}) {
-    return _preferences?.getString(key) != null
-        ? (_preferences?.getString(key) ?? '')
-        : defValue;
+    return _preferences?.getString(key) ?? defValue;
   }
 
-  Future setInt(String key, int value) async {
-    await _preferences?.setInt(key, value);
+  Future<void> setInt(String key, int value) async {
+    _preferences ??= await SharedPreferences.getInstance();
+    await _preferences!.setInt(key, value);
   }
 
   int getInt(String key, {int defValue = 0}) {
-    return _preferences?.getInt(key) != null
-        ? (_preferences?.getInt(key) ?? 0)
-        : defValue;
+    return _preferences?.getInt(key) ?? defValue;
   }
 
-  Future setBool(String key, bool value) async {
-    await _preferences?.setBool(key, value);
+  Future<void> setBool(String key, bool value) async {
+    _preferences ??= await SharedPreferences.getInstance();
+    await _preferences!.setBool(key, value);
   }
 
   bool getBool(String key, {bool defValue = false}) {
     return _preferences?.getBool(key) ?? defValue;
   }
-Future<void> clearSharedPreferences() async {
-  if (_preferences == null) {
-    _preferences = await SharedPreferences.getInstance();
-  }
-  
-  // ✅ Save welcome dialog data before clearing (these should persist forever)
-  final welcomeName = _preferences!.getString('welcome_name');
-  final welcomeMobile = _preferences!.getString('welcome_mobile');
-  final welcomeEmail = _preferences!.getString('welcome_email');
-  final welcomeDealerId = _preferences!.getString('welcome_dealer_id');
-  final dealerCompleted = _preferences!.getBool('dealer_completed'); // ✅ KEY FLAG
-  final isFirstTime = _preferences!.getBool('is_first_time_user');
-  final welcomeShown = _preferences!.getBool('welcome_dialog_shown');
-  
-  debugPrint("🔍 Before clear - dealer_completed: $dealerCompleted");
-  
-  // Clear all data
-  await _preferences!.clear();
-  
-  // ✅ Restore welcome dialog data (should persist across logout)
-  if (welcomeName != null) {
-    await _preferences!.setString('welcome_name', welcomeName);
-  }
-  if (welcomeMobile != null) {
-    await _preferences!.setString('welcome_mobile', welcomeMobile);
-  }
-  if (welcomeEmail != null) {
-    await _preferences!.setString('welcome_email', welcomeEmail);
-  }
-  if (welcomeDealerId != null) {
-    await _preferences!.setString('welcome_dealer_id', welcomeDealerId);
-  }
-  if (dealerCompleted != null) {
-    await _preferences!.setBool('dealer_completed', dealerCompleted);
-  }
-  if (isFirstTime != null) {
-    await _preferences!.setBool('is_first_time_user', isFirstTime);
-  }
-  if (welcomeShown != null) {
-    await _preferences!.setBool('welcome_dialog_shown', welcomeShown);
-  }
-  
-  debugPrint("✅ After restore - dealer_completed: ${_preferences!.getBool('dealer_completed')}");
-  debugPrint("✅ Logout: Cleared session data but preserved welcome dialog data");
-}
 
+  Future<void> clearSharedPreferences() async {
+    _preferences ??= await SharedPreferences.getInstance();
 
-  // String getStudentInfo() {
-  //   log("-----dwdwdws  " +
-  //       AppPreference().getString(PreferencesKey.studentData));
-  //   Map<String, dynamic> userData =
-  //       jsonDecode(AppPreference().getString(PreferencesKey.studentData));
-  //   String classId = userData['data']['student']['st_class'] ?? "";
-  //   print("Class ID: $classId");
-  //   return classId;
-  // }
+    final authKeys = <String>{
+      PreferencesKey.token,
+      PreferencesKey.userId,
+      PreferencesKey.name,
+      PreferencesKey.email,
+      PreferencesKey.contactNumber,
+      PreferencesKey.type,
+    };
 
-  // bool get isLogin => getBool(PreferencesKey.isLoggedIn);
-  // bool get isTeacherLogin => getBool(PreferencesKey.isTeacherLoggedIn);
-  // bool get showIntro => getBool(PreferencesKey.introPage);
-  // String get uType => getString(PreferencesKey.uType);
+    for (final key in authKeys) {
+      await _preferences!.remove(key);
+    }
+
+    debugPrint('Logout: removed auth/session data only');
+  }
+
   String get uName => getString(PreferencesKey.token);
-
-
-  // int get isLoginFirstTimeteacher =>
-
-  // int  // getInt(PreferencesKey.isLoggedInFirstTimeT);get isLoginFirstTimestudent =>
-  //     // getInt(PreferencesKey.isLoggedInFirstTimeSt);
-
-  // /// Redirect user with local credentials
-  // String get initRoute => isLogin
-  //     ? (isTeacherLogin)
-  //         ? (isLoginFirstTimeteacher == 1)
-  //             ? RoutesConst.teacherHome
-  //             : RoutesConst.editProfile
-  //         : (isLoginFirstTimestudent == 1)
-  //             ? RoutesConst.home
-  //             : RoutesConst.editProfile
-  //     // ? RoutesConst.teacherHome
-  //     // : RoutesConst.home
-  //     : showIntro
-  //         ? RoutesConst.loginPage
-  //         : RoutesConst.introPage;
 }

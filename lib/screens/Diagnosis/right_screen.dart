@@ -6,10 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:dio/dio.dart';
 import 'package:jin_reflex_new/api_service/global/utils.dart';
+import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:image/image.dart' as img;
+import 'package:screenshot/screenshot.dart';
+
+const String _diagnosisImageFlipPrefKey = "diagnosisImageFlip";
 
 class PointData {
   final String id;
@@ -44,11 +48,13 @@ class PointData {
 class RightFootScreenNew extends StatefulWidget {
   final String diagnosisId;
   final String patientId;
+  final String? gender;
   final bool isNew;
 
   const RightFootScreenNew({
     required this.diagnosisId,
     required this.patientId,
+    this.gender,
     this.isNew = false,
     Key? key,
   }) : super(key: key);
@@ -100,11 +106,18 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
       final List<dynamic> jsonList = jsonMap["RightFoot"] as List<dynamic>;
       points = jsonList.map((p) => PointData.fromJson(p)).toList();
 
+      final hasLocalDraft =
+          AppPreference()
+              .getString("RF_DATA_${widget.diagnosisId}_${widget.patientId}")
+              .isNotEmpty;
+
       // load saved local selections first (if any)
       await loadSavedLocal();
 
-      // fetch server states and merge
-      await fetchServerStates();
+      // fetch server states and merge only when no local draft exists
+      if (!hasLocalDraft) {
+        await fetchServerStates();
+      }
 
       if (_isMounted) {
         setState(() => isLoading = false);
@@ -277,6 +290,7 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
   // --------------------------------------------------
   // SAVE TO SERVER (Background call) - FIXED URL
   // --------------------------------------------------
+
   Future<void> saveAllToServer() async {
     try {
       final StringBuffer sb = StringBuffer();
@@ -319,50 +333,53 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
   // --------------------------------------------------
   // CAPTURE SCREENSHOT
   // --------------------------------------------------
+  ScreenshotController screenshotController = ScreenshotController();
   Future<String?> captureScreenshot() async {
     try {
-      await Future.delayed(const Duration(milliseconds: 120));
-
-      final boundary =
-          screenshotKey.currentContext?.findRenderObject()
-              as RenderRepaintBoundary?;
-
-      if (boundary == null) return null;
-
-      // ⭐ FIXED RATIO (NEVER devicePixelRatio)
-      final ui.Image rawImage = await boundary.toImage(pixelRatio: 2.0);
-
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
-      final paint = Paint();
-
-      final w = rawImage.width.toDouble();
-      final h = rawImage.height.toDouble();
-
-      // ⭐ SAFE DRAW METHOD
-      canvas.drawImageRect(
-        rawImage,
-        Rect.fromLTWH(0, 0, w, h),
-        Rect.fromLTWH(0, 0, w, h),
-        paint,
+      final bytes = await screenshotController.capture(
+        pixelRatio: 2,
+        delay: const Duration(milliseconds: 350),
       );
 
-      final picture = recorder.endRecording();
-      final finalImage = await picture.toImage(rawImage.width, rawImage.height);
+      if (bytes == null) return null;
 
-      final byteData = await finalImage.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
+      img.Image? image = img.decodeImage(bytes);
+      if (image == null) return null;
 
-      if (byteData == null) return null;
+      if (AppPreference().getBool(_diagnosisImageFlipPrefKey, defValue: true)) {
+        image = img.flipVertical(image);
+      }
+      image = img.copyResize(image, width: 900);
+      final compressed = img.encodePng(image, level: 6);
 
-      return base64Encode(byteData.buffer.asUint8List());
+      return base64Encode(compressed);
     } catch (e) {
       debugPrint("Screenshot error: $e");
       return null;
     }
   }
 
+  bool _isFootBottomWide(img.Image image) {
+    int topWidth = _countVisiblePixels(image, 20);
+    int bottomWidth = _countVisiblePixels(image, image.height - 20);
+
+    /// foot bottom always wider than top
+    return bottomWidth > topWidth;
+  }
+
+  int _countVisiblePixels(img.Image image, int y) {
+    int count = 0;
+
+    for (int x = 0; x < image.width; x++) {
+      img.Pixel pixel = image.getPixel(x, y);
+
+      if (pixel.a > 0) {
+        count++;
+      }
+    }
+
+    return count;
+  }
   // Future<String?> captureScreenshot() async {
   //   try {
   //     await WidgetsBinding.instance.endOfFrame;
@@ -405,10 +422,11 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
     final Set<String> greenTags = {};
 
     for (var point in points) {
-      if (point.state == 1 && point.tag.isNotEmpty) {
-        redTags.add(point.tag); // red
-      } else if (point.state == 2 && point.tag.isNotEmpty) {
-        greenTags.add(point.tag); // green
+      final effectiveTag = _effectiveTag(point);
+      if (point.state == 1 && effectiveTag.isNotEmpty) {
+        redTags.add(effectiveTag); // red
+      } else if (point.state == 2 && effectiveTag.isNotEmpty) {
+        greenTags.add(effectiveTag); // green
       }
     }
 
@@ -432,6 +450,26 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
     return resultBuffer.toString();
   }
 
+  String _effectiveTag(PointData point) {
+    final normalizedGender = (widget.gender ?? "").trim().toLowerCase();
+    final isFemale = normalizedGender == "female" || normalizedGender == "f";
+    if (!isFemale) return point.tag;
+
+    switch (point.index) {
+      case 286:
+      case 287:
+        return "Ovaries Gland";
+      case 288:
+      case 289:
+        return "Uterus";
+      case 291:
+      case 292:
+        return "Vagina";
+      default:
+        return point.tag;
+    }
+  }
+
   Widget _buildDot(PointData p, double scale) {
     Color color;
     if (p.state == 1) {
@@ -439,7 +477,7 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
     } else if (p.state == 2) {
       color = Colors.green;
     } else {
-      if (p.index == 377 || p.index == 302) {
+      if (p.index == 377 || p.index == 302 || p.index == 382) {
         color = Colors.white;
       } else {
         color = Colors.transparent;
@@ -538,7 +576,7 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
       } else if (point.state == 1) {
         serverValue = 0; // red
       } else {
-        serverValue = -1; // white/unselected
+        serverValue = -1;
       }
 
       items.add("${point.index}:$serverValue");
@@ -547,11 +585,7 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
     return items.join(";");
   }
 
-  // --------------------------------------------------
-  // SAVE & EXIT BUTTON - FIXED VERSION
-  // --------------------------------------------------
   Future<void> _saveAndExit() async {
-    // Prevent double click
     if (_isSaving) return;
     _isSaving = true;
 
@@ -643,9 +677,6 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
     }
   }
 
-  // --------------------------------------------------
-  // TEST BUTTON - Save button kaam न करे तो यह टेस्ट करें
-  // --------------------------------------------------
   Widget _buildTestButton() {
     return Positioned(
       bottom: 20,
@@ -694,12 +725,10 @@ class _RightFootScreenNewState extends State<RightFootScreenNew> {
                     child: Container(
                       width: containerW,
                       height: containerH,
-                      child: RepaintBoundary(
-                        key: screenshotKey,
-
+                      child: Screenshot(
+                        controller: screenshotController,
                         child: Stack(
                           children: [
-                            // Right foot image
                             Image.asset(
                               'assets/images/foot_right.png',
                               width: containerW,

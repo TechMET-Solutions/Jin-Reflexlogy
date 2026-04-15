@@ -1282,6 +1282,7 @@ class _AddressManagementScreenState extends State<AddressManagementScreen> {
 class BuyNowFormScreen extends StatefulWidget {
   final List<CartItem> cartItems;
   final double subtotal;
+  final double shippingCharges;
   final double discount;
   final double total;
   final String deliveryType; // 'india' or 'outside'
@@ -1290,6 +1291,7 @@ class BuyNowFormScreen extends StatefulWidget {
     super.key,
     required this.cartItems,
     required this.subtotal,
+    required this.shippingCharges,
     required this.discount,
     required this.total,
     required this.deliveryType,
@@ -1312,15 +1314,19 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
   Address? selectedAddress;
   String? appliedCouponCode;
   double currentSubtotal = 0;
+  double currentShippingCharges = 0;
   double currentDiscount = 0;
   double currentTotal = 0;
   late Razorpay _razorpay;
   bool _canGoBack = true;
+  int _cartFetchSeq = 0;
+  bool _handlingPaymentResult = false;
 
   @override
   void initState() {
     super.initState();
     currentSubtotal = widget.subtotal;
+    currentShippingCharges = widget.shippingCharges;
     currentDiscount = widget.discount;
     currentTotal = widget.total;
 
@@ -1392,40 +1398,111 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
 
   /// ================= PAYMENT HANDLERS =================
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Payment Success\nPayment ID: ${response.paymentId}"),
-        backgroundColor: Colors.green,
-      ),
-    );
+    if (!mounted || _handlingPaymentResult) return;
+    _handlingPaymentResult = true;
 
-    await sendPaymentToBackend(
-      status: "success",
-      paymentId: response.paymentId,
-      orderId: response.orderId,
-      amount: currentTotal.toInt(),
-    );
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Payment Success\nPayment ID: ${response.paymentId}"),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      setState(() => _canGoBack = false);
+
+      await sendPaymentToBackend(
+        status: "success",
+        paymentId: response.paymentId,
+        orderId: response.orderId,
+        amount: currentTotal.toInt(),
+      );
+
+      await _clearCartOnServer();
+      await placeOrder();
+    } finally {
+      if (mounted) {
+        setState(() => _canGoBack = true);
+      }
+      _handlingPaymentResult = false;
+    }
   }
 
   void _handlePaymentError(PaymentFailureResponse response) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Payment Failed\n${response.message}"),
-        backgroundColor: Colors.red,
-      ),
-    );
+    if (!mounted || _handlingPaymentResult) return;
+    _handlingPaymentResult = true;
 
-    await sendPaymentToBackend(
-      status: "failed",
-      reason: response.message,
-      amount: currentTotal.toInt(),
-    );
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Payment Failed\n${response.message}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+
+      setState(() => _canGoBack = false);
+
+      await sendPaymentToBackend(
+        status: "failed",
+        reason: response.message,
+        amount: currentTotal.toInt(),
+      );
+
+      await _clearCartOnServer();
+
+      if (!mounted) return;
+      setState(() => _canGoBack = true);
+      _handlingPaymentResult = false;
+      Navigator.pop(context);
+    } finally {
+      // In case of any exception before popping.
+      _handlingPaymentResult = false;
+    }
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Wallet Used: ${response.walletName}")),
     );
+  }
+
+  Future<void> _clearCartOnServer() async {
+    final prefs = AppPreference();
+    final token = prefs.getString(PreferencesKey.token);
+    final type = prefs.getString(PreferencesKey.type);
+    final String country = widget.deliveryType == "india" ? "in" : "us";
+
+    // No items, nothing to clear.
+    if (widget.cartItems.isEmpty) return;
+
+    const String url =
+        "https://admin.jinreflexology.in/api/cart/update-quantity";
+
+    final uniqueCartIds = <int>{};
+    for (final item in widget.cartItems) {
+      uniqueCartIds.add(item.id);
+    }
+
+    for (final cartId in uniqueCartIds) {
+      try {
+        await http.post(
+          Uri.parse(url),
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            if (token.isNotEmpty) "Authorization": "Bearer $token",
+          },
+          body: jsonEncode({
+            "cart_id": cartId,
+            "quantity": 0,
+            "country": country,
+            "type": type,
+          }),
+        );
+      } catch (e) {
+        debugPrint("❌ Error clearing cartId=$cartId: $e");
+      }
+    }
   }
 
   Future<bool> isIndianUser() async {
@@ -1438,6 +1515,54 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
   /// Fetch product ID mapping from cart API
   /// ===============================================================
   Future<void> _fetchProductIdMapping() async {
+    await _refreshCartSnapshot(updateTotals: false, updateMapping: true);
+  }
+
+  Map<String, dynamic>? _extractTotals(dynamic decoded) {
+    if (decoded is! Map) return null;
+    final direct = decoded["totals"];
+    if (direct is Map) return direct.cast<String, dynamic>();
+
+    final data = decoded["data"];
+    if (data is Map) {
+      final nested = data["totals"];
+      if (nested is Map) return nested.cast<String, dynamic>();
+
+      final looksLikeTotals =
+          data.containsKey("subtotal") ||
+          data.containsKey("shipping_charges") ||
+          data.containsKey("discount") ||
+          data.containsKey("total");
+      if (looksLikeTotals) return data.cast<String, dynamic>();
+    }
+    return null;
+  }
+
+  bool _totalsLooksValid(Map<String, dynamic> totals) {
+    if (widget.cartItems.isEmpty) return true;
+    final subtotal =
+        double.tryParse(totals["subtotal"]?.toString() ?? "") ?? 0.0;
+    final total = double.tryParse(totals["total"]?.toString() ?? "") ?? 0.0;
+    return subtotal > 0 || total > 0;
+  }
+
+  void _applyTotalsToState(Map<String, dynamic> totals) {
+    setState(() {
+      currentSubtotal =
+          double.tryParse(totals["subtotal"]?.toString() ?? "0") ?? 0;
+      currentShippingCharges =
+          double.tryParse(totals["shipping_charges"]?.toString() ?? "0") ?? 0;
+      currentDiscount =
+          double.tryParse(totals["discount"]?.toString() ?? "0") ?? 0;
+      currentTotal = double.tryParse(totals["total"]?.toString() ?? "0") ?? 0;
+    });
+  }
+
+  Future<void> _refreshCartSnapshot({
+    required bool updateTotals,
+    required bool updateMapping,
+  }) async {
+    final int seq = ++_cartFetchSeq;
     try {
       final userId = AppPreference().getString(PreferencesKey.userId);
       final type = AppPreference().getString(PreferencesKey.type);
@@ -1449,25 +1574,42 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
         ),
       );
 
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        if (decoded["success"] == true) {
-          final cartData = decoded["data"] as List;
-          final mapping = <int, int>{};
+      dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } catch (_) {
+        decoded = null;
+      }
 
-          for (var item in cartData) {
-            final cartItemId = item["id"] as int;
-            final productId = item["product_id"] as int;
+      if (!mounted || seq != _cartFetchSeq) return;
+      if (response.statusCode != 200 ||
+          decoded is! Map ||
+          decoded["success"] != true) {
+        return;
+      }
+
+      if (updateMapping) {
+        final cartData =
+            (decoded["data"] is List) ? (decoded["data"] as List) : <dynamic>[];
+        final mapping = <int, int>{};
+        for (final item in cartData) {
+          if (item is! Map) continue;
+          final cartItemId = int.tryParse(item["id"]?.toString() ?? "") ?? 0;
+          final productId =
+              int.tryParse(item["product_id"]?.toString() ?? "") ?? 0;
+          if (cartItemId != 0 && productId != 0) {
             mapping[cartItemId] = productId;
           }
-
-          setState(() {
-            productIdMap = mapping;
-          });
         }
+        setState(() => productIdMap = mapping);
+      }
+
+      if (updateTotals) {
+        final totals = _extractTotals(decoded);
+        if (totals != null) _applyTotalsToState(totals);
       }
     } catch (e) {
-      print("❌ Error fetching product mapping: $e");
+      debugPrint("❌ Error refreshing cart snapshot: $e");
     }
   }
 
@@ -1535,42 +1677,84 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
                   return;
                 }
 
-                await sendPaymentToBackend(
-                  status: "success",
-                  paymentId: paypalPaymentId,
-                  orderId: null,
-                  amount: currentTotal.toInt(),
-                );
-                placeOrder();
-
-                if (!mounted) return;
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("PayPal Payment Successful"),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                // Close PayPal screen first, then proceed with order flow.
                 Navigator.pop(context);
+                if (!mounted || _handlingPaymentResult) return;
+                _handlingPaymentResult = true;
+
+                try {
+                  setState(() => _canGoBack = false);
+
+                  await sendPaymentToBackend(
+                    status: "success",
+                    paymentId: paypalPaymentId,
+                    orderId: null,
+                    amount: currentTotal.toInt(),
+                  );
+
+                  await _clearCartOnServer();
+                  await placeOrder();
+                } finally {
+                  if (mounted) {
+                    setState(() => _canGoBack = true);
+                  }
+                  _handlingPaymentResult = false;
+                }
               },
               onError: (error) async {
-                // await sendPaymentToBackend(
-                //   status: "failed",
-                //   reason: error.toString(),
-                //   amount: currentTotal.toInt(),
-                // );
-                // debugPrint("❌ PayPal Error: $error");
+                debugPrint("❌ PayPal Error: $error");
+                Navigator.pop(context);
+
+                if (!mounted || _handlingPaymentResult) return;
+                _handlingPaymentResult = true;
+
+                try {
+                  setState(() => _canGoBack = false);
+
+                  await sendPaymentToBackend(
+                    status: "failed",
+                    reason: error.toString(),
+                    amount: currentTotal.toInt(),
+                  );
+                  await _clearCartOnServer();
+
+                  if (!mounted) return;
+                  setState(() => _canGoBack = true);
+                  Navigator.pop(context);
+                } finally {
+                  _handlingPaymentResult = false;
+                }
               },
               onCancel: () async {
                 debugPrint("⚠️ PayPal Cancelled");
                 Navigator.pop(context);
+
+                if (!mounted || _handlingPaymentResult) return;
+                _handlingPaymentResult = true;
+
+                try {
+                  setState(() => _canGoBack = false);
+
+                  await sendPaymentToBackend(
+                    status: "failed",
+                    reason: "cancelled",
+                    amount: currentTotal.toInt(),
+                  );
+                  await _clearCartOnServer();
+
+                  if (!mounted) return;
+                  setState(() => _canGoBack = true);
+                  Navigator.pop(context);
+                } finally {
+                  _handlingPaymentResult = false;
+                }
               },
             ),
       ),
     );
   }
 
-  Future<void> sendPaymentToBackend({
+  Future<bool> sendPaymentToBackend({
     required String status,
     String? paymentId,
     String? orderId,
@@ -1579,41 +1763,28 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
   }) async {
     try {
       final dio = Dio();
-      var postData = {
-        "user_id": AppPreference().getString(PreferencesKey.userId),
-        "payment_id": paymentId,
-        "orderid": orderId,
-        "amount": currentTotal,
-        "status": status,
-        "email": AppPreference().getString(PreferencesKey.email),
-        "name": AppPreference().getString(PreferencesKey.name),
-        "contact": AppPreference().getString(PreferencesKey.contactNumber),
-      };
-      log("${postData}");
       final response = await dio.post(
         "https://admin.jinreflexology.in/api/payment_callback",
         data: {
           "user_id": AppPreference().getString(PreferencesKey.userId),
           "payment_id": paymentId,
           "orderid": orderId,
-          "amount": currentSubtotal,
+          "amount": amount,
           "status": status,
+          if (reason != null) "reason": reason,
           "email": AppPreference().getString(PreferencesKey.email),
           "name": AppPreference().getString(PreferencesKey.name),
           "contact": AppPreference().getString(PreferencesKey.contactNumber),
           "country": widget.deliveryType == "india" ? "in" : "us",
-          "userType":AppPreference().getString(PreferencesKey.type)
+          "userType": AppPreference().getString(PreferencesKey.type),
         },
       );
 
       debugPrint("✅ Payment sent to backend: ${response.data}");
-      if (response.data["success"] == true) {
-        log("Payment Success");
-        await placeOrder();
-        Navigator.pop(context);
-      } else {}
+      return response.data is Map && response.data["success"] == true;
     } catch (e) {
       debugPrint("❌ Backend API error: $e");
+      return false;
     }
   }
 
@@ -1666,14 +1837,17 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
 
         if (decoded["success"] == true) {
           await _fetchProductIdMapping();
-          final totals = decoded["totals"] ?? {};
+          final totals = _extractTotals(decoded);
 
           setState(() {
             appliedCouponCode = couponController.text.trim();
-            currentSubtotal = double.tryParse(totals["subtotal"] ?? "0") ?? 0;
-            currentDiscount = double.tryParse(totals["discount"] ?? "0") ?? 0;
-            currentTotal = double.tryParse(totals["total"] ?? "0") ?? 0;
           });
+
+          if (totals != null && _totalsLooksValid(totals)) {
+            _applyTotalsToState(totals);
+          } else {
+            await _refreshCartSnapshot(updateTotals: true, updateMapping: false);
+          }
 
           _showSuccess("Coupon applied successfully!");
         } else {
@@ -1735,15 +1909,18 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
         final decoded = jsonDecode(response.body);
 
         if (decoded["success"] == true) {
-          final totals = decoded["totals"] ?? {};
           await _fetchProductIdMapping();
+          final totals = _extractTotals(decoded);
           setState(() {
             appliedCouponCode = null;
             couponController.clear();
-            currentSubtotal = double.tryParse(totals["subtotal"] ?? "0") ?? 0;
-            currentDiscount = double.tryParse(totals["discount"] ?? "0") ?? 0;
-            currentTotal = double.tryParse(totals["total"] ?? "0") ?? 0;
           });
+
+          if (totals != null && _totalsLooksValid(totals)) {
+            _applyTotalsToState(totals);
+          } else {
+            await _refreshCartSnapshot(updateTotals: true, updateMapping: false);
+          }
           setState(() {
             _canGoBack = true;
           });
@@ -1808,6 +1985,7 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
       "pincode": selectedAddress!.pincode,
       "customer_name": nameController.text.trim(),
       "customer_email": emailController.text.trim(),
+      "customer_id": emailController.text.trim(),
       "customer_phone": phoneController.text.trim(),
       "items": items,
       "subtotal": currentSubtotal,
@@ -1985,6 +2163,10 @@ class _BuyNowFormScreenState extends State<BuyNowFormScreen> {
           _priceRow(
             "Discount",
             "- ${widget.deliveryType == "india" ? "₹" : "\$"} ${currentDiscount.toStringAsFixed(2)}",
+          ),
+          _priceRow(
+            "Shipping Charges",
+            "${widget.deliveryType == "india" ? "Rs" : "\$"} ${currentShippingCharges.toStringAsFixed(2)}",
           ),
           const Divider(),
           _priceRow(

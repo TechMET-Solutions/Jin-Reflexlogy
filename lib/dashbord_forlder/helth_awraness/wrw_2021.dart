@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:jin_reflex_new/screens/health_campaign_pdf_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Wrw2021Screen extends StatefulWidget {
   const Wrw2021Screen({super.key});
@@ -12,6 +14,114 @@ class _Wrw2021ScreenState extends State<Wrw2021Screen> {
   bool isExpanded1 = false;
   bool isExpanded2 = false;
   bool isExpanded3 = false;
+
+  static const String _heroImageUrl =
+      "https://jinreflexology.in/wp-content/uploads/2022/02/14-1-jpg.webp";
+
+  static const List<String> _gridImageUrls = [
+    "https://jinreflexology.in/wp-content/uploads/2022/02/15-jpg.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/16-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/17-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/18-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/19-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/20-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/21-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/25-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/23-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/24-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/25-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/26-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/27-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/28-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/29-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/30-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/31-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/32-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/33-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/34-jpg-500x269.webp",
+    "https://jinreflexology.in/wp-content/uploads/2022/02/35-jpg-500x269.webp",
+  ];
+
+  static const String _internationalConferenceUrl =
+      "https://www.youtube.com/watch?v=cgAYRcfsqBM";
+  static const String _nationalConferenceUrl =
+      "https://www.youtube.com/watch?v=D1VART5jbkQ";
+  static const String _infoSlideUrl =
+      "https://www.youtube.com/watch?v=FNZ5QOLZ3cY";
+
+  static const List<String> _youtubeUrls = [
+    _infoSlideUrl,
+    "https://www.youtube.com/watch?v=yvJeXJPI_aU",
+    "https://www.youtube.com/watch?v=p0RuqtItUBg",
+    "https://www.youtube.com/watch?v=9hTg7GE4eWs",
+    "https://www.youtube.com/watch?v=YO_vKV5PNmA",
+    "https://www.youtube.com/watch?v=B2xA9iE7xbg",
+    "https://www.youtube.com/watch?v=KzaFQVR8scA",
+    "https://www.youtube.com/watch?v=LLU1MqaS438",
+    "https://www.youtube.com/watch?v=ZuvbtOoSbJk",
+    "https://www.youtube.com/watch?v=2Ups6hCC4vo",
+    "https://www.youtube.com/watch?v=mtzpWq_uGr0",
+    "https://www.youtube.com/watch?v=554T1u8Uv4k",
+    "https://www.youtube.com/watch?v=d819b1wdgjk",
+    "https://www.youtube.com/watch?v=8P_SGGpqGv0",
+    "https://www.youtube.com/watch?v=pdUXDgQ-e2c",
+    "https://www.youtube.com/watch?v=6E74vsJnsV4",
+    "https://www.youtube.com/watch?v=zWsMFBIxKd0",
+    "https://www.youtube.com/watch?v=MgCeiUQ6tM4",
+    "https://www.youtube.com/watch?v=x9LZteVuysA",
+    "https://www.youtube.com/watch?v=v6MTrH1BSZw",
+    "https://www.youtube.com/watch?v=v6MTrH1BSZw",
+    "https://www.youtube.com/watch?v=ZB76xY0gW9Q",
+    _internationalConferenceUrl,
+    _nationalConferenceUrl,
+  ];
+
+  static String? _extractYoutubeId(String url) {
+    try {
+      final uri = Uri.parse(url);
+      if (uri.host.contains("youtu.be")) {
+        return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+      }
+      if (uri.host.contains("youtube.com")) {
+        if (uri.queryParameters.containsKey("v")) return uri.queryParameters["v"];
+        if (uri.pathSegments.isNotEmpty && uri.pathSegments.first == "shorts") {
+          return uri.pathSegments.length >= 2 ? uri.pathSegments[1] : null;
+        }
+        if (uri.pathSegments.isNotEmpty && uri.pathSegments.first == "live") {
+          return uri.pathSegments.length >= 2 ? uri.pathSegments[1] : null;
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
+    return null;
+  }
+
+  static String _youtubeThumbnailUrl(String url) {
+    final id = _extractYoutubeId(url);
+    if (id == null || id.isEmpty) return "";
+    return "https://img.youtube.com/vi/$id/hqdefault.jpg";
+  }
+
+  static List<String> _dedupeByKey(
+    List<String> items,
+    String Function(String) keyOf,
+  ) {
+    final seen = <String>{};
+    final out = <String>[];
+    for (final item in items) {
+      final key = keyOf(item);
+      if (key.isEmpty) continue;
+      if (seen.add(key)) out.add(item);
+    }
+    return out;
+  }
+
+  Future<void> _openExternal(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -488,7 +598,10 @@ class _Wrw2021ScreenState extends State<Wrw2021Screen> {
                 const SizedBox(height: 20),
         
                 /// 🔹 Large Image Placeholder
-                buildGreyBox(height: 400),
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: _imageCard(_heroImageUrl),
+                ),
         
                 const SizedBox(height: 16),
         
@@ -500,24 +613,45 @@ class _Wrw2021ScreenState extends State<Wrw2021Screen> {
                   ),
                 ),
         
+                const SizedBox(height: 12),
+                _youtubeThumbCard(
+                  _infoSlideUrl,
+                  title: "Online Interaction and Yoga Camp (Info Slide)",
+                ),
+        
                 const SizedBox(height: 16),
         
-                buildGreyBox(height: 400),
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: _imageCard(_gridImageUrls.first),
+                ),
         
                 const SizedBox(height: 16),
         
                 /// 🔹 Grid Section
                 buildGrid(),
         
-                const SizedBox(height: 16),
-        
-                buildGreyBox(height: 200),
+                const SizedBox(height: 20),
+                const Text(
+                  "YouTube Videos",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                buildYoutubeGrid(),
         
                 const SizedBox(height: 12),
-        
-                buildGrid(),
-        
+                const Text(
+                  "2021 Glimpses PDF",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 12),
+                SizedBox(
+                  height: 560,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: const CampaignPdfViewer(year: 2021),
+                  ),
+                ),
         
                 const Text(
                   "World Reflexology Work Event – 2nd International Conference – 2021 – Convener – JR Anil Jain",
@@ -531,7 +665,10 @@ class _Wrw2021ScreenState extends State<Wrw2021Screen> {
         
                 const SizedBox(height: 12),
         
-                buildGreyBox(height: 200),
+                _youtubeThumbCard(
+                  _internationalConferenceUrl,
+                  title: "2nd International Conference (2021)",
+                ),
         
                 const SizedBox(height: 12),
         
@@ -547,7 +684,10 @@ class _Wrw2021ScreenState extends State<Wrw2021Screen> {
         
                 const SizedBox(height: 12),
         
-                buildGreyBox(height: 200),
+                _youtubeThumbCard(
+                  _nationalConferenceUrl,
+                  title: "7th National Conference (2021)",
+                ),
         
                 const SizedBox(height: 12),
         
@@ -602,19 +742,152 @@ class _Wrw2021ScreenState extends State<Wrw2021Screen> {
   }
 
   /// 🔹 Grid Builder
+  Widget _imageCard(String url, {double borderRadius = 12}) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => _FullScreenImage(title: "Image", imageUrl: url),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Image.network(
+          url,
+          fit: BoxFit.cover,
+          errorBuilder:
+              (_, __, ___) => Container(
+                color: Colors.grey.shade300,
+                alignment: Alignment.center,
+                child: const Icon(Icons.broken_image, size: 40),
+              ),
+        ),
+      ),
+    );
+  }
+
+  Widget _youtubeThumbCard(String url, {required String title}) {
+    return InkWell(
+      onTap: () => _openExternal(url),
+      borderRadius: BorderRadius.circular(12),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: const Color(0xfffff3d6),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xfff1cd8f)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Image.network(
+                      _youtubeThumbnailUrl(url),
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (_, __, ___) => Container(
+                            color: Colors.grey.shade300,
+                            child: const Icon(Icons.broken_image, size: 34),
+                          ),
+                    ),
+                  ),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black.withOpacity(0.45),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget buildGrid() {
+    final urls = _dedupeByKey(_gridImageUrls, (u) => u);
     return GridView.builder(
-      itemCount: 21,
+      itemCount: urls.length,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 5,
-        mainAxisSpacing: 5,
+        crossAxisCount: 2,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: 16 / 10,
+      ),
+      itemBuilder: (context, index) => _imageCard(urls[index]),
+    );
+  }
+
+  Widget buildYoutubeGrid() {
+    final urls = _dedupeByKey(_youtubeUrls, (u) => _extractYoutubeId(u) ?? "");
+    return GridView.builder(
+      itemCount: urls.length,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 15 / 12,
       ),
       itemBuilder: (context, index) {
-        return Container(color: Colors.grey.shade400);
+        return _youtubeThumbCard(urls[index], title: "Video ${index + 1}");
       },
+    );
+  }
+}
+
+class _FullScreenImage extends StatelessWidget {
+  const _FullScreenImage({required this.title, required this.imageUrl});
+
+  final String title;
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: CommonAppBar(title: title),
+      body: InteractiveViewer(
+        minScale: 0.5,
+        maxScale: 5,
+        child: Center(
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.contain,
+            errorBuilder:
+                (_, __, ___) => const Center(child: Text("Image failed to load")),
+          ),
+        ),
+      ),
     );
   }
 }

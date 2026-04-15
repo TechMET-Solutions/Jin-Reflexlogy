@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_paypal_payment/flutter_paypal_payment.dart';
 import 'package:http/http.dart' as http;
 import 'package:jin_reflex_new/api_service/api_state.dart' hide ApiService;
+import 'package:jin_reflex_new/api_service/payment_getway_keys.dart';
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/login_screen.dart';
@@ -11,6 +14,8 @@ import 'package:jin_reflex_new/model/dignosis_list_model.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/add_patient_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/tritment_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MemberListScreen extends StatefulWidget {
   @override
@@ -47,6 +52,10 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
   final FocusNode _searchFocusNode = FocusNode();
   String _currentSearchText = '';
   Timer? _searchDebounceTimer;
+  late Razorpay _razorpay;
+  final TextEditingController amountController = TextEditingController();
+  bool showValidation = false;
+  int _balanceRefreshTrigger = 0;
   @override
   void initState() {
     super.initState();
@@ -54,6 +63,10 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
     fetchPatients(isInitial: true);
     scrollController.addListener(_scrollListener);
     searchController.addListener(_onSearchChanged);
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
   }
 
   void _scrollListener() {
@@ -89,8 +102,10 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
     scrollController.removeListener(_scrollListener);
     scrollController.dispose();
     searchController.dispose();
+    amountController.dispose();
     _searchFocusNode.dispose();
     _searchDebounceTimer?.cancel();
+    _razorpay.clear();
     super.dispose();
   }
 
@@ -244,6 +259,252 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
     print("=" * 60 + "\n");
   }
 
+  Future<bool> isIndianUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString("delivery_type") == "india";
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Payment Success\nPayment ID: ${response.paymentId}"),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    await sendPaymentToBackend(
+      status: "success",
+      paymentId: response.paymentId,
+      orderId: response.orderId,
+      amount: int.tryParse(amountController.text) ?? 0,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _balanceRefreshTrigger++;
+    });
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) async {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Payment Failed\n${response.message}"),
+        backgroundColor: Colors.red,
+      ),
+    );
+
+    await sendPaymentToBackend(
+      status: "failed",
+      reason: response.message,
+      amount: int.tryParse(amountController.text) ?? 0,
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Wallet Used: ${response.walletName}")),
+    );
+  }
+
+  void _showPaymentPopup() {
+    amountController.clear();
+    showValidation = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return FutureBuilder<bool>(
+          future: isIndianUser(),
+          builder: (context, snapshot) {
+            final bool isIndia = snapshot.data ?? true;
+
+            return StatefulBuilder(
+              builder: (context, setPopupState) {
+                return AlertDialog(
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Add Payment',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Enter amount to add balance',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: amountController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText:
+                              'Enter Amount ${isIndia ? "(Rs)" : "(\$)"}',
+                          border: const OutlineInputBorder(),
+                          errorText:
+                              showValidation ? 'Minimum 50 required' : null,
+                        ),
+                        onChanged: (_) {
+                          if (showValidation) {
+                            setPopupState(() => showValidation = false);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final amountText = amountController.text.trim();
+
+                        if (amountText.isEmpty ||
+                            int.tryParse(amountText) == null ||
+                            int.parse(amountText) < 50) {
+                          setPopupState(() => showValidation = true);
+                          return;
+                        }
+
+                        final enteredAmount = int.parse(amountText);
+                        Navigator.pop(dialogContext);
+
+                        if (isIndia) {
+                          _razorpay.open({
+                            'key': razorpayKey,
+                            'amount': enteredAmount * 100,
+                            'name': AppPreference().getString(
+                              PreferencesKey.name,
+                            ),
+                            'description': 'Wallet Payment',
+                            'prefill': {
+                              'contact': AppPreference().getString(
+                                PreferencesKey.contactNumber,
+                              ),
+                              'email': AppPreference().getString(
+                                PreferencesKey.email,
+                              ),
+                            },
+                          });
+                        } else {
+                          _startPayPalPayment();
+                        }
+                      },
+                      child: const Text('Pay'),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _startPayPalPayment() {
+    final String amount = amountController.text.trim();
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (_) => PaypalCheckoutView(
+              sandboxMode: isSandboxMode,
+              clientId: paypalClientId,
+              secretKey: paypalSecret,
+              transactions: [
+                {
+                  "amount": {"total": amount, "currency": "USD"},
+                  "description": "Wallet / Service Payment",
+                },
+              ],
+              note: "Demo PayPal payment",
+              onSuccess: (Map params) async {
+                final paypalPaymentId = params["data"]?["id"];
+                if (paypalPaymentId == null) {
+                  debugPrint("PayPal paymentId null");
+                  return;
+                }
+
+                await sendPaymentToBackend(
+                  status: "success",
+                  paymentId: paypalPaymentId,
+                  orderId: null,
+                  amount: int.tryParse(amountController.text) ?? 0,
+                );
+
+                if (!mounted) return;
+                setState(() {
+                  _balanceRefreshTrigger++;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("PayPal Payment Successful"),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                Navigator.pop(context);
+              },
+              onError: (error) async {
+                await sendPaymentToBackend(
+                  status: "failed",
+                  reason: error.toString(),
+                  amount: int.tryParse(amountController.text) ?? 0,
+                );
+
+                if (!mounted) return;
+                Navigator.pop(context);
+              },
+              onCancel: () async {
+                if (!mounted) return;
+                Navigator.pop(context);
+              },
+            ),
+      ),
+    );
+  }
+
+  Future<void> sendPaymentToBackend({
+    required String status,
+    String? paymentId,
+    String? orderId,
+    String? reason,
+    required int amount,
+  }) async {
+    try {
+      final dio = Dio();
+      await dio.post(
+        "https://admin.jinreflexology.in/api/payment_callback",
+        data: {
+          "user_id": AppPreference().getString(PreferencesKey.userId),
+          "payment_id": paymentId,
+          "orderid": orderId,
+          "amount": amount.toString(),
+          "status": status,
+          "reason": reason,
+          "email": AppPreference().getString(PreferencesKey.email),
+          "name": AppPreference().getString(PreferencesKey.name),
+          "contact": AppPreference().getString(PreferencesKey.contactNumber),
+        },
+      );
+    } catch (e) {
+      debugPrint("Backend API error: $e");
+    }
+  }
+
   // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
@@ -255,8 +516,40 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
       appBar: CommonAppBar(
         title: "Patient List",
         showBalance: true,
-
         userId: token,
+        balanceRefreshTrigger: _balanceRefreshTrigger,
+        actions: [
+          InkWell(
+            onTap: () {
+              _showPaymentPopup();
+            },
+            child: Container(
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                color: Colors.green,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(5),
+                child: Text(
+                  "Add Amount",
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 5),
+          // IconButton(
+          //   tooltip: "Add Payment",
+          //   onPressed: _showPaymentPopup,
+          //   icon: const Icon(Icons.account_balance_wallet, color: Colors.white),
+          // ),
+        ],
       ),
       backgroundColor: Color(0xFFFDF3DD),
       body:
@@ -653,7 +946,7 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
                                                 SizedBox(
                                                   width:
                                                       screenSize.width * 0.04,
-                                                ),
+                                                ), 
                                                 Expanded(
                                                   child: Column(
                                                     crossAxisAlignment:

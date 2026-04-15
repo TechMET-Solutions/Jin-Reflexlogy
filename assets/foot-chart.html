@@ -40,15 +40,33 @@
 	//-->
 	</script>
 	<style>
-img {
-  width: 100% !important;
-  height: auto !important;
-}
 img[usemap] {
 		border: none;
 		height: auto;
-		max-width: 100%;
-		width: auto;
+		width: 100%;
+		max-width: 475px;
+		display: block;
+		margin: 0 auto;
+	}
+.chart-wrapper{
+		position: relative;
+		display: inline-block;
+		width: 100%;
+		max-width: 475px;
+	}
+.chart-overlay{
+		position: absolute;
+		inset: 0;
+		z-index: 5;
+	}
+.chart-point{
+		position: absolute;
+		transform: translate(-50%, -50%);
+		background: transparent;
+		border: none;
+		padding: 0;
+		margin: 0;
+		z-index: 6;
 	}
 
 .div { width:90%; padding-right:5%; padding-left:5%;}
@@ -76,8 +94,11 @@ img[usemap] {
 
           <p style="color:#FFFFFF; font-size:14px; text-align:center; width:100%; display:block;">Please touch point to see details and pictures</p>
 
-          <div style="margin-top:20px; margin-bottom:10px;">
-		 <img src="images/Left-Foot.jpg" name="Map2222" width="475" height="1134" border="0" align="middle" usemap="#Map2222" id="Map2222" />
+          <div style="margin-top:20px; margin-bottom:10px; padding:0 10px; text-align:center;">
+         <div class="chart-wrapper">
+		 <img src="images/Left-Foot.jpg" name="Map2222" width="475" height="1134" border="0" usemap="#Map2222" id="Map2222" />
+         <div class="chart-overlay" id="chart-overlay-left"></div>
+         </div>
          <map name="Map2222" id="Map2222">
            <area shape="circle" coords="175,586,12"  rel="imgtip[43]" />
 
@@ -491,6 +512,73 @@ for ( var i = 0; i < imgs.length; ++i ) {
   var map = document.querySelector( "map[name=" + imgs[i].useMap.substring( 1 ) + "]" );
   wrap( imgs[i], map );
 }
+
+function createTapTargets(imgId, mapId, overlayId){
+  var img = document.getElementById(imgId);
+  var map = document.getElementById(mapId);
+  var overlay = document.getElementById(overlayId);
+  if(!img || !map || !overlay){ return; }
+
+  function renderTargets(){
+    overlay.innerHTML = '';
+    var scaleX = img.clientWidth / 475;
+    var scaleY = img.clientHeight / 1134;
+    var areas = map.querySelectorAll('area');
+
+    areas.forEach(function(area){
+      var rel = area.getAttribute('rel');
+      if(!rel){ return; }
+      var coords = (area.getAttribute('coords') || '').split(',').map(parseFloat);
+      if(coords.length < 2){ return; }
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'chart-point';
+      btn.setAttribute('aria-label', rel);
+
+      if(area.getAttribute('shape') === 'rect' && coords.length >= 4){
+        var x1 = coords[0] * scaleX;
+        var y1 = coords[1] * scaleY;
+        var x2 = coords[2] * scaleX;
+        var y2 = coords[3] * scaleY;
+        btn.style.left = x1 + 'px';
+        btn.style.top = y1 + 'px';
+        btn.style.width = (x2 - x1) + 'px';
+        btn.style.height = (y2 - y1) + 'px';
+        btn.style.transform = 'none';
+      }else if(coords.length >= 3){
+        var x = coords[0] * scaleX;
+        var y = coords[1] * scaleY;
+        var r = Math.max(coords[2] * ((scaleX + scaleY) / 2), 18);
+        btn.style.left = x + 'px';
+        btn.style.top = y + 'px';
+        btn.style.width = (r * 2) + 'px';
+        btn.style.height = (r * 2) + 'px';
+        btn.style.borderRadius = '50%';
+      }
+
+      btn.addEventListener('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        var match = rel.match(/\[(\d+)\]/);
+        if(match && ddimgtooltip.tiparray[match[1]]){
+          ddimgtooltip.showmodal(jQuery, ddimgtooltip.tiparray[match[1]]);
+        }
+      });
+
+      overlay.appendChild(btn);
+    });
+  }
+
+  window.addEventListener('resize', renderTargets, false);
+  if (img.complete) {
+    renderTargets();
+  } else {
+    img.addEventListener('load', renderTargets, false);
+  }
+}
+
+createTapTargets('Map2222', 'Map2222', 'chart-overlay-left');
 });
 </script>
 

@@ -16,13 +16,34 @@ class CartItem {
   });
   
   factory CartItem.fromJson(Map<String, dynamic> json) {
+    final product = (json['product'] as Map?)?.cast<String, dynamic>() ?? {};
+    final images = (product['images'] as List?) ?? const [];
+
     return CartItem(
-      id: json['id'] ?? 0, // Cart item ID
-      productId: json['product_id'] ?? 0, // Extract from cart response
-      name: json['product']['title'] ?? '',
-      price: (json['product']['price'] ?? 0).toDouble(),
-      quantity: json['quantity'] ?? 0,
-      image: (json['product']['images'] as List?)?.first ?? '',
+      id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      productId: int.tryParse(json['product_id']?.toString() ?? '0') ?? 0,
+      name: product['title']?.toString() ?? '',
+      price: double.tryParse(product['price']?.toString() ?? '0') ?? 0,
+      quantity: int.tryParse(json['quantity']?.toString() ?? '0') ?? 0,
+      image: images.isNotEmpty ? images.first.toString() : '',
+    );
+  }
+
+  CartItem copyWith({
+    int? id,
+    int? productId,
+    String? name,
+    double? price,
+    int? quantity,
+    String? image,
+  }) {
+    return CartItem(
+      id: id ?? this.id,
+      productId: productId ?? this.productId,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      quantity: quantity ?? this.quantity,
+      image: image ?? this.image,
     );
   }
 }

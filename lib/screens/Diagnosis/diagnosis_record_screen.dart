@@ -80,6 +80,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
         "screen": LeftFootScreenNew(
           diagnosisId: widget.diagnosis_id?.toString() ?? "",
           patientId: widget.patient_id?.toString() ?? "",
+          gender: widget.gender,
           isNew: widget.isNew,
         ),
       },
@@ -89,6 +90,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
         "screen": RightFootScreenNew(
           patientId: widget.patient_id?.toString() ?? "",
           diagnosisId: widget.diagnosis_id?.toString() ?? "",
+          gender: widget.gender,
         ),
       },
       {
@@ -303,7 +305,9 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                       height: 40,
                       decoration: BoxDecoration(
                         color:
-                            isCompleted ? Colors.green : const Color(0xffF9CF63),
+                            isCompleted
+                                ? Colors.green
+                                : const Color(0xffF9CF63),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -325,18 +329,21 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                         fontSize: 15,
                       ),
                     ),
-                    subtitle: isCompleted && result.isNotEmpty
-                        ? Text(
-                            "Result: $result",
-                            style: const TextStyle(
-                              color: Colors.green,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          )
-                        : null,
+                    subtitle:
+                        isCompleted && result.isNotEmpty
+                            ? Text(
+                              "Result: $result",
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            )
+                            : null,
                     trailing: Icon(
-                      isCompleted ? Icons.check_circle : Icons.arrow_forward_ios,
+                      isCompleted
+                          ? Icons.check_circle
+                          : Icons.arrow_forward_ios,
                       color: isCompleted ? Colors.green : Colors.grey,
                       size: 20,
                     ),
@@ -347,43 +354,49 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                         result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => LeftFootScreenNew(
-                              diagnosisId: widget.diagnosis_id.toString(),
-                              patientId: widget.patient_id.toString(),
-                              isNew: widget.isNew,
-                            ),
+                            builder:
+                                (_) => LeftFootScreenNew(
+                                  diagnosisId: widget.diagnosis_id.toString(),
+                                  patientId: widget.patient_id.toString(),
+                                  gender: widget.gender,
+                                  isNew: widget.isNew,
+                                ),
                           ),
                         );
                       } else if (type == "rf") {
                         result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => RightFootScreenNew(
-                              patientId: widget.patient_id.toString(),
-                              diagnosisId: widget.diagnosis_id.toString(),
-                            ),
+                            builder:
+                                (_) => RightFootScreenNew(
+                                  patientId: widget.patient_id.toString(),
+                                  diagnosisId: widget.diagnosis_id.toString(),
+                                  gender: widget.gender,
+                                ),
                           ),
                         );
                       } else if (type == "rh") {
                         result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => RightHandScreen(
-                              pid: widget.patient_id.toString(),
-                              diagnosisId: widget.diagnosis_id.toString(),
-                              gender: widget.gender,
-                            ),
+                            builder:
+                                (_) => RightHandScreen(
+                                  pid: widget.patient_id.toString(),
+                                  diagnosisId: widget.diagnosis_id.toString(),
+                                  gender: widget.gender,
+                                ),
                           ),
                         );
                       } else if (type == "lh") {
                         result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => LeftHandScreen(
-                              pid: widget.patient_id.toString(),
-                              diagnosisId: widget.diagnosis_id.toString(),
-                              gender: widget.gender,
-                            ),
+                            builder:
+                                (_) => LeftHandScreen(
+                                  pid: widget.patient_id.toString(),
+                                  diagnosisId: widget.diagnosis_id.toString(),
+                                  gender: widget.gender,
+                                ),
                           ),
                         );
                       }
@@ -532,47 +545,30 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                 isEnabled: true,
               ),
               allPartsCompleted
-                  ? InkWell(
-                      onTap: isLoading
-                          ? null
-                          : () {
-                              if (matchedProblem.text.isEmpty) {
-                                Utils().showToastMessage(
-                                  "Please enter which diagnosis points match your problem?",
-                                );
-                                return;
-                              }
-                              if (notDetected.text.isEmpty) {
-                                Utils().showToastMessage(
-                                    "Please enter which problems were not detected?");
-                                return;
-                              }
-                              submitDiagnosis();
-                            },
-                      borderRadius: BorderRadius.circular(30),
-                      child: isLoading
-                          ? _loadingButton()
-                          : _button(
-                              "Submit",
-                              Colors.green,
-                              () {
-                                submitDiagnosis();
-                              },
-                              isEnabled: true,
-                            ),
-                    )
-                  : _button(
-                      "Submit",
-                      Colors.grey,
-                      () {
-                        showSnack(
-                          context,
-                          "Please complete all 4 diagnosis parts first!",
-                          error: true,
-                        );
-                      },
-                      isEnabled: false,
-                    ),
+                  ? isLoading
+                      ? _loadingButton()
+                      : _button("Submit", Colors.green, () {
+                        if (matchedProblem.text.isEmpty) {
+                          Utils().showToastMessage(
+                            "Please enter which diagnosis points match your problem?",
+                          );
+                          return;
+                        }
+                        if (notDetected.text.isEmpty) {
+                          Utils().showToastMessage(
+                            "Please enter which problems were not detected?",
+                          );
+                          return;
+                        }
+                        submitDiagnosis();
+                      }, isEnabled: true)
+                  : _button("Submit", Colors.grey, () {
+                    showSnack(
+                      context,
+                      "Please complete all 4 diagnosis parts first!",
+                      error: true,
+                    );
+                  }, isEnabled: false),
             ],
           ),
         ),
@@ -716,18 +712,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       if (rfImg != null) debugPrint("RF: ${rfImg!.length ~/ 1024} KB");
       if (lhImg != null) debugPrint("LH: ${lhImg!.length ~/ 1024} KB");
       if (rhImg != null) debugPrint("RH: ${rhImg!.length ~/ 1024} KB");
-
-    
-
-     
-     
-
-     
-
-     
       int totalSize = 0;
-
-
       debugPrint("Total size to upload: ${totalSize ~/ 1024} KB");
 
       if (totalSize > 5 * 1024 * 1024) {
@@ -759,6 +744,29 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
         "is_satisfied": satisfaction ?? "Yes",
         "timestamp": DateTime.now().toString().replaceAll(" ", "+"),
       });
+
+      debugPrint("===== SUBMIT API BODY START =====");
+      debugPrint("URL => $add_diagnosis");
+      debugPrint("gender => ${widget.gender}");
+      debugPrint("patient_id => ${widget.patient_id}");
+      debugPrint("pid => ${AppPreference().getString(PreferencesKey.userId)}");
+      debugPrint("diagnosis_id => ${widget.diagnosis_id}");
+      debugPrint("lf_result => ${lfResult ?? ""}");
+      debugPrint("rf_result => ${rfResult ?? ""}");
+      debugPrint("lh_result => ${lhResult ?? ""}");
+      debugPrint("rh_result => ${rhResult ?? ""}");
+      debugPrint("lf_data => ${lfData ?? ""}");
+      debugPrint("rf_data => ${rfData ?? ""}");
+      debugPrint("lh_data => ${lhData ?? ""}");
+      debugPrint("rh_data => ${rhData ?? ""}");
+      debugPrint("problems_matched => ${matchedProblem.text}");
+      debugPrint("not_detected => ${notDetected.text}");
+      debugPrint("is_satisfied => ${satisfaction ?? "Yes"}");
+      debugPrint("lf_img_length => ${lfImg64?.length ?? 0}");
+      debugPrint("rf_img_length => ${rfImg?.length ?? 0}");
+      debugPrint("lh_img_length => ${lhImg?.length ?? 0}");
+      debugPrint("rh_img_length => ${rhImg?.length ?? 0}");
+      debugPrint("===== SUBMIT API BODY END =====");
 
       final dio = Dio();
 
@@ -815,7 +823,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
         showSnack(context, "Diagnosis Submitted Successfully!");
 
         if (mounted) {
-          Navigator.pop(context);
+          Navigator.pop(context, true);
         }
       } else {
         showSnack(context, "Server error: ${response.statusCode}", error: true);

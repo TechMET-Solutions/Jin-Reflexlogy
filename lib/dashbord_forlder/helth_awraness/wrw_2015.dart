@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jin_reflex_new/screens/health_campaign_pdf_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
 class Wrw2015Screen extends StatefulWidget {
@@ -79,7 +80,7 @@ class _Wrw2015ScreenState extends State<Wrw2015Screen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Icon(
-                    isExpanded1 ? Icons.remove : Icons.add,
+                    isExpanded3 ? Icons.remove : Icons.add,
                     size: 20,
                     color: Colors.grey,
                   ),
@@ -576,50 +577,32 @@ class _Wrw2015ScreenState extends State<Wrw2015Screen> {
 
           SizedBox(height: 20),
 
-          Container(height: 200, width: double.infinity, color: Colors.grey),
-
-          SizedBox(height: 20),
-
+          const SizedBox(height: 12),
           Container(
-            height: 50,
             width: double.infinity,
-            color: Colors.red,
-
-            child: Text(
-              "GLIMPSE OF iNDIA'S BIGGEST HEALTH AWARENESS CAMPAIGN - 2015",
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.red.shade700,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+              "2015 Glimpses PDF",
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          Container(height: 200, width: double.infinity, color: Colors.grey),
-
-          Divider(color: Colors.red,),
-
-          SizedBox(height: 20),
-
-          const Text(
-            "World Reflexology Week free Treatment Campaign - 26 September 2015",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.6,
-              fontWeight: FontWeight.w600,
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 560,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: const CampaignPdfViewer(year: 2015),
             ),
           ),
-
-          SizedBox(height: 20),
-
-
-          Container(height: 200, width: double.infinity, color: Colors.grey),
-
-
-
-
-
-
         ],
       ),
     );
@@ -638,7 +621,7 @@ class _Wrw2015ScreenState extends State<Wrw2015Screen> {
               padding: const EdgeInsets.all(12),
               color: const Color(0xFF6A3EB5),
               child: const Text(
-                "World Reflexology Week - 24th September to 30th September , 2018",
+                "World Reflexology Week - 20th September to 26th September , 2015",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.yellow,
@@ -651,39 +634,34 @@ class _Wrw2015ScreenState extends State<Wrw2015Screen> {
 
             Wrw2015Screen.buildRow(
               "Advisory Member",
-              "Prof. P.B. Lohiya, Dr. Sarvdeo Prasad Gupta",
+              "Prof. P.B. Lohiya, Dr. Sarvdeo Prasad Gupta, Dr. Suresh Kumar Agarwal, Dr. Chanchalmal Chordia",
             ),
 
             Wrw2015Screen.sectionTitle(
               "WRW Inaugural Function - World Reflexology Week Nationwide Free Treatment Mega Event",
             ),
 
-            Wrw2015Screen.buildRow("Date", "24th September 2018"),
+            Wrw2015Screen.buildRow("Date", "20th September 2015"),
 
             Wrw2015Screen.buildRow(
               "Guest",
-              "Hon. Rajendra Babuji Darda (Editor in Chief, Lokmat)",
+              "Prof. P. B. Lohiya",
+            ),
+
+            Wrw2015Screen.buildRow("City", "Aurangabad"),
+
+            Wrw2015Screen.sectionTitle(
+              "WRW Concluding Function - 1st National Conference and Award Presentation Ceremony - 2015",
+            ),
+
+            Wrw2015Screen.buildRow("Date", "26th September 2015"),
+
+            Wrw2015Screen.buildRow(
+              "Guest",
+              "Honorable Rajendra Babuji Darda (Editor in Chief - Lokmat), Hon'ble Haribhau Bagde (Speaker - Maharashtra Assembly), Hon'ble Chandrakant Khaire (Member of Parliament)",
             ),
 
             Wrw2015Screen.buildRow("City", "Aurangabad, Maharashtra, India"),
-
-            Wrw2015Screen.buildRow(
-              "Organizer",
-              "International Reflexology JIN Association",
-            ),
-
-            Wrw2015Screen.sectionTitle(
-              "WRW Concluding Function - 4th National Conference and Award Presentation Ceremony - 2018",
-            ),
-
-            Wrw2015Screen.buildRow("Date", "30th September 2018"),
-
-            Wrw2015Screen.buildRow(
-              "Guest",
-              "Dr. Sachin Lohia and Dr. Bharat Bhushan Sharma",
-            ),
-
-            Wrw2015Screen.buildRow("City", "Surat, Gujrat, India"),
 
             Wrw2015Screen.buildRow(
               "Organizer",

@@ -49,35 +49,30 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
 
   final GlobalKey _repaintBoundaryKey = GlobalKey();
 
+  String get defaultSeverity =>
+      widget.day == 'first' ? levels.first : "fullyRecovered";
+
   // ==================== GETTERS ====================
   List<String> get levels =>
       widget.day == 'first'
-          ? ["severe", "moderate", "mild25", "painful"]
-          : [
-            "mild50",
-            "recovered",
-            "temporary",
-            "miniMild",
-            "progressive",
-            "relax",
-          ];
+          ? ["severe", "moderate50", "mild25", "painful"]
+          : ["fullyRecovered", "moderate", "progressive", "relax25", "none0"];
 
   Map<String, Color> get severityColors {
     if (widget.day == 'first') {
       return {
         "severe": Colors.red[700]!,
-        "moderate": Colors.orange[700]!,
+        "moderate50": Colors.orange[700]!,
         "mild25": Colors.yellow[700]!,
         "painful": Colors.red[900]!,
       };
     } else {
       return {
-        "mild50": Colors.lightGreen[600]!,
-        "recovered": Colors.green[700]!,
-        "temporary": Colors.blue[600]!,
-        "miniMild": Colors.lightGreen[400]!,
+        "fullyRecovered": Colors.green[700]!,
+        "moderate": Colors.orange[700]!,
         "progressive": Colors.teal[600]!,
-        "relax": Colors.green[400]!,
+        "relax25": Colors.lightGreen[400]!,
+        "none0": Colors.grey[500]!,
       };
     }
   }
@@ -86,23 +81,102 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
     if (widget.day == 'first') {
       return {
         "severe": "Severe",
-        "moderate": "Moderate",
+        "moderate50": "Moderate 50%",
         "mild25": "Mild (25%)",
         "painful": "Painful",
       };
     } else {
       return {
-        "mild50": "Mild (50%)",
-        "recovered": "Recovered",
-        "temporary": "Temporary",
-        "miniMild": "Mini Mild",
-        "progressive": "Progressive",
-        "relax": "Relax",
+        "fullyRecovered": "Fully Recovered 100%",
+        "moderate": "Moderate",
+        "progressive": "Progressive 75%",
+        "relax25": "Relax 25%",
+        "none0": "None 0%",
       };
     }
   }
 
-  // ==================== INIT ====================
+  String _normalizedSeverity(String severity) {
+    final value = severity.trim();
+    final normalizedKey = value.toLowerCase();
+
+    if (widget.day == 'first') {
+      switch (value) {
+        case "severe":
+        case "moderate50":
+        case "mild25":
+        case "painful":
+          return value;
+        case "moderate":
+          return "moderate50";
+        default:
+          return "severe";
+      }
+    }
+
+    switch (normalizedKey) {
+      case "fullyrecovered":
+        return "fullyRecovered";
+      case "moderate":
+        return "moderate";
+      case "temporary":
+        return "temporary";
+      case "minimild":
+        return "miniMild";
+      case "progressive":
+        return "progressive";
+      case "relax25":
+        return "relax25";
+      case "none0":
+        return "none0";
+      case "relax":
+        return "relax25";
+      case "mild50":
+      case "moderate50":
+        return "moderate";
+      case "recovered":
+        return "fullyRecovered";
+      default:
+        return "fullyRecovered";
+    }
+  }
+
+  String _painForBackend(String severity) {
+    final normalized = _normalizedSeverity(severity);
+
+    if (widget.day == 'first') {
+      switch (normalized) {
+        case "severe":
+        case "painful":
+          return "severe";
+        case "moderate50":
+          return "moderate50";
+        case "mild25":
+          return "mild25";
+        default:
+          return "severe";
+      }
+    }
+
+    switch (normalized) {
+      case "fullyRecovered":
+        return "fullyRecovered";
+      case "moderate":
+        return "moderate";
+      case "temporary":
+        return "temporary";
+      case "miniMild":
+        return "miniMild";
+      case "progressive":
+        return "progressive";
+      case "relax25":
+        return "relax25";
+      case "none0":
+        return "none0";
+      default:
+        return "fullyRecovered";
+    }
+  }
   @override
   void initState() {
     super.initState();
@@ -215,7 +289,7 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
                     .map(
                       (e) => BodyPartItem(
                         name: e.toString().trim(),
-                        severity: levels.first,
+                        severity: defaultSeverity,
                       ),
                     )
                     .toList();
@@ -269,18 +343,13 @@ class _BodyPartScreenState extends State<BodyPartScreen> {
       final screenshotFile = await ScreenshotHelper.captureWidget(
         _repaintBoundaryKey,
       );
-    List<Map<String, String>> diagnosisList = [];
+      List<Map<String, String>> diagnosisList = [];
 
-for (final item in items) {
+      for (final item in items) {
+        final String pain = _painForBackend(item.severity);
 
-  String pain = item.severity.toLowerCase();
-
-  diagnosisList.add({
-    "bodyPart": item.name.trim(),
-    "pain": pain
-  });
-
-}
+        diagnosisList.add({"bodyPart": item.name.trim(), "pain": pain});
+      }
 
       debugPrint("📤 Submitting: ${jsonEncode(diagnosisList)}");
       final success = await ScreenshotHelper.submitBodyMapData(
@@ -491,6 +560,7 @@ for (final item in items) {
                 },
               )
               : _buildBody(),
+
       floatingActionButton: _buildFloatingActionButton(),
     );
   }
@@ -611,7 +681,10 @@ for (final item in items) {
   Widget _buildMainContent() {
     final Map<String, int> count = {};
     for (var level in levels) {
-      count[level] = items.where((item) => item.severity == level).length;
+      count[level] =
+          items
+              .where((item) => _normalizedSeverity(item.severity) == level)
+              .length;
     }
     return SingleChildScrollView(
       child: Column(
@@ -883,152 +956,214 @@ for (final item in items) {
   }
 
   Widget _buildBodyPartItem(BodyPartItem item, int index) {
-    final severityColor = severityColors[item.severity] ?? Colors.grey;
+    final currentSeverity = _normalizedSeverity(item.severity);
+    if (item.severity != currentSeverity) {
+      item.severity = currentSeverity;
+    }
+    final severityColor = severityColors[currentSeverity] ?? Colors.grey;
     final bool isEditable = hasDayFile != true;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool useVerticalLayout = constraints.maxWidth < 420;
+        final Widget iconBox = Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: severityColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
+          child: Icon(
+            _getBodyPartIcon(item.name),
+            color: severityColor,
+            size: 22,
+          ),
+        );
+
+        final Widget titleSection = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: severityColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+            Text(
+              item.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
-              child: Icon(
-                _getBodyPartIcon(item.name),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              "Severity: ${severityLabels[currentSeverity] ?? currentSeverity}",
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
                 color: severityColor,
-                size: 20,
+                fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Severity: ${item.severity}",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: severityColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isEditable)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: severityColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: severityColor.withOpacity(0.3)),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: item.severity,
-                    icon: Icon(Icons.arrow_drop_down, color: severityColor),
-                    iconSize: 24,
-                    elevation: 0,
-                    borderRadius: BorderRadius.circular(8),
-                    dropdownColor: Colors.white,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: severityColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    items:
-                        levels.map((String value) {
-                          final color = severityColors[value] ?? Colors.grey;
-                          final label = severityLabels[value] ?? value;
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    color: color,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(label),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                    onChanged: (val) {
-                      if (isEditable && mounted) {
-                        setState(() => item.severity = val!);
-                      }
-                    },
-                  ),
-                ),
-              )
-            else
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: severityColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      severityLabels[item.severity] ?? item.severity,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(Icons.lock, size: 14, color: Colors.grey[500]),
-                  ],
-                ),
-              ),
           ],
+        );
+
+        final Widget actionWidget =
+            isEditable
+                ? _buildSeverityDropdown(item, currentSeverity, severityColor)
+                : _buildReadOnlySeverityChip(currentSeverity, severityColor);
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child:
+                useVerticalLayout
+                    ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            iconBox,
+                            const SizedBox(width: 12),
+                            Expanded(child: titleSection),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        SizedBox(width: double.infinity, child: actionWidget),
+                      ],
+                    )
+                    : Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        iconBox,
+                        const SizedBox(width: 16),
+                        Expanded(child: titleSection),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 280),
+                            child: actionWidget,
+                          ),
+                        ),
+                      ],
+                    ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSeverityDropdown(
+    BodyPartItem item,
+    String currentSeverity,
+    Color severityColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: severityColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: severityColor.withOpacity(0.3)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: currentSeverity,
+          isExpanded: true,
+          icon: Icon(Icons.arrow_drop_down, color: severityColor),
+          iconSize: 24,
+          elevation: 0,
+          borderRadius: BorderRadius.circular(12),
+          dropdownColor: Colors.white,
+          style: TextStyle(
+            fontSize: 14,
+            color: severityColor,
+            fontWeight: FontWeight.w600,
+          ),
+          items:
+              levels.map((String value) {
+                final color = severityColors[value] ?? Colors.grey;
+                final label = severityLabels[value] ?? value;
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          label,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+          onChanged: (val) {
+            if (mounted && val != null) {
+              setState(() => item.severity = val);
+            }
+          },
         ),
+      ),
+    );
+  }
+
+  Widget _buildReadOnlySeverityChip(
+    String currentSeverity,
+    Color severityColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: severityColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              severityLabels[currentSeverity] ?? currentSeverity,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Icon(Icons.lock, size: 14, color: Colors.grey[500]),
+        ],
       ),
     );
   }
@@ -1048,35 +1183,46 @@ for (final item in items) {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Total Conditions",
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 10),
+                  Text(
+                    "Total Conditions",
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                  Text(
+                    "${items.length} items",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
               ),
               Text(
-                "${items.length} items",
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
+                "Severity Count",
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],
           ),
-          Row(
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 16,
+            runSpacing: 12,
             children:
-                levels.take(3).map((severity) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 16),
-                    child: _buildSeverityCount(severity, count[severity] ?? 0),
-                  );
+                levels.map((severity) {
+                  return _buildSeverityCount(severity, count[severity] ?? 0);
                 }).toList(),
           ),
+          SizedBox(height: 25),
         ],
       ),
     );

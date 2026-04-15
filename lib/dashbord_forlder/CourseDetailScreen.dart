@@ -8,6 +8,7 @@ import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/login_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_screen_list.dart';
+import 'package:jin_reflex_new/screens/main_home_dashoabrd_screen.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,6 +30,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   late Razorpay _razorpay;
   bool _isProcessing = false;
   bool _isLoginInProgress = false;
+  bool _hasNavigatedAfterSuccess = false;
 
   // Text controllers for user details (for non-logged in users)
   final TextEditingController _firstNameController = TextEditingController();
@@ -70,12 +72,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       'email': prefs.getString(PreferencesKey.email) ?? '',
       'contact': prefs.getString(PreferencesKey.contactNumber) ?? '',
     };
-    
+
     print("📱 Refreshed User Data:");
     print("Token: ${data['token']}");
     print("UserId: ${data['userId']}");
     print("Type: ${data['type']}");
-    
+
     return data;
   }
 
@@ -93,57 +95,61 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: lines.map((line) {
-        final isPrice = line.contains("₹") || line.contains("\$");
-        final isBulletPoint = line.trim().startsWith("-") ||
-            line.trim().startsWith("•") ||
-            line.trim().startsWith("*");
+      children:
+          lines.map((line) {
+            final isPrice = line.contains("₹") || line.contains("\$");
+            final isBulletPoint =
+                line.trim().startsWith("-") ||
+                line.trim().startsWith("•") ||
+                line.trim().startsWith("*");
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (isBulletPoint) ...[
-                Padding(
-                  padding: const EdgeInsets.only(top: 5, right: 8),
-                  child: Container(
-                    width: 5,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 19, 4, 66),
-                      shape: BoxShape.circle,
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (isBulletPoint) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(top: 5, right: 8),
+                      child: Container(
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 19, 4, 66),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    line.trim().replaceFirst(RegExp(r'^[-•*]\s*'), ''),
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: isPrice ? FontWeight.w600 : FontWeight.normal,
-                      color: isPrice ? Colors.green : Colors.black87,
-                      height: 1.6,
+                    Expanded(
+                      child: Text(
+                        line.trim().replaceFirst(RegExp(r'^[-•*]\s*'), ''),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight:
+                              isPrice ? FontWeight.w600 : FontWeight.normal,
+                          color: isPrice ? Colors.green : Colors.black87,
+                          height: 1.6,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ] else ...[
-                Expanded(
-                  child: Text(
-                    line.trim(),
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: isPrice ? FontWeight.w600 : FontWeight.normal,
-                      color: isPrice ? Colors.green : Colors.black87,
-                      height: 1.6,
+                  ] else ...[
+                    Expanded(
+                      child: Text(
+                        line.trim(),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight:
+                              isPrice ? FontWeight.w600 : FontWeight.normal,
+                          color: isPrice ? Colors.green : Colors.black87,
+                          height: 1.6,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-      }).toList(),
+                  ],
+                ],
+              ),
+            );
+          }).toList(),
     );
   }
 
@@ -179,12 +185,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       ),
     );
 
-    // Call enrollment API on failure
-    await _callSubmitEnrollmentAPI(
-      paymentId: null,
-      orderId: null,
+    final userData = await _refreshUserData();
+    await sendPaymentToBackend(
+      userId: userData['userId'] ?? '',
       status: "failed",
-      paymentGateway: "razorpay",
+      reason: response.message,
+      amount: coursePrice.toInt(),
     );
   }
 
@@ -192,22 +198,23 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   Future<bool> _isUserLoggedIn() async {
     // Force refresh SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    
+
     final token = prefs.getString(PreferencesKey.token) ?? '';
     final userId = prefs.getString(PreferencesKey.userId) ?? '';
     final type = prefs.getString(PreferencesKey.type) ?? '';
-    
+
     // Allow both patient AND therapist to enroll
-    final isLoggedIn = token.isNotEmpty && 
-                       userId.isNotEmpty && 
-                       (type == "patient" || type == "therapist");
-    
+    final isLoggedIn =
+        token.isNotEmpty &&
+        userId.isNotEmpty &&
+        (type == "patient" || type == "therapist");
+
     print("📱 Login Status Check (Fresh):");
     print("Token: $token");
     print("UserId: $userId");
     print("Type: $type");
     print("Is Logged In: $isLoggedIn");
-    
+
     return isLoggedIn;
   }
 
@@ -236,7 +243,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     try {
       // IMPORTANT: Get FRESH user data for each API call
       final userData = await _refreshUserData();
-      
+
       final therapistId = userData['userId'];
 
       final body = {
@@ -268,23 +275,36 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       if (response.statusCode == 200) {
         final res = jsonDecode(response.body);
         print("📥 Enrollment Response: $res");
+        final bool apiSuccess =
+            res["success"] == true ||
+            res["success"] == 1 ||
+            res["status"] == "success" ||
+            res["paymentStatus"] == true;
+        final String message =
+            res["message"] ??
+            (apiSuccess
+                ? "Course enrolled successfully"
+                : "Course enrollment failed");
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                status == "success"
-                    ? "✅ Course enrolled successfully"
-                    : "❌ Enrollment failed",
-              ),
-              backgroundColor: status == "success" ? Colors.green : Colors.red,
+        if (apiSuccess && mounted && !_hasNavigatedAfterSuccess) {
+          _hasNavigatedAfterSuccess = true;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder:
+                  (_) => _PaymentSuccessFullScreen(
+                    title: "Course Purchased Successfully",
+                    message: message,
+                    delay: const Duration(seconds: 6),
+                  ),
             ),
           );
-        }
-
-        if (status == "success" && mounted) {
-          // Navigate back to refresh the course list
-          Navigator.pop(context, true);
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: apiSuccess ? Colors.green : Colors.red,
+            ),
+          );
         }
       } else {
         throw Exception("API Error ${response.statusCode}");
@@ -330,50 +350,41 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
 
     if (!isLoggedIn) {
       setState(() => _isLoginInProgress = true);
-      
+
       print("🚀 Redirecting to login screen...");
-      
+
       // Navigate to login screen and wait for result
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => JinLoginScreen(
-            text: "CourseDetailScreen",
-            type: "therapist",
-            diliveryType: widget.deliveryType,
-            registershow: true,
-            onTab: () {
-              // This will navigate to MemberListScreen
-              // But we'll handle return separately
-            },
-          ),
+          builder:
+              (_) => JinLoginScreen(
+                text: "CourseDetailScreen",
+                type: "therapist",
+                diliveryType: widget.deliveryType,
+                registershow: true,
+                onTab: () {
+                  // This will navigate to MemberListScreen
+                  // But we'll handle return separately
+                },
+              ),
         ),
       );
-
       setState(() => _isLoginInProgress = false);
-
-      // IMPORTANT: Give some time for SharedPreferences to update
       await Future.delayed(const Duration(milliseconds: 1000));
-      
-      // Check login status again after returning with FRESH data
       final isNowLoggedIn = await _isUserLoggedIn();
-      
+
       if (isNowLoggedIn) {
         print("✅ Login successful! Token updated. Retrying enrollment...");
-        
-        // Small delay to ensure all data is loaded
         await Future.delayed(const Duration(milliseconds: 500));
-        
-        // Retry enrollment
         if (mounted) {
           _handleEnrollNow();
         }
       } else {
         print("❌ Login failed or cancelled");
-        // User cancelled login or login failed
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text("Please login to enroll in this course"),
               backgroundColor: Colors.orange,
             ),
@@ -388,10 +399,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
 
     // Free course
     if (coursePrice == 0) {
-      await _callSubmitEnrollmentAPI(
-        status: "success",
-        paymentGateway: "free",
-      );
+      await _callSubmitEnrollmentAPI(status: "success", paymentGateway: "free");
       return;
     }
 
@@ -408,7 +416,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     final amount = (coursePrice * 100).toInt(); // Convert to paise
 
     var options = {
-      'key': razorpayKey, 
+      'key': razorpayKey,
       'amount': amount.toString(),
       'name': 'Jin Reflexology',
       'description': widget.course['title'],
@@ -416,13 +424,11 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         'contact':
             _mobileController.text.trim().isNotEmpty
                 ? _mobileController.text.trim()
-                : AppPreference().getString(PreferencesKey.contactNumber) ??
-                    '',
+                : AppPreference().getString(PreferencesKey.contactNumber) ?? '',
         'email':
             _emailController.text.trim().isNotEmpty
                 ? _emailController.text.trim()
-                : AppPreference().getString(PreferencesKey.email) ??
-                    '',
+                : AppPreference().getString(PreferencesKey.email) ?? '',
         'name':
             _firstNameController.text.trim().isNotEmpty
                 ? "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}"
@@ -575,12 +581,52 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 floating: false,
                 pinned: true,
                 flexibleSpace: FlexibleSpaceBar(
-                  background: imageUrl.isNotEmpty
-                      ? Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: const Color.fromARGB(255, 19, 4, 66),
+                  background:
+                      imageUrl.isNotEmpty
+                          ? Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (_, __, ___) => Container(
+                                  color: const Color.fromARGB(255, 19, 4, 66),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.book_outlined,
+                                      size: 80,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                color: Colors.grey[200],
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    value:
+                                        loadingProgress.expectedTotalBytes !=
+                                                null
+                                            ? loadingProgress
+                                                    .cumulativeBytesLoaded /
+                                                loadingProgress
+                                                    .expectedTotalBytes!
+                                            : null,
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                          : Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color.fromARGB(255, 19, 4, 66),
+                                  const Color.fromARGB(255, 88, 72, 137),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
                             child: const Center(
                               child: Icon(
                                 Icons.book_outlined,
@@ -589,41 +635,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                               ),
                             ),
                           ),
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              color: Colors.grey[200],
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes !=
-                                          null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                                ),
-                              ),
-                            );
-                          },
-                        )
-                      : Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color.fromARGB(255, 19, 4, 66),
-                                const Color.fromARGB(255, 88, 72, 137),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.book_outlined,
-                              size: 80,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
                   title: Text(
                     "Course Details",
                     style: TextStyle(
@@ -733,10 +744,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Divider(
-                              color: Colors.grey[300],
-                              height: 1,
-                            ),
+                            Divider(color: Colors.grey[300], height: 1),
                             const SizedBox(height: 16),
 
                             // Borrowed Status Badge
@@ -749,9 +757,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.green[50],
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.green[200]!,
-                                  ),
+                                  border: Border.all(color: Colors.green[200]!),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -833,8 +839,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            if (longDesc.isNotEmpty)
-                              buildDescription(longDesc),
+                            if (longDesc.isNotEmpty) buildDescription(longDesc),
                           ],
                         ),
                       ),
@@ -848,10 +853,18 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              const Color.fromARGB(255, 19, 4, 66)
-                                  .withOpacity(0.95),
-                              const Color.fromARGB(255, 88, 72, 137)
-                                  .withOpacity(0.95),
+                              const Color.fromARGB(
+                                255,
+                                19,
+                                4,
+                                66,
+                              ).withOpacity(0.95),
+                              const Color.fromARGB(
+                                255,
+                                88,
+                                72,
+                                137,
+                              ).withOpacity(0.95),
                             ],
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
@@ -859,8 +872,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                           borderRadius: BorderRadius.circular(15),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color.fromARGB(255, 19, 4, 66)
-                                  .withOpacity(0.3),
+                              color: const Color.fromARGB(
+                                255,
+                                19,
+                                4,
+                                66,
+                              ).withOpacity(0.3),
                               blurRadius: 20,
                               spreadRadius: 2,
                               offset: const Offset(0, 8),
@@ -936,13 +953,18 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                               width: double.infinity,
                               height: 50,
                               child: ElevatedButton(
-                                onPressed: (isBorrowed || _isLoginInProgress) 
-                                    ? null 
-                                    : _handleEnrollNow,
+                                onPressed:
+                                    (isBorrowed || _isLoginInProgress)
+                                        ? null
+                                        : _handleEnrollNow,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.white,
-                                  foregroundColor:
-                                      const Color.fromARGB(255, 19, 4, 66),
+                                  foregroundColor: const Color.fromARGB(
+                                    255,
+                                    19,
+                                    4,
+                                    66,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -959,26 +981,28 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            Color.fromARGB(255, 19, 4, 66),
-                                          ),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Color.fromARGB(255, 19, 4, 66),
+                                              ),
                                         ),
                                       )
                                     else
                                       Icon(
                                         isBorrowed
                                             ? Icons.check_circle
-                                            : Icons.shopping_cart_checkout_rounded,
+                                            : Icons
+                                                .shopping_cart_checkout_rounded,
                                       ),
                                     const SizedBox(width: 10),
                                     Text(
                                       _isLoginInProgress
                                           ? "Please wait..."
                                           : isBorrowed
-                                              ? "Already Enrolled"
-                                              : coursePrice == 0
-                                                  ? "Enroll for Free"
-                                                  : "Enroll Now",
+                                          ? "Already Enrolled"
+                                          : coursePrice == 0
+                                          ? "Enroll for Free"
+                                          : "Enroll Now",
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -1012,11 +1036,119 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           if (_isProcessing)
             Container(
               color: Colors.black.withOpacity(0.5),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: const Center(child: CircularProgressIndicator()),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _PaymentSuccessFullScreen extends StatefulWidget {
+  final String title;
+  final String message;
+  final Duration delay;
+
+  const _PaymentSuccessFullScreen({
+    required this.title,
+    required this.message,
+    required this.delay,
+  });
+
+  @override
+  State<_PaymentSuccessFullScreen> createState() =>
+      _PaymentSuccessFullScreenState();
+}
+
+class _PaymentSuccessFullScreenState extends State<_PaymentSuccessFullScreen> {
+  bool _navigated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(widget.delay, () {
+      if (!mounted || _navigated) return;
+      _navigated = true;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainHomeScreenDashBoard()),
+        (route) => false,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F6F6),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 12,
+                    offset: Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_circle,
+                      size: 54,
+                      color: Colors.green,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    widget.title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color.fromARGB(255, 19, 4, 66),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    widget.message,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      height: 1.4,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(strokeWidth: 3),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "Redirecting to Home in ${widget.delay.inSeconds}s...",
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

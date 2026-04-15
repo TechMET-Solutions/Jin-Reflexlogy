@@ -23,9 +23,11 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
   List<CartItem> cartItems = [];
   bool isLoading = true;
   final Set<int> _updatingCartIds = <int>{};
+  int _fetchSeq = 0;
 
   int userId = 0;
   double subtotal = 0;
+  double shippingCharges = 0;
   double discount = 0;
   double total = 0;
 
@@ -39,8 +41,8 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
 
   Future<void> loadUserAndFetchCart() async {
     final prefs = AppPreference();
-    userId = int.tryParse(prefs.getString(PreferencesKey.userId) ?? "0") ?? 0;
-    fetchCartItems();
+    userId = int.tryParse(prefs.getString(PreferencesKey.userId)) ?? 0;
+    await fetchCartItems(showLoader: true);
   }
 
   @override
@@ -61,9 +63,13 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
   }
 
   // ================= FETCH CART ITEMS =================
-  Future<void> fetchCartItems() async {
+  Future<void> fetchCartItems({bool showLoader = false}) async {
+    final int seq = ++_fetchSeq;
+    if (showLoader && mounted) {
+      setState(() => isLoading = true);
+    }
     final prefs = AppPreference();
-    final token = prefs.getString(PreferencesKey.userId);
+    final token = prefs.getString(PreferencesKey.token);
     final type = prefs.getString(PreferencesKey.type);
 
     final String country = widget.deliveryType == "india" ? "in" : "us";
@@ -84,25 +90,45 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
       debugPrint("STATUS: ${response.statusCode}");
       debugPrint("BODY: ${response.body}");
 
-      final decoded = jsonDecode(response.body);
+      dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } catch (_) {
+        decoded = null;
+      }
 
-      if (response.statusCode == 200 && decoded["success"] == true) {
-        final List list = decoded["data"] ?? [];
-        final totals = decoded["totals"] ?? {};
+      if (!mounted || seq != _fetchSeq) return;
+
+      if (response.statusCode == 200 &&
+          decoded is Map &&
+          decoded["success"] == true) {
+        final List list =
+            (decoded["data"] is List) ? (decoded["data"] as List) : <dynamic>[];
+        final totals =
+            (decoded["totals"] is Map) ? (decoded["totals"] as Map) : <dynamic, dynamic>{};
 
         setState(() {
           cartItems = list.map<CartItem>((e) => CartItem.fromJson(e)).toList();
-          subtotal = double.tryParse(totals["subtotal"] ?? "0") ?? 0;
-          discount = double.tryParse(totals["discount"] ?? "0") ?? 0;
-          total = double.tryParse(totals["total"] ?? "0") ?? 0;
+          subtotal =
+              double.tryParse(totals["subtotal"]?.toString() ?? "0") ?? 0;
+          shippingCharges =
+              double.tryParse(totals["shipping_charges"]?.toString() ?? "0") ??
+              0;
+          discount =
+              double.tryParse(totals["discount"]?.toString() ?? "0") ?? 0;
+          total = double.tryParse(totals["total"]?.toString() ?? "0") ?? 0;
           isLoading = false;
         });
       } else {
-        // API message dynamic
-        String errorMessage = decoded["message"] ?? "Something went wrong";
+        String errorMessage = "Something went wrong";
+        if (decoded is Map && decoded["message"] != null) {
+          errorMessage = decoded["message"].toString();
+        } else if (response.body.trim().isNotEmpty) {
+          errorMessage = response.body.trim();
+        }
 
         _showError(errorMessage);
-        setState(() => isLoading = false);
+        if (mounted) setState(() => isLoading = false);
       }
     } catch (e) {
       debugPrint("❌ CART ERROR: $e");
@@ -110,17 +136,51 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
       // network / parsing error dynamic
       _showError(e.toString());
 
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
+  void _recomputeTotalsFromItems() {
+    final newSubtotal = cartItems.fold<double>(
+      0,
+      (sum, item) => sum + (item.price * item.quantity),
+    );
+
+    setState(() {
+      subtotal = newSubtotal;
+      total = (subtotal + shippingCharges) - discount;
+      if (total < 0) total = 0;
+    });
+  }
+
   Future<void> updateQuantity(int cartId, int newQuantity) async {
+    // Optimistic update so +/- UI responds immediately.
+    final int itemIndex = cartItems.indexWhere((item) => item.id == cartId);
+    int? oldQuantity;
+    CartItem? removedItem;
+    final int originalIndex = itemIndex;
+    if (itemIndex != -1) {
+      oldQuantity = cartItems[itemIndex].quantity;
+      setState(() {
+        if (newQuantity == 0) {
+          removedItem = cartItems[itemIndex];
+          cartItems.removeAt(itemIndex);
+        } else {
+          cartItems[itemIndex] = cartItems[itemIndex].copyWith(
+            quantity: newQuantity,
+          );
+        }
+      });
+      _recomputeTotalsFromItems();
+    }
+
     setState(() {
       _updatingCartIds.add(cartId);
     });
 
     final prefs = AppPreference();
     final type = prefs.getString(PreferencesKey.type);
+    final token = prefs.getString(PreferencesKey.token);
 
     final String url =
         "https://admin.jinreflexology.in/api/cart/update-quantity";
@@ -144,6 +204,7 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
         },
         body: jsonEncode(body),
       );
@@ -171,15 +232,69 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
           await fetchCartItems();
         } else {
           _showError(decoded["message"] ?? "Failed to update quantity");
+          if (oldQuantity != null && mounted) {
+            setState(() {
+              if (removedItem != null) {
+                final insertAt =
+                    originalIndex < 0
+                        ? 0
+                        : (originalIndex > cartItems.length
+                            ? cartItems.length
+                            : originalIndex);
+                cartItems.insert(insertAt, removedItem!);
+              }
+              final idx = cartItems.indexWhere((item) => item.id == cartId);
+              if (idx != -1) {
+                cartItems[idx] = cartItems[idx].copyWith(quantity: oldQuantity!);
+              }
+            });
+            _recomputeTotalsFromItems();
+          }
           await fetchCartItems();
         }
       } else {
         _showError("Server error: ${response.statusCode}");
+        if (oldQuantity != null && mounted) {
+          setState(() {
+            if (removedItem != null) {
+              final insertAt =
+                  originalIndex < 0
+                      ? 0
+                      : (originalIndex > cartItems.length
+                          ? cartItems.length
+                          : originalIndex);
+              cartItems.insert(insertAt, removedItem!);
+            }
+            final idx = cartItems.indexWhere((item) => item.id == cartId);
+            if (idx != -1) {
+              cartItems[idx] = cartItems[idx].copyWith(quantity: oldQuantity!);
+            }
+          });
+          _recomputeTotalsFromItems();
+        }
         await fetchCartItems();
       }
     } catch (e) {
       debugPrint("❌ UPDATE QUANTITY ERROR: $e");
       _showError("Network error");
+      if (oldQuantity != null && mounted) {
+        setState(() {
+          if (removedItem != null) {
+            final insertAt =
+                originalIndex < 0
+                    ? 0
+                    : (originalIndex > cartItems.length
+                        ? cartItems.length
+                        : originalIndex);
+            cartItems.insert(insertAt, removedItem!);
+          }
+          final idx = cartItems.indexWhere((item) => item.id == cartId);
+          if (idx != -1) {
+            cartItems[idx] = cartItems[idx].copyWith(quantity: oldQuantity!);
+          }
+        });
+        _recomputeTotalsFromItems();
+      }
       await fetchCartItems();
     } finally {
       setState(() {
@@ -243,7 +358,7 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
                   // CART LIST
                   Expanded(
                     child: RefreshIndicator(
-                      onRefresh: fetchCartItems,
+                      onRefresh: () => fetchCartItems(showLoader: false),
                       child: ListView.builder(
                         padding: const EdgeInsets.all(14),
                         itemCount: cartItems.length,
@@ -275,9 +390,14 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
                           "${widget.deliveryType == "india" ? "₹" : "\$"}${subtotal.toStringAsFixed(2)}",
                         ),
                         _priceRow(
+                          "Shipping Charges",
+                          "${widget.deliveryType == "india" ? "₹ " : "\$"}${shippingCharges.toStringAsFixed(2)}",
+                        ),
+                        _priceRow(
                           "Discount",
                           "- ${widget.deliveryType == "india" ? "₹" : "\$"}${discount.toStringAsFixed(2)}",
                         ),
+
                         const Divider(),
                         _priceRow(
                           "Total",
@@ -531,13 +651,13 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
                                       (_) => BuyNowFormScreen(
                                         cartItems: cartItems,
                                         subtotal: subtotal,
+                                        shippingCharges: shippingCharges,
                                         discount: discount,
                                         total: total,
                                         deliveryType: widget.deliveryType,
                                       ),
                                 ),
                               ).then((_) {
-                                // 👇 BACK आल्यावर CART API REFRESH
                                 fetchCartItems();
                               });
                             },
@@ -570,6 +690,7 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
 
   // ================= PRICE ROW WIDGET =================
   Widget _priceRow(String title, String value, {bool bold = false}) {
+    final bool isDiscountRow = title.toLowerCase() == "discount";
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -583,7 +704,12 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
             value,
             style: TextStyle(
               fontWeight: bold ? FontWeight.bold : null,
-              color: bold ? const Color.fromARGB(255, 19, 4, 66) : Colors.black,
+              color:
+                  isDiscountRow
+                      ? Colors.green
+                      : (bold
+                          ? const Color.fromARGB(255, 19, 4, 66)
+                          : Colors.black),
             ),
           ),
         ],

@@ -45,6 +45,20 @@ class _CountryStateCityWidgetState extends State<CountryStateCityWidget> {
     _loadCountries();
   }
 
+  @override
+  void didUpdateWidget(covariant CountryStateCityWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialCountry != oldWidget.initialCountry ||
+        widget.initialState != oldWidget.initialState ||
+        widget.initialCity != oldWidget.initialCity) {
+      setState(() {
+        selectedCountry = widget.initialCountry;
+        selectedState = widget.initialState;
+        selectedCity = widget.initialCity;
+      });
+    }
+  }
+
   Future<void> _loadCountries() async {
     if (!mounted) return;
     setState(() => isLoadingCountries = true);
@@ -59,9 +73,13 @@ class _CountryStateCityWidgetState extends State<CountryStateCityWidget> {
       });
 
       if (selectedCountry != null) {
-        await _loadStates(selectedCountry!);
+        await _loadStates(selectedCountry!, preserveSelection: true);
         if (selectedState != null) {
-          await _loadCities(selectedCountry!, selectedState!);
+          await _loadCities(
+            selectedCountry!,
+            selectedState!,
+            preserveSelection: true,
+          );
         }
       }
     } catch (e) {
@@ -76,7 +94,10 @@ class _CountryStateCityWidgetState extends State<CountryStateCityWidget> {
     }
   }
 
-  Future<void> _loadStates(String country) async {
+  Future<void> _loadStates(
+    String country, {
+    bool preserveSelection = false,
+  }) async {
     print("🔍 Loading states for: $country");
     
     if (!mounted) return;
@@ -84,8 +105,10 @@ class _CountryStateCityWidgetState extends State<CountryStateCityWidget> {
       isLoadingStates = true;
       states = [];
       cities = [];
-      selectedState = null;
-      selectedCity = null;
+      if (!preserveSelection) {
+        selectedState = null;
+        selectedCity = null;
+      }
     });
 
     try {
@@ -96,6 +119,12 @@ class _CountryStateCityWidgetState extends State<CountryStateCityWidget> {
       setState(() {
         states = result;
         isLoadingStates = false;
+        if (preserveSelection &&
+            selectedState != null &&
+            !result.any((e) => e.name == selectedState)) {
+          selectedState = null;
+          selectedCity = null;
+        }
       });
       
       if (result.isEmpty) {
@@ -108,7 +137,7 @@ class _CountryStateCityWidgetState extends State<CountryStateCityWidget> {
         );
       }
       
-      widget.onChanged(selectedCountry, null, null);
+      widget.onChanged(selectedCountry, selectedState, selectedCity);
     } catch (e) {
       print("❌ Error loading states: $e");
       
@@ -123,14 +152,20 @@ class _CountryStateCityWidgetState extends State<CountryStateCityWidget> {
     }
   }
 
-  Future<void> _loadCities(String country, String state) async {
+  Future<void> _loadCities(
+    String country,
+    String state, {
+    bool preserveSelection = false,
+  }) async {
     print("🔍 Loading cities for: $country, $state");
     
     if (!mounted) return;
     setState(() {
       isLoadingCities = true;
       cities = [];
-      selectedCity = null;
+      if (!preserveSelection) {
+        selectedCity = null;
+      }
     });
 
     try {
@@ -141,6 +176,11 @@ class _CountryStateCityWidgetState extends State<CountryStateCityWidget> {
       setState(() {
         cities = result;
         isLoadingCities = false;
+        if (preserveSelection &&
+            selectedCity != null &&
+            !result.contains(selectedCity)) {
+          selectedCity = null;
+        }
       });
       
       if (result.isEmpty) {
@@ -181,6 +221,7 @@ class _CountryStateCityWidgetState extends State<CountryStateCityWidget> {
           popupProps: PopupProps.menu(
             showSearchBox: true,
             searchFieldProps: TextFieldProps(
+              autofocus: true,
               decoration: InputDecoration(
                 hintText: "Search country...",
                 prefixIcon: const Icon(Icons.search),
@@ -221,7 +262,14 @@ class _CountryStateCityWidgetState extends State<CountryStateCityWidget> {
           onChanged: (value) async {
             if (value != null && value != selectedCountry) {
               print("🌍 Country selected: $value");
-              setState(() => selectedCountry = value);
+              setState(() {
+                selectedCountry = value;
+                selectedState = null;
+                selectedCity = null;
+                states = [];
+                cities = [];
+              });
+              widget.onChanged(value, null, null);
               await _loadStates(value);
             }
           },
@@ -242,6 +290,7 @@ class _CountryStateCityWidgetState extends State<CountryStateCityWidget> {
           popupProps: PopupProps.menu(
             showSearchBox: true,
             searchFieldProps: TextFieldProps(
+              autofocus: true,
               decoration: InputDecoration(
                 hintText: "Search state...",
                 prefixIcon: const Icon(Icons.search),
@@ -286,7 +335,12 @@ class _CountryStateCityWidgetState extends State<CountryStateCityWidget> {
           onChanged: (value) async {
             if (value != null && value != selectedState) {
               print("🏙️ State selected: $value");
-              setState(() => selectedState = value);
+              setState(() {
+                selectedState = value;
+                selectedCity = null;
+                cities = [];
+              });
+              widget.onChanged(selectedCountry, value, null);
               if (selectedCountry != null) {
                 await _loadCities(selectedCountry!, value);
               }
@@ -309,6 +363,7 @@ class _CountryStateCityWidgetState extends State<CountryStateCityWidget> {
           popupProps: PopupProps.menu(
             showSearchBox: true,
             searchFieldProps: TextFieldProps(
+              autofocus: true,
               decoration: InputDecoration(
                 hintText: "Search city...",
                 prefixIcon: const Icon(Icons.search),

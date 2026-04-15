@@ -43,6 +43,14 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
   bool _isApiLoading = false;
   bool _isRegisterLoading = false; // Separate loading for register
 
+  String get _forgotPasswordUserType {
+    final type = widget.type?.toString().trim().toLowerCase();
+    if (type == null || type.isEmpty) {
+      return widget.shop == true ? 'patient' : 'therapist';
+    }
+    return type;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1111,14 +1119,16 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                               const SizedBox(height: 10),
                               GestureDetector(
                                 onTap: () {
-                                  // Navigate to Forgot Password Screen
+                                  final loginId = _idController.text.trim();
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder:
                                           (context) =>
-                                              const ForgotPasswordScreen(
-                                                userType: "therapist",
+                                              ForgotPasswordScreen(
+                                                userType:
+                                                    _forgotPasswordUserType,
+                                                userId: loginId,
                                               ),
                                     ),
                                   );
@@ -1145,13 +1155,16 @@ class _JinLoginScreenState extends ConsumerState<JinLoginScreen> {
                             children: [
                               GestureDetector(
                                 onTap: () {
+                                  final loginId = _idController.text.trim();
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder:
                                           (context) =>
-                                              const ForgotPasswordScreen(
-                                                userType: "patient",
+                                              ForgotPasswordScreen(
+                                                userType:
+                                                    _forgotPasswordUserType,
+                                                userId: loginId,
                                               ),
                                     ),
                                   );
@@ -1586,85 +1599,94 @@ class _ShopRegisterDialogState extends State<ShopRegisterDialog> {
     );
   }
 
-  Future<void> _registerShop() async {
-    // Validation
-    if (_nameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _mobileController.text.isEmpty ||
-        _passwordController.text.isEmpty) {
-      _showSnackBar("Please fill all fields", Colors.red);
-      return;
-    }
-
-    if (!_emailController.text.contains('@')) {
-      _showSnackBar("Please enter valid email", Colors.red);
-      return;
-    }
-
-    if (_mobileController.text.length != 10) {
-      _showSnackBar("Mobile number must be 10 digits", Colors.red);
-      return;
-    }
-
-    if (_passwordController.text.length < 6) {
-      _showSnackBar("Password must be at least 6 characters", Colors.red);
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final url = Uri.parse(
-        'https://jinreflexology.in/api1/new/signUpPatient.php',
-      );
-
-      final response = await http.post(
-        url,
-        body: {
-          'name': _nameController.text.trim(),
-          'email': _emailController.text.trim(),
-          'mobile': _mobileController.text.trim(),
-          'password': _passwordController.text.trim(),
-        },
-      );
-
-      print('Response Status: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (response.statusCode == 200) {
-        try {
-          var jsonResponse = jsonDecode(response.body);
-          String message = jsonResponse['message'] ?? 'Registration successful';
-
-          // Show success message
-          _showSuccessDialog(message);
-        } catch (e) {
-          // If response is not JSON (like HTML error), still show success
-          _showSuccessDialog("Registration completed");
-        }
-      } else {
-        _showSnackBar("Server Error: ${response.statusCode}", Colors.red);
-      }
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      print('Error: $e');
-      _showSnackBar("Connection Error", Colors.red);
-    }
+Future<void> _registerShop() async {
+  // Validation
+  if (_nameController.text.isEmpty ||
+      _emailController.text.isEmpty ||
+      _mobileController.text.isEmpty ||
+      _passwordController.text.isEmpty) {
+    _showSnackBar("Please fill all fields", Colors.red);
+    return;
   }
 
+  if (!_emailController.text.contains('@')) {
+    _showSnackBar("Please enter valid email", Colors.red);
+    return;
+  }
+
+  if (_mobileController.text.length != 10) {
+    _showSnackBar("Mobile number must be 10 digits", Colors.red);
+    return;
+  }
+
+  if (_passwordController.text.length < 6) {
+    _showSnackBar("Password must be at least 6 characters", Colors.red);
+    return;
+  }
+
+  setState(() {
+    _isLoading = true;
+  });
+
+  try {
+    final url = Uri.parse(
+      'https://jinreflexology.in/api1/new/signUpPatient.php',
+    );
+
+    final response = await http.post(
+      url,
+      body: {
+        'name': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'mobile': _mobileController.text.trim(),
+        'password': _passwordController.text.trim(),
+      },
+    );
+
+    print('Response Status: ${response.statusCode}');
+    print('Response Body: ${response.body}');
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (response.statusCode == 200) {
+      try {
+        var jsonResponse = jsonDecode(response.body);
+        
+        // Check the success value - it might be string or int
+        dynamic successValue = jsonResponse['success'];
+        String message = jsonResponse['message'] ?? 'Unknown response';
+        
+        // Convert to string for comparison or check directly
+        if (successValue == 1 || successValue == "1" || successValue == 1) {
+          // Success case
+          _showSuccessDialog(message);
+        } else {
+          // Error case (user already exists, etc.)
+          _showSnackBar(message, Colors.red);
+        }
+      } catch (e) {
+        // If response is not JSON
+        print('JSON Parse Error: $e');
+        _showSnackBar("Server returned invalid response", Colors.red);
+      }
+    } else {
+      _showSnackBar("Server Error: ${response.statusCode}", Colors.red);
+    }
+  } catch (e) {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    print('Connection Error: $e');
+    _showSnackBar("Connection Error. Please check your internet.", Colors.red);
+  }
+}
   void _showSuccessDialog(String message) {
     showDialog(
       context: context,

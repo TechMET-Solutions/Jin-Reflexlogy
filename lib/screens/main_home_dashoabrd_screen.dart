@@ -5,6 +5,7 @@ import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_screen_list.dart';
 import 'package:jin_reflex_new/screens/ebook_screen.dart';
 import 'package:jin_reflex_new/screens/shop/shop_screen.dart';
 import 'package:jin_reflex_new/services/first_time_service.dart';
+import 'package:jin_reflex_new/services/welcome_dialog_prefs.dart';
 import 'package:jin_reflex_new/widgets/welcome_dialog.dart';
 
 class MainHomeScreenDashBoard extends StatefulWidget {
@@ -46,12 +47,9 @@ class _MainHomeScreenDashBoardState extends State<MainHomeScreenDashBoard> {
 
   Future<void> _checkAndShowWelcomeDialog() async {
     debugPrint("🔍 Checking dealer status");
-
-    final prefs = await SharedPreferences.getInstance();
-    final dealerCompleted = prefs.getBool('dealer_completed') ?? false;
-
-    debugPrint("dealer_completed = $dealerCompleted");
-    if (dealerCompleted == true) return;
+    final shouldShow = await WelcomeDialogPrefs.shouldShowDialog();
+    debugPrint("shouldShowWelcomeDialog = $shouldShow");
+    if (!shouldShow) return;
 
     if (!mounted) return;
 

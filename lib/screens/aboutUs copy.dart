@@ -36,7 +36,9 @@ class AboutScreen extends StatelessWidget {
         final videoId = uri.queryParameters['v'];
         return videoId ?? 'vpCIft15u2Y';
       } else if (uri.host.contains('youtu.be')) {
-        return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : 'vpCIft15u2Y';
+        return uri.pathSegments.isNotEmpty
+            ? uri.pathSegments.first
+            : 'vpCIft15u2Y';
       }
     } catch (e) {
       print('Error extracting video ID: $e');
@@ -46,107 +48,108 @@ class AboutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isMobile = screenWidth < 600;
+    final bool isTablet = screenWidth >= 600 && screenWidth < 900;
+
     return Scaffold(
       backgroundColor: Colors.grey.shade300,
       appBar: CommonAppBar(title: "About Us"),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-                           
-
-              Container(
-                height: 100,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  color: Colors.red,
-                  image: const DecorationImage(
-                    fit: BoxFit.cover,
-                    image: AssetImage("assets/images/about_bannar.png"),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: Padding(
+              padding: EdgeInsets.all(isMobile ? 10 : 16),
+              child: Column(
+                children: [
+                  Container(
+                    height: isMobile ? 90 : (isTablet ? 120 : 150),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      color: Colors.red,
+                      image: const DecorationImage(
+                        fit: BoxFit.cover,
+                        image: AssetImage("assets/images/about_bannar.png"),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _videoSectionWithThumbnail(),
-              const SizedBox(height: 12),
+                  const SizedBox(height: 12),
+                  _videoSectionWithThumbnail(
+                    isMobile: isMobile,
+                    isTablet: isTablet,
+                  ),
+                  const SizedBox(height: 12),
 
-              // Director's Message
-              _directorsMessage(),
-              
-              _sectionTile("Our Mission", ["Your Health is Our Priority"]),
-              _sectionTile("Our Vision", [
-                "Healthy Life without Medicine - 100%",
-              ]),
-              
-              // Our Management Team
-              _sectionTile("Our Management Team", []),
-              
-              _teamCard(
-                image: "assets/images/suganchand_Jain.png",
-                name: "Suganchand Jain",
-                role: "Director",
-                desc: "",
-              ),
-              
-              _teamCard(
-                image: "assets/images/suganchand_Jain.png",
-                name: "Manoj Kumar Jain",
-                role: "Director",
-                desc: "",
-              ),
-              
-              _teamCard(
-                image: "assets/images/anil_jain.png",
-                name: "JR Anil Jain",
-                role: "Director",
-                desc: "",
-              ),
-              
-              _teamCard(
-                image: "assets/images/anil_jain.png",
-                name: "JR Harshit Jain",
-                role: "Director",
-                desc: "",
-              ),
-              
-              _teamCard(
-                image: "assets/images/anil_jain.png",
-                name: "JR Anil Suganchand Jain",
-                role: "Inventor of JIN Reflexology",
-                desc: "President- International Reflexology JIN Association",
-              ),
-              
-              // Research Section
-              _researchSection(),
-              
-              // National & International Conferences
-              _conferencesSection(),
-              
-              // JIN Day Events
-              _jinDayEvents(),
-              
-              _sectionTile("Manufacturer", [
-                "Manufacturing world-class 4G Super Magnet, 4G Low Power and 4G Spectacles Magnet JIN Reflexology Therapy related tools.",
-              ]),
+                  // Director's Message
+                  _directorsMessage(),
 
-              _sectionTile("Exporter", [
-                "We also exports JIN Reflexology Book, 4G Series Magnet, All type of acupressure reflexology related equipment.",
-              ]),
+                  _sectionTile("Our Mission", ["Your Health is Our Priority"]),
+                  _sectionTile("Our Vision", [
+                    "Healthy Life without Medicine - 100%",
+                  ]),
 
-              _sectionTile("Publisher", [
-                "Published Foot and Hand JIN Reflexology Chart – an easy way for locating points and treatment of various ailments.",
-                "Published award winning book – Bhartiya Jivan Padhati – Acupressure (Hindi) (Released by Honorable Rajendraji Darda, Education Minister, Maharashtra).",
-                "Released book – Indian Life Style – Acupressure (English) (Released by Honorable Ghulam Nabi Azad, Union Health and Family Planning Minister) Honorable Vijay Darda (MP).",
-                "Published book – JIN Reflexology – (With DVD) (Released by Honorable Prithaviraj Chavhan, Chief Minister, Maharashtra, Hon'ble Rajendra Darda (Education Minister), Hon'ble Balasaheb Thorat (Palak Mantri), Mr. Kalyan Bale (MLA).",
-                "Published JIN Reflexology Book with 118 QR Code Video Link.",
-                "Publish JIN Reflexology E-Book Hindi and English Version.",
-              ]),
-              
-              // Video Section with dynamic thumbnail
-              
-              const SizedBox(height: 20),
-            ],
+                  _sectionTile("Our Management Team", []),
+                    _teamCard(
+                      image: "assets/images/suganchand_Jain.png",
+                  
+                    name: "Suganchand Jain",
+                    role: "Director",
+                    desc: "",
+                  ),
+                  _teamCard(
+                     image: "assets/images/manoj_kumar_jain.png",
+                    name: "Manoj Kumar Jain",
+                    role: "Director",
+                    desc: "",
+                  ),
+                  _teamCard(
+                    image: "assets/images/anil_jain.png",
+                    name: "JR Anil Suganchand Jain",
+                    role: "Inventor of JIN Reflexology",
+                    desc:
+                        "President- International Reflexology JIN Association",
+                  ),
+                
+
+                  _teamCard(
+                    image: "assets/images/harshit.jpeg",
+                    name: "JR Harshit Jain",
+                    role: "Director",
+                    desc: "",
+                  ),
+
+                  // Research Section
+                  _researchSection(),
+
+                  // National & International Conferences
+                  _conferencesSection(),
+
+                  // JIN Day Events
+                  _jinDayEvents(),
+
+                  _sectionTile("Manufacturer", [
+                    "Manufacturing world-class 4G Super Magnet, 4G Low Power and 4G Spectacles Magnet JIN Reflexology Therapy related tools.",
+                  ]),
+
+                  _sectionTile("Exporter", [
+                    "We also exports JIN Reflexology Book, 4G Series Magnet, All type of acupressure reflexology related equipment.",
+                  ]),
+
+                  _sectionTile("Publisher", [
+                    "Published Foot and Hand JIN Reflexology Chart – an easy way for locating points and treatment of various ailments.",
+                    "Published award winning book – Bhartiya Jivan Padhati – Acupressure (Hindi) (Released by Honorable Rajendraji Darda, Education Minister, Maharashtra).",
+                    "Released book – Indian Life Style – Acupressure (English) (Released by Honorable Ghulam Nabi Azad, Union Health and Family Planning Minister) Honorable Vijay Darda (MP).",
+                    "Published book – JIN Reflexology – (With DVD) (Released by Honorable Prithaviraj Chavhan, Chief Minister, Maharashtra, Hon'ble Rajendra Darda (Education Minister), Hon'ble Balasaheb Thorat (Palak Mantri), Mr. Kalyan Bale (MLA).",
+                    "Published JIN Reflexology Book with 118 QR Code Video Link.",
+                    "Publish JIN Reflexology E-Book Hindi and English Version.",
+                  ]),
+
+                  // Video Section with dynamic thumbnail
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -156,9 +159,12 @@ class AboutScreen extends StatelessWidget {
   // ------------------------------
   // VIDEO SECTION WITH DYNAMIC THUMBNAIL
   // ------------------------------
-  Widget _videoSectionWithThumbnail() {
+  Widget _videoSectionWithThumbnail({
+    required bool isMobile,
+    required bool isTablet,
+  }) {
     final youtubeLink = 'https://www.youtube.com/watch?v=vpCIft15u2Y';
-    
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 15),
@@ -178,6 +184,7 @@ class AboutScreen extends StatelessWidget {
               color: Colors.black,
               fontWeight: FontWeight.bold,
             ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           GestureDetector(
@@ -185,8 +192,11 @@ class AboutScreen extends StatelessWidget {
             child: Stack(
               children: [
                 // YouTube Thumbnail Image
-                _buildThumbnailImage(youtubeLink, false),
-                
+                _buildThumbnailImage(
+                  youtubeLink,
+                  isTablet ? 220 : (isMobile ? 180 : 240),
+                ),
+
                 // Play Button Overlay
                 Positioned.fill(
                   child: Center(
@@ -245,9 +255,9 @@ class AboutScreen extends StatelessWidget {
   // ------------------------------
   // THUMBNAIL IMAGE WIDGET
   // ------------------------------
-  Widget _buildThumbnailImage(String youtubeLink, bool isTablet) {
+  Widget _buildThumbnailImage(String youtubeLink, double height) {
     return Container(
-      height: isTablet ? 180 : 200,
+      height: height,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
@@ -264,41 +274,40 @@ class AboutScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         child: Image.network(
           getYoutubeThumbnail(youtubeLink),
-          height: isTablet ? 180 : 200,
+          height: height,
           width: double.infinity,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Container(
-            height: isTablet ? 180 : 200,
-            width: double.infinity,
-            color: Colors.grey[300],
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.broken_image,
-                  size: 40,
-                  color: Colors.grey,
+          errorBuilder:
+              (_, __, ___) => Container(
+                height: height,
+                width: double.infinity,
+                color: Colors.grey[300],
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.broken_image,
+                      size: 40,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Image not available",
+                      style: TextStyle(
+                        fontSize: height >= 200 ? 14 : 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  "Image not available",
-                  style: TextStyle(
-                    fontSize: isTablet ? 14 : 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return Container(
-              height: isTablet ? 180 : 200,
+              height: height,
               width: double.infinity,
               color: Colors.grey[200],
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: const Center(child: CircularProgressIndicator()),
             );
           },
         ),
@@ -342,10 +351,7 @@ class AboutScreen extends StatelessWidget {
           const SizedBox(height: 8),
           const Text(
             "Welcome to JIN Reflexology. We are committed to providing natural healing solutions through our research and innovative therapies.",
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.black87),
           ),
         ],
       ),
@@ -388,27 +394,31 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           ...[
-            "After doing research work on 13000 people, on the most ancient Therapy, it was presented as JIN Reflexology Therapy. There are more than 200 Therapies in the world for treatment, but the disease cannot be diagnosed accurately. After Ayurveda, the only therapy in the world for diagnosing the disease is JIN Reflexology, in which not a single question is asked to the patient, and he is told what problem he is suffering from.",
-            "Creation of world class software in which complete information of the patient is stored for research work and to get quick results.",
-            "India's biggest health awareness campaign successfully completed."
-          ].map((e) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("• "),
-                Expanded(
-                  child: Text(
-                    e,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
+                "After doing research work on 13000 people, on the most ancient Therapy, it was presented as JIN Reflexology Therapy. There are more than 200 Therapies in the world for treatment, but the disease cannot be diagnosed accurately. After Ayurveda, the only therapy in the world for diagnosing the disease is JIN Reflexology, in which not a single question is asked to the patient, and he is told what problem he is suffering from.",
+                "Creation of world class software in which complete information of the patient is stored for research work and to get quick results.",
+                "India's biggest health awareness campaign successfully completed.",
+              ]
+              .map(
+                (e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("• "),
+                      Expanded(
+                        child: Text(
+                          e,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          )).toList(),
+              )
+              .toList(),
         ],
       ),
     );
@@ -427,7 +437,7 @@ class AboutScreen extends StatelessWidget {
       "1st International and 6th National Conference Online – 2020",
       "2nd International and 7th National Conference Online – 2021",
     ];
-    
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 15),
@@ -449,24 +459,28 @@ class AboutScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          ...conferences.map((e) => Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("• "),
-                Expanded(
-                  child: Text(
-                    e,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
+          ...conferences
+              .map(
+                (e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("• "),
+                      Expanded(
+                        child: Text(
+                          e,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          )).toList(),
+              )
+              .toList(),
         ],
       ),
     );
@@ -484,7 +498,7 @@ class AboutScreen extends StatelessWidget {
       "JIN Day Event – 1st June (JIN Reflexology day) to 21st June (International Yoga Day) Health Awareness Campaign – 2024: 21 Days, 21 Cities (4 States – Madhya Pradesh, Maharashtra, Karnataka, Telangana Rajasthan), 21 Health Awareness and Life Changing Seminars",
       "JIN Day Event – 1st June (JIN Reflexology day) to 21st June (International Yoga Day) Health Awareness Campaign – 2025: 31 Days, 21 Cities (7 States – Delhi, Madhya Pradesh, Maharashtra, Karnataka, Telangana Rajasthan, Tamil Nadu), 21 Health Awareness and Life Changing Seminars",
     ];
-    
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 15),
@@ -506,24 +520,28 @@ class AboutScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          ...events.map((e) => Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("• "),
-                Expanded(
-                  child: Text(
-                    e,
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      color: Colors.black87,
-                    ),
+          ...events
+              .map(
+                (e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("• "),
+                      Expanded(
+                        child: Text(
+                          e,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          )).toList(),
+              )
+              .toList(),
         ],
       ),
     );
@@ -601,25 +619,27 @@ class AboutScreen extends StatelessWidget {
           BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(1, 2)),
         ],
       ),
-      child: Row(
-        children: [
-          CircleAvatar(radius: 34, backgroundImage: AssetImage(image)),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 360;
 
-          const SizedBox(width: 12),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          if (isNarrow) {
+            return Column(
               children: [
+                CircleAvatar(radius: 38, backgroundImage: AssetImage(image)),
+                const SizedBox(height: 12),
                 Text(
                   name,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: 4),
                 Text(
                   role,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.red,
@@ -627,13 +647,50 @@ class AboutScreen extends StatelessWidget {
                   ),
                 ),
                 if (desc.isNotEmpty) ...[
-                  const SizedBox(height: 5),
-                  Text(desc, style: const TextStyle(fontSize: 13)),
+                  const SizedBox(height: 6),
+                  Text(
+                    desc,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 13, height: 1.4),
+                  ),
                 ],
               ],
-            ),
-          ),
-        ],
+            );
+          }
+
+          return Row(
+            children: [
+              CircleAvatar(radius: 34, backgroundImage: AssetImage(image)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      role,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (desc.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Text(desc, style: const TextStyle(fontSize: 13)),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

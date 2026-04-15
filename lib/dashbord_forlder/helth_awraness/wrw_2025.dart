@@ -1,8 +1,147 @@
 import 'package:flutter/material.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Wrw2025Screen extends StatelessWidget {
   const Wrw2025Screen({super.key});
+
+  static const List<String> _youtubeUrls = [
+    "https://www.youtube.com/watch?v=H2b2HBm4Yik",
+    "https://www.youtube.com/watch?v=DN5CQtM5-Lc",
+    "https://www.youtube.com/watch?v=EOZN_pS5xy4",
+    "https://www.youtube.com/watch?v=tUdc9GoS7_U",
+    "https://www.youtube.com/watch?v=VhVhnQO3E2Y",
+    "https://www.youtube.com/watch?v=MUguY8KCDIc",
+    "https://www.youtube.com/watch?v=a6W8La9KXl8",
+    "https://www.youtube.com/watch?v=SM5XonWUBxg",
+    "https://www.youtube.com/watch?v=CIU5Ix-etHA",
+    "https://www.youtube.com/watch?v=8WDRhcN7AUA",
+    "https://www.youtube.com/watch?v=n8u5-AzTlwY",
+    "https://www.youtube.com/watch?v=xGN5dz8y7y4",
+    "https://www.youtube.com/watch?v=3dNC9KBl_ZY",
+    "https://www.youtube.com/watch?v=PHZTEsdV1BA",
+    "https://www.youtube.com/watch?v=8HxwqUWvkzM",
+    "https://www.youtube.com/watch?v=kBFpsNiduoE",
+    "https://www.youtube.com/watch?v=Th6cvWgr7cU",
+    "https://www.youtube.com/watch?v=U6ADGRy7vlQ",
+  ];
+
+  static String? _extractYoutubeId(String url) {
+    try {
+      final uri = Uri.parse(url);
+
+      if (uri.host.contains("youtu.be")) {
+        final id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+        return (id != null && id.length > 11) ? id.substring(0, 11) : id;
+      }
+
+      if (uri.host.contains("youtube.com")) {
+        final v = uri.queryParameters["v"];
+        if (v != null && v.isNotEmpty) {
+          return v.length > 11 ? v.substring(0, 11) : v;
+        }
+
+        if (uri.pathSegments.isNotEmpty && uri.pathSegments.first == "shorts") {
+          final id = uri.pathSegments.length >= 2 ? uri.pathSegments[1] : null;
+          return (id != null && id.length > 11) ? id.substring(0, 11) : id;
+        }
+
+        if (uri.pathSegments.isNotEmpty && uri.pathSegments.first == "live") {
+          final id = uri.pathSegments.length >= 2 ? uri.pathSegments[1] : null;
+          return (id != null && id.length > 11) ? id.substring(0, 11) : id;
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
+    return null;
+  }
+
+  static List<String> _dedupeYoutubeUrls(List<String> urls) {
+    final seen = <String>{};
+    final out = <String>[];
+    for (final url in urls) {
+      final id = _extractYoutubeId(url);
+      if (id == null || id.isEmpty) continue;
+      if (seen.add(id)) out.add(url);
+    }
+    return out;
+  }
+
+  static String _youtubeThumbnailUrl(String url) {
+    final id = _extractYoutubeId(url);
+    if (id == null || id.isEmpty) return "";
+    return "https://img.youtube.com/vi/$id/hqdefault.jpg";
+  }
+
+  static Widget _youtubeThumbCard({
+    required String title,
+    required String url,
+  }) {
+    return InkWell(
+      onTap: () async {
+        final uri = Uri.tryParse(url);
+        if (uri == null) return;
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: const Color(0xfffff3d6),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xfff1cd8f)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Image.network(
+                      _youtubeThumbnailUrl(url),
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (_, __, ___) => Container(
+                            color: Colors.grey.shade300,
+                            child: const Icon(Icons.broken_image, size: 34),
+                          ),
+                    ),
+                  ),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black.withOpacity(0.45),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +161,7 @@ class Wrw2025Screen extends StatelessWidget {
 
   /// 📰 Article Section
   static Widget articleSection() {
+    final youtubeUrls = _dedupeYoutubeUrls(_youtubeUrls);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -338,17 +478,18 @@ class Wrw2025Screen extends StatelessWidget {
           GridView.builder(
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
-            itemCount: 22,
+            itemCount: youtubeUrls.length,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               mainAxisSpacing: 4,
               crossAxisSpacing: 4,
               crossAxisCount: 2,
+              childAspectRatio: 16 / 11,
             ),
             itemBuilder: (context, index) {
-              return Container(
-                color: Colors.grey,
-                height: 200,
-                width: double.infinity,
+              final url = youtubeUrls[index];
+              return _youtubeThumbCard(
+                title: "Session ${index + 1}",
+                url: url,
               );
             },
           ),

@@ -127,7 +127,7 @@ class _LifestyleScreenState extends State<LifestyleScreen> {
 
       // Load URL
       String url =
-          "https://jinreflexology.in/api1/new/patient_lifestyle.php?id=${AppPreference().getString(PreferencesKey.userId)}";
+          "https://jinreflexology.in/api1/new/patient_lifestyle.php?id=$patientId";
       print("🔗 Loading URL: $url");
 
       await controller.loadRequest(
@@ -183,10 +183,16 @@ class _LifestyleScreenState extends State<LifestyleScreen> {
       appBar: CommonAppBar(
         title: "Lifestyle",
         onBack: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => MainHomeScreenDashBoard()),
-          );
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MainHomeScreenDashBoard(),
+              ),
+            );
+          }
         },
       ),
       body:

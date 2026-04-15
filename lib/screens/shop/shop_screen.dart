@@ -9,6 +9,7 @@ import 'package:jin_reflex_new/screens/shop/shop_details_screen.dart';
 import 'package:jin_reflex_new/screens/shop/ui_model.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:jin_reflex_new/screens/shop/cartscreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ShopScreen extends StatefulWidget {
   final String deliveryType; // india / outside
@@ -22,6 +23,7 @@ class ShopScreen extends StatefulWidget {
 class _ShopScreenState extends State<ShopScreen> {
   bool isLoading = true;
   bool hasError = false;
+  late String _deliveryType;
 
   List<Product> allProducts = [];
   List<Product> filteredProducts = [];
@@ -32,11 +34,15 @@ class _ShopScreenState extends State<ShopScreen> {
   @override
   void initState() {
     super.initState();
+    _deliveryType = widget.deliveryType;
     loadProducts();
   }
 
   // ================= LOAD PRODUCTS =================
   Future<void> loadProducts() async {
+    if (mounted) {
+      setState(() => isLoading = true);
+    }
     try {
       allProducts = await fetchProducts();
       filteredProducts = allProducts;
@@ -74,6 +80,18 @@ class _ShopScreenState extends State<ShopScreen> {
     });
   }
 
+  Future<void> _changeDeliveryType(String value) async {
+    if (_deliveryType == value) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("delivery_type", value);
+    if (!mounted) return;
+    setState(() {
+      _deliveryType = value;
+      selectedCategory = "All";
+    });
+    await loadProducts();
+  }
+
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
@@ -87,17 +105,44 @@ class _ShopScreenState extends State<ShopScreen> {
     return Scaffold(
       appBar: CommonAppBar(
         title:
-            widget.deliveryType == "india"
+            _deliveryType == "india"
                 ? "Shop (India Delivery)"
                 : "Shop (Outside India)",
         actions: [
+          PopupMenuButton<String>(
+            initialValue: _deliveryType,
+            tooltip: "Currency",
+            onSelected: _changeDeliveryType,
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: "india", child: Text("Rupees (India)")),
+              PopupMenuItem(
+                value: "outside",
+                child: Text("Dollar (International)"),
+              ),
+            ],
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white24),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Text(
+                _deliveryType == "india" ? "₹" : "\$",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.shopping_cart_outlined),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => CartScreen(deliveryType: widget.deliveryType),
+                  builder: (_) => CartScreen(deliveryType: _deliveryType),
                 ),
               );
             },
@@ -171,7 +216,7 @@ class _ShopScreenState extends State<ShopScreen> {
                                         builder:
                                             (_) => ProductDetailScreen(
                                               product: product,
-                                              deliveryType: widget.deliveryType,
+                                              deliveryType: _deliveryType,
                                             ),
                                       ),
                                     );
@@ -211,7 +256,7 @@ class _ShopScreenState extends State<ShopScreen> {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          "${widget.deliveryType == "india" ? "₹" : "\$"}${product.unitPrice.toStringAsFixed(0)}",
+                                          "${_deliveryType == "india" ? "₹" : "\$"}${product.unitPrice.toStringAsFixed(0)}",
                                           style: const TextStyle(fontSize: 13),
                                         ),
                                       ],
@@ -228,7 +273,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
   // ================= API =================
 Future<List<Product>> fetchProducts() async {
-  final String country = widget.deliveryType == "india" ? "in" : "us";
+  final String country = _deliveryType == "india" ? "in" : "us";
 
   const String url =
       "https://admin.jinreflexology.in/api/products/by-country";

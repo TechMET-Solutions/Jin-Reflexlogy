@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jin_reflex_new/screens/health_campaign_pdf_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 class Wrw2016Screen extends StatelessWidget {
   const Wrw2016Screen({super.key});
@@ -527,6 +528,14 @@ class Wrw2016Screen extends StatelessWidget {
           const Text(
             'Other Glimpses of India’s Biggest Health Awareness Campaign – 2016',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 560,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: const CampaignPdfViewer(year: 2016),
+            ),
           ),
         ],
       ),

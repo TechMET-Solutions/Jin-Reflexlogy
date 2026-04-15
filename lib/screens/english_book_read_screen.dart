@@ -30,11 +30,13 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
     _fetchPage(pageIndex);
     _preloadNextPage();
   }
+
   void _preloadNextPage() {
     if (pageIndex < lastPage && !_pageCache.containsKey(pageIndex + 1)) {
       _fetchPageForCache(pageIndex + 1);
     }
   }
+
   Future<void> _fetchPageForCache(int pageNo) async {
     try {
       FormData formData = FormData.fromMap({
@@ -197,43 +199,7 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
       body: Column(
         children: [
           // Controls Bar
-          Container(
-            padding: const EdgeInsets.all(10),
-            color: Colors.white,
-            child: Row(
-              children: [
-                _button("Prev", Colors.blue, prevPage),
-                const SizedBox(width: 8),
-
-                // Page number search
-                Expanded(
-                  child: TextField(
-                    controller: searchController,
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => gotoPage(),
-                    decoration: InputDecoration(
-                      hintText: "Enter page number",
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey.shade100,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(width: 8),
-                _button("Go", Colors.green, gotoPage),
-                const SizedBox(width: 8),
-                _button("Next", Colors.blue, nextPage),
-              ],
-            ),
-          ),
+       
 
           // Page Viewer
           Expanded(
@@ -267,6 +233,44 @@ class _EnglishBookScreenState extends State<EnglishBookScreen> {
               ],
             ),
           ),
+             Container(
+            padding: const EdgeInsets.all(10),
+            color: Colors.white,
+            child: Row(
+              children: [
+                _button("Prev", Colors.blue, prevPage),
+                const SizedBox(width: 8),
+
+                // Page number search
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => gotoPage(),
+                    decoration: InputDecoration(
+                      hintText: "Enter page number",
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),         
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+                _button("Go", Colors.green, gotoPage),
+                const SizedBox(width: 8),
+                _button("Next", Colors.blue, nextPage),
+              ],
+            ),
+          ),
+          SizedBox(height: 50,)
         ],
       ),
     );

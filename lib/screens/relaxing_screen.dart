@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 String getYoutubeThumbnail(String videoUrl) {
-    // Extract video ID from URL
-    final videoId = videoUrl.split('/').last;
-    // Return high quality thumbnail URL
-    return 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
-  }
+  // Extract video ID from URL
+  final videoId = videoUrl.split('/').last;
+  // Return high quality thumbnail URL
+  return 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
+}
 
 class FootRelaxingScreen extends StatelessWidget {
   const FootRelaxingScreen({super.key});
@@ -67,7 +68,7 @@ class FootRelaxingScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               twistingCard(
-                "Twisting of legs", 
+                "Twisting of legs",
                 "assets/images/relaxing.png",
                 "The patient sits with legs stretched while the practitioner sits upright nearby. Treatment begins with the left foot, either on the floor or with the patient seated on a couch. Before applying pressure to reflex points, tension in the legs is released. This preparation ensures better results from the treatment.",
                 youtubeLink: "https://youtu.be/z19XMdXtg04",
@@ -105,7 +106,7 @@ class FootRelaxingScreen extends StatelessWidget {
                 youtubeLink: "https://youtu.be/zaMfEmwkiS8",
               ),
 
-              SizedBox(height: 15,),
+              SizedBox(height: 15),
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -151,7 +152,13 @@ class FootRelaxingScreen extends StatelessWidget {
     );
   }
 
-  Widget twistingCard(String title, String img, String text, {bool imageLeft = true, String? youtubeLink}) {
+  Widget twistingCard(
+    String title,
+    String img,
+    String text, {
+    bool imageLeft = true,
+    String? youtubeLink,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -254,7 +261,10 @@ class FootRelaxingScreen extends StatelessWidget {
                       height: 180,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.grey.shade300, width: 1),
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 1,
+                        ),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
@@ -265,10 +275,12 @@ class FootRelaxingScreen extends StatelessWidget {
                             if (loadingProgress == null) return child;
                             return Center(
                               child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                    : null,
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress
+                                                .cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
                               ),
                             );
                           },
@@ -279,7 +291,11 @@ class FootRelaxingScreen extends StatelessWidget {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.videocam_off, size: 40, color: Colors.grey),
+                                    Icon(
+                                      Icons.videocam_off,
+                                      size: 40,
+                                      color: Colors.grey,
+                                    ),
                                     SizedBox(height: 8),
                                     Text(
                                       'Video Preview',
@@ -293,7 +309,7 @@ class FootRelaxingScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    
+
                     // Play Button
                     Container(
                       width: 60,
@@ -309,12 +325,15 @@ class FootRelaxingScreen extends StatelessWidget {
                         size: 35,
                       ),
                     ),
-                    
+
                     // "Watch Video" Text
                     Positioned(
                       bottom: 10,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.7),
                           borderRadius: BorderRadius.circular(20),
@@ -338,7 +357,13 @@ class FootRelaxingScreen extends StatelessWidget {
     );
   }
 
-  Widget foottwistingCard(String title, String img, String text, {bool imageLeft = true, String? youtubeLink}) {
+  Widget foottwistingCard(
+    String title,
+    String img,
+    String text, {
+    bool imageLeft = true,
+    String? youtubeLink,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -441,7 +466,10 @@ class FootRelaxingScreen extends StatelessWidget {
                       height: 180,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.grey.shade300, width: 1),
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 1,
+                        ),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
@@ -452,10 +480,12 @@ class FootRelaxingScreen extends StatelessWidget {
                             if (loadingProgress == null) return child;
                             return Center(
                               child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                    : null,
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress
+                                                .cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
                               ),
                             );
                           },
@@ -466,7 +496,11 @@ class FootRelaxingScreen extends StatelessWidget {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.videocam_off, size: 40, color: Colors.grey),
+                                    Icon(
+                                      Icons.videocam_off,
+                                      size: 40,
+                                      color: Colors.grey,
+                                    ),
                                     SizedBox(height: 8),
                                     Text(
                                       'Video Preview',
@@ -480,7 +514,7 @@ class FootRelaxingScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    
+
                     // Play Button
                     Container(
                       width: 60,
@@ -496,12 +530,15 @@ class FootRelaxingScreen extends StatelessWidget {
                         size: 35,
                       ),
                     ),
-                    
+
                     // "Watch Video" Text
                     Positioned(
                       bottom: 10,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.7),
                           borderRadius: BorderRadius.circular(20),

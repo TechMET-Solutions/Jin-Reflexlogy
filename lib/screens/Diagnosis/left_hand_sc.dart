@@ -1,18 +1,16 @@
-import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
-import 'package:flutter/services.dart';
-import 'package:flutter/rendering.dart';
+
 import 'package:dio/dio.dart';
-import 'package:jin_reflex_new/api_service/global/utils.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
-import 'package:image/image.dart' as img;
+import 'package:screenshot/screenshot.dart';
 
-/// --------------------------------------------------
-/// MODEL
-/// --------------------------------------------------
+const String _diagnosisImageFlipPrefKey = "diagnosisImageFlip";
+
 class PointData {
   final String id;
   double x;
@@ -45,9 +43,6 @@ class PointData {
   }
 }
 
-/// --------------------------------------------------
-/// SCREEN
-/// --------------------------------------------------
 class LeftHandScreen extends StatefulWidget {
   final String diagnosisId;
   final String pid;
@@ -71,25 +66,23 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
   List<PointData> points = [];
   bool isLoading = true;
 
-  final GlobalKey screenshotKey = GlobalKey();
+  final ScreenshotController screenshotController = ScreenshotController();
 
   @override
   void initState() {
     super.initState();
-    debugPrint("👤 LH Gender: ${widget.gender}");
+    debugPrint("LH Gender: ${widget.gender}");
     loadPoints();
   }
 
-  /// --------------------------------------------------
-  /// LOAD POINTS BASED ON GENDER
   Future<void> loadPoints() async {
     try {
+      final normalizedGender = (widget.gender ?? "").trim().toLowerCase();
+      final isFemale = normalizedGender == "female" || normalizedGender == "f";
       final jsonPath =
-          widget.gender?.toLowerCase() == "female"
-              ? "assets/left_hand_btnf.json"
-              : "assets/left_hand_btn.json";
+          isFemale ? "assets/left_hand_btnf.json" : "assets/left_hand_btn.json";
 
-      debugPrint("📄 Loading LH JSON: $jsonPath");
+      debugPrint("Loading LH JSON: $jsonPath");
 
       final jsonString = await rootBundle.loadString(jsonPath);
       final jsonMap = jsonDecode(jsonString);
@@ -99,19 +92,26 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
               .map((e) => PointData.fromJson(e))
               .toList();
 
+      final hasLocalDraft =
+          AppPreference()
+              .getString("LH_DATA_${widget.diagnosisId}_${widget.pid}")
+              .isNotEmpty;
+
       loadSavedLocal();
-      await fetchServer();
+      if (!hasLocalDraft) {
+        await fetchServer();
+      }
 
       if (!mounted) return;
       setState(() => isLoading = false);
     } catch (e) {
-      debugPrint("❌ LH LOAD ERROR: $e");
-      if (mounted) setState(() => isLoading = false);
+      debugPrint("LH LOAD ERROR: $e");
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
-  /// --------------------------------------------------
-  /// LOAD SAVED LOCAL
   void loadSavedLocal() {
     final key = "LH_DATA_${widget.diagnosisId}_${widget.pid}";
     final raw = AppPreference().getString(key);
@@ -119,21 +119,23 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
 
     final decoded = jsonDecode(raw) as Map<String, dynamic>;
     decoded.forEach((idx, val) {
-      final parts = val.split(",");
+      final parts = val.toString().split(",");
       final p = points.firstWhere((e) => e.index.toString() == idx);
-      // p.state = int.parse(parts[2]);
-      p.x = double.parse(parts[0]); // ✅ restore X
-      p.y = double.parse(parts[1]); // ✅ restore Y
-      p.state = int.parse(parts[2]); // ✅ restore state
+
+      // Keep JSON coordinates as the source of truth for hand layouts.
+      // Restoring stale x/y can misplace female points after JSON changes.
+      if (parts.length >= 3) {
+        p.state = int.tryParse(parts[2]) ?? 0;
+      } else if (parts.isNotEmpty) {
+        p.state = int.tryParse(parts.last) ?? 0;
+      }
     });
   }
 
-  /// --------------------------------------------------
-  /// SAVE LOCAL FAST
   Future<void> saveAllPointsFast() async {
-    Map<String, String> data = {};
-    for (var p in points) {
-      data[p.index.toString()] = "${p.x},${p.y},${p.state}";
+    final Map<String, String> data = {};
+    for (final p in points) {
+      data[p.index.toString()] = p.state.toString();
     }
 
     await AppPreference().setString(
@@ -142,8 +144,6 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
     );
   }
 
-  /// --------------------------------------------------
-  /// FETCH SERVER DATA
   Future<void> fetchServer() async {
     try {
       final res = await Dio().post(
@@ -159,12 +159,12 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
       final raw = res.data.toString();
       final start = raw.indexOf("{");
       final end = raw.lastIndexOf("}");
-      if (start == -1) return;
+      if (start == -1 || end == -1) return;
 
       final body = jsonDecode(raw.substring(start, end + 1));
       if (body["success"] != 1) return;
 
-      for (var item in body["data"].split(";")) {
+      for (final item in body["data"].split(";")) {
         if (!item.contains(":")) continue;
         final parts = item.split(":");
         final idx = int.parse(parts[0]);
@@ -174,16 +174,14 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
         p.state = val == 1 ? 2 : (val == -1 ? 0 : 1);
       }
     } catch (e) {
-      debugPrint("❌ LH SERVER ERROR: $e");
+      debugPrint("LH SERVER ERROR: $e");
     }
   }
 
-  /// --------------------------------------------------
-  /// ENCODE DATA
   String encodeLhData() {
-    StringBuffer sb = StringBuffer();
-    for (var p in points) {
-      int serverValue = p.state == 2 ? 1 : (p.state == 1 ? 0 : -1);
+    final StringBuffer sb = StringBuffer();
+    for (final p in points) {
+      final int serverValue = p.state == 2 ? 1 : (p.state == 1 ? 0 : -1);
       sb.write("${p.index}:$serverValue;");
     }
     return sb.toString();
@@ -191,83 +189,33 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
 
   String encodeLhResult() {
     final Set<String> tags = {};
-    for (var p in points) {
-      if (p.state != 0 && p.tag.isNotEmpty) tags.add(p.tag);
+    for (final p in points) {
+      if (p.state != 0 && p.tag.isNotEmpty) {
+        tags.add(p.tag);
+      }
     }
     return tags.join("|");
   }
 
-  // Future<String?> captureScreenshot() async {
-  //   try {
-  //     await Future.delayed(const Duration(milliseconds: 120));
-  //     final boundary =
-  //         screenshotKey.currentContext?.findRenderObject()
-  //             as RenderRepaintBoundary?;
-  //     if (boundary == null) return null;
-  //     final ui.Image rawImage = await boundary.toImage(pixelRatio: 2.0);
-  //     final recorder = ui.PictureRecorder();
-  //     final canvas = Canvas(recorder);
-  //     final paint = Paint();
-  //     final w = rawImage.width.toDouble();
-  //     final h = rawImage.height.toDouble();
-  //     canvas.drawImageRect(
-  //       rawImage,
-  //       Rect.fromLTWH(0, 0, w, h),
-  //       Rect.fromLTWH(0, 0, w, h),
-  //       paint,
-  //     );
-
-  //     final picture = recorder.endRecording();
-  //     final finalImage = await picture.toImage(rawImage.width, rawImage.height);
-  //     final byteData = await finalImage.toByteData(
-  //       format: ui.ImageByteFormat.png,
-  //     );
-  //     if (byteData == null) return null;
-  //     return base64Encode(byteData.buffer.asUint8List());
-  //   } catch (e) {
-  //     debugPrint("Screenshot error: $e");
-  //     return null;
-  //   }
-  // }
-
   Future<String?> captureScreenshot() async {
     try {
-      await Future.delayed(const Duration(milliseconds: 120));
-
-      final boundary =
-          screenshotKey.currentContext?.findRenderObject()
-              as RenderRepaintBoundary?;
-
-      if (boundary == null) return null;
-
-      // ⭐ FIXED RATIO (NEVER devicePixelRatio)
-      final ui.Image rawImage = await boundary.toImage(pixelRatio: 2.0);
-
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
-      final paint = Paint();
-
-      final w = rawImage.width.toDouble();
-      final h = rawImage.height.toDouble();
-
-      // ⭐ SAFE DRAW METHOD
-      canvas.drawImageRect(
-        rawImage,
-        Rect.fromLTWH(0, 0, w, h),
-        Rect.fromLTWH(0, 0, w, h),
-        paint,
+      final bytes = await screenshotController.capture(
+        pixelRatio: 2,
+        delay: const Duration(milliseconds: 350),
       );
 
-      final picture = recorder.endRecording();
-      final finalImage = await picture.toImage(rawImage.width, rawImage.height);
+      if (bytes == null) return null;
 
-      final byteData = await finalImage.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
+      img.Image? image = img.decodeImage(bytes);
+      if (image == null) return null;
 
-      if (byteData == null) return null;
+      if (AppPreference().getBool(_diagnosisImageFlipPrefKey, defValue: true)) {
+        image = img.flipVertical(image);
+      }
 
-      return base64Encode(byteData.buffer.asUint8List());
+      image = img.copyResize(image, width: 900);
+      final compressed = img.encodePng(image, level: 6);
+      return base64Encode(compressed);
     } catch (e) {
       debugPrint("Screenshot error: $e");
       return null;
@@ -288,7 +236,7 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
   Widget _buildDot(PointData p, double scaleX, double scaleY) {
     final double dotSize = 25 * ((scaleX + scaleY) / 2);
 
-    Color color =
+    final Color color =
         p.state == 1
             ? const Color(0xFF8B0000)
             : p.state == 2
@@ -303,17 +251,12 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
 
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(p.tag), duration: Duration(milliseconds: 500)),
+          SnackBar(
+            content: Text(p.tag),
+            duration: const Duration(milliseconds: 500),
+          ),
         );
       },
-
-      onPanUpdate: (details) {
-        // setState(() {
-        //   p.x += details.delta.dx / scaleX;
-        //   p.y += details.delta.dy / scaleY;
-        // });
-      },
-
       child: Container(
         width: dotSize,
         height: dotSize,
@@ -326,19 +269,17 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
     );
   }
 
-  /// --------------------------------------------------
-  /// UI
   @override
   Widget build(BuildContext context) {
-    double desiredAspect = baseWidth / baseHeight;
-    double screenW = MediaQuery.of(context).size.width * 0.95;
-    double screenH = MediaQuery.of(context).size.height * 0.30;
+    final double desiredAspect = baseWidth / baseHeight;
+    final double screenW = MediaQuery.of(context).size.width * 0.95;
+    final double screenH = MediaQuery.of(context).size.height * 0.30;
 
-    double containerW = math.min(screenW, screenH * desiredAspect);
-    double containerH = containerW / desiredAspect;
+    final double containerW = math.min(screenW, screenH * desiredAspect);
+    final double containerH = containerW / desiredAspect;
 
-    double scaleX = containerW / baseWidth;
-    double scaleY = containerH / baseHeight;
+    final double scaleX = containerW / baseWidth;
+    final double scaleY = containerH / baseHeight;
 
     return Scaffold(
       appBar: CommonAppBar(title: "Left Hand"),
@@ -356,8 +297,8 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
                   child: SizedBox(
                     width: containerW,
                     height: containerH,
-                    child: RepaintBoundary(
-                      key: screenshotKey,
+                    child: Screenshot(
+                      controller: screenshotController,
                       child: Stack(
                         children: [
                           Positioned.fill(
@@ -366,7 +307,6 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
                               fit: BoxFit.contain,
                             ),
                           ),
-
                           ...points.map(
                             (p) => Positioned(
                               left: (p.x * scaleX) - 10,

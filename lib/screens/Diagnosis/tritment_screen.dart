@@ -5,6 +5,7 @@ import 'package:jin_reflex_new/api_service/api_service.dart';
 import 'package:jin_reflex_new/api_service/api_state.dart' hide ApiService;
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/main.dart'; // routeObserver
+import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_balance_guard.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_details_card.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_record_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
@@ -54,6 +55,7 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
   List<DiagnosisData> diagnosisList = [];
   bool isLoading = true;
   bool _isSubscribed = false;
+  bool _isOpeningDiagnosis = false;
 
   /// -------------------------------------------------------
   /// INIT
@@ -138,6 +140,14 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
       /// ---------------- FAB ----------------
       floatingActionButton: FloatingActionButton.extended(
   onPressed: () async {
+    if (_isOpeningDiagnosis) return;
+    setState(() {
+      _isOpeningDiagnosis = true;
+    });
+
+    try {
+    final hasBalance = await ensureDiagnosisBalanceAvailable(context);
+    if (!hasBalance) return;
 
       await AppPreference().remove(
       "LF_DATA_${widget.diagnosisId}_${widget.patientId}",
@@ -166,7 +176,7 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
     await AppPreference().remove(
       "LH_IMG_${widget.diagnosisId}_${widget.patientId}",
     );
-    Navigator.push(
+    final submitted = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => DiagnosisScreen(
@@ -177,6 +187,17 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
         ),
       ),
     );
+
+    if (submitted == true && mounted) {
+      fetchDiagnosisList();
+    }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isOpeningDiagnosis = false;
+        });
+      }
+    }
   },
 
   backgroundColor: Colors.orange.shade300,
@@ -257,6 +278,7 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
                                     date: date,
                                     time: time,
                                     title: "Day: ${index + 1}",
+                                    gender: widget.gender,
                                   ),
                             ),
                           );

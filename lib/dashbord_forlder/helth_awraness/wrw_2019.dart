@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jin_reflex_new/screens/health_campaign_pdf_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
 class Wrw2019Screen extends StatefulWidget {
@@ -67,7 +68,32 @@ class _Wrw2019ScreenState extends State<Wrw2019Screen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          SizedBox(height: 20,),
+          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+              "2019 Glimpses PDF",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 560,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: const CampaignPdfViewer(year: 2019),
+            ),
+          ),
 
           /// Expandable Title
           InkWell(

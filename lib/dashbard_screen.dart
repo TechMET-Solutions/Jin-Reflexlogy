@@ -20,6 +20,7 @@ import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2016.dart';
 import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2017.dart';
 import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2018.dart';
 import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2019.dart';
+import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2020.dart';
 import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2021.dart';
 import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2022.dart';
 import 'package:jin_reflex_new/dashbord_forlder/helth_awraness/wrw_2023.dart';
@@ -46,6 +47,7 @@ import 'package:jin_reflex_new/screens/ebook_screen.dart';
 import 'package:jin_reflex_new/screens/faq_screen.dart';
 import 'package:jin_reflex_new/screens/history_screen.dart';
 import 'package:jin_reflex_new/screens/info_screen.dart';
+import 'package:jin_reflex_new/screens/health_campaign_pdf_screen.dart';
 import 'package:jin_reflex_new/screens/life_style/life_style_screen.dart';
 import 'package:jin_reflex_new/screens/life_style/treatmentPlan.dart';
 import 'package:jin_reflex_new/screens/shop/shop_screen.dart';
@@ -55,10 +57,14 @@ import 'package:jin_reflex_new/screens/visitUsScreen.dart';
 import 'package:jin_reflex_new/screens/point_finder_screen.dart';
 import 'package:jin_reflex_new/screens/point_screen.dart';
 import 'package:jin_reflex_new/screens/relaxing_screen.dart';
+import 'package:jin_reflex_new/screens/settings_screen.dart';
 import 'package:jin_reflex_new/screens/sussess_story_screen.dart';
 import 'package:jin_reflex_new/screens/treatment/triment_screen.dart';
+import 'package:jin_reflex_new/services/welcome_dialog_prefs.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:jin_reflex_new/widgets/welcome_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -68,6 +74,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static bool _welcomeDialogCheckedThisSession = false;
+
   final PageController _pageController = PageController();
   int _currentPage = 0;
   String _countryName = 'Loading...';
@@ -106,19 +114,41 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _requestLocationPermission();
+
+    checkLocationPermission(); // ✅ Only this
+
     _checkDocumentsAndShowPopup();
-    _loadWelcomeData(); // Load saved welcome data
+    _loadWelcomeData();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndShowWelcomeDialog();
+    });
+
     Future.delayed(const Duration(seconds: 2), _autoSlide);
+  }
+
+  Future<void> _checkAndShowWelcomeDialog() async {
+    if (_welcomeDialogCheckedThisSession) {
+      return;
+    }
+
+    _welcomeDialogCheckedThisSession = true;
+    final shouldShowDialog = await WelcomeDialogPrefs.shouldShowDialog();
+
+    if (!shouldShowDialog || !mounted) {
+      return;
+    }
+
+    await WelcomeDialog.show(context, onGetStarted: _loadWelcomeData);
   }
 
   /// Load welcome user data from SharedPreferences
   Future<void> _loadWelcomeData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _welcomeMobile = prefs.getString('welcome_mobile') ?? '';
-      _welcomeEmail = prefs.getString('welcome_email') ?? '';
-      _welcomeDealerId = prefs.getString('welcome_dealer_id') ?? '';
+      _welcomeMobile = prefs.getString(WelcomeDialogPrefs.keyMobile) ?? '';
+      _welcomeEmail = prefs.getString(WelcomeDialogPrefs.keyEmail) ?? '';
+      _welcomeDealerId = prefs.getString(WelcomeDialogPrefs.keyDealerId) ?? '';
     });
 
     debugPrint("📊 Loaded welcome data:");
@@ -303,22 +333,129 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _requestLocationPermission() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // Test if location services are enabled.
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      // Location services are not enabled don't continue
-      // accessing the position and request users of the
-      // App to enable the location services.
+  Future<void> checkLocationPermission() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedDeliveryType = prefs.getString("delivery_type");
+    if (savedDeliveryType != null && savedDeliveryType.isNotEmpty) {
+      final normalized = _normalizeDeliveryType(savedDeliveryType);
       setState(() {
-        _countryName = 'Location disabled';
+        _countryName = normalized == 'india' ? 'India' : 'International';
+        _countryCode = normalized == 'india' ? 'IN' : 'US';
         _isLoadingLocation = false;
       });
       return;
     }
+
+    /// Step 1 : check location service
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
+    if (!serviceEnabled) {
+      _showLocationServiceDialog();
+      if (mounted) {
+        setState(() {
+          _countryName = 'Location disabled';
+          _countryCode = '';
+          _isLoadingLocation = false;
+        });
+      }
+      return;
+    }
+
+    /// Step 2 : check permission (use Geolocator to match getCurrentPosition)
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      _showPermissionDialog();
+      if (mounted) {
+        setState(() {
+          _countryName = 'Permission denied';
+          _countryCode = '';
+          _isLoadingLocation = false;
+        });
+      }
+      return;
+    }
+
+    if (permission == LocationPermission.denied) {
+      if (mounted) {
+        setState(() {
+          _countryName = 'Permission denied';
+          _countryCode = '';
+          _isLoadingLocation = false;
+        });
+      }
+      return;
+    }
+
+    await _getCurrentLocation();
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: Text("Permission Required"),
+            content: Text("Location permission is required."),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await openAppSettings();
+                },
+                child: Text("Open Settings"),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _showLocationServiceDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: Text("Location Disabled"),
+            content: Text("Please enable location service."),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await Geolocator.openLocationSettings();
+                },
+                child: Text("Enable"),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _requestLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
+    if (!serviceEnabled) {
+      await Geolocator.openLocationSettings();
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      await Geolocator.openAppSettings();
+      return;
+    }
+
+    _getCurrentLocation();
 
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
@@ -353,6 +490,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _getCurrentLocation() async {
     try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          setState(() {
+            _countryName = 'Location disabled';
+            _countryCode = '';
+            _isLoadingLocation = false;
+          });
+        }
+        return;
+      }
+
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          setState(() {
+            _countryName = 'Permission denied';
+            _countryCode = '';
+            _isLoadingLocation = false;
+          });
+        }
+        return;
+      }
+
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -539,49 +701,53 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   List<CampaignItem> campaignItems3() => [
-    CampaignItem(
-      title: 'Shop',
-      img: 'assets/jinImages/13.png',
-      onTap: () async {
-        final deliveryType = await _getSavedDeliveryType();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ShopScreen(deliveryType: deliveryType),
-          ),
-        );
-      },
-    ),
-    CampaignItem(
-      title: 'Treat Video',
-      img: 'assets/jinImages/14.png',
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => Treatment()),
-        );
-      },
-    ),
-    CampaignItem(
-      title: 'JIN Refle.Book',
-      img: 'assets/jinImages/15.png',
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => EbookScreen()),
-        );
-      },
-    ),
-    CampaignItem(
-      title: 'Treatement Plan',
-      img: 'assets/jinImages/16.png',
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => TreatmentPlanScreen()),
-        );
-      },
-    ),
+    // CampaignItem(
+    //   title: 'Shop',
+    //   img: 'assets/jinImages/13.png',
+    //   onTap: () async {
+    //     final deliveryType = await _getSavedDeliveryType();
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(
+    //         builder: (_) => ShopScreen(deliveryType: deliveryType),
+    //       ),
+    //     );
+    //   },
+    // ),
+    // CampaignItem(
+    //   title: 'Treat Video',
+    //   img: 'assets/jinImages/14.png',
+    //   onTap: () {
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(builder: (context) => Treatment()),
+    //     );
+    //   },
+    // ),
+    // CampaignItem(
+    //   title: 'JIN Refle.Book',
+    //   img: 'assets/jinImages/15.png',
+    //   onTap: () {
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(builder: (context) => EbookScreen()),
+    //     );
+    //   },
+    // ),
+
+    //    CampaignItem(
+    //   title: 'Training',
+    //   img: 'assets/jinImages/20.png',
+    //   onTap: () async {
+    //     final deliveryType = await _getSavedDeliveryType();
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(
+    //         builder: (_) => CourseScreen(deliveryType: deliveryType),
+    //       ),
+    //     );
+    //   },
+    // ),
     CampaignItem(
       title: 'Seminar',
       img: 'assets/jinImages/17.png',
@@ -626,15 +792,12 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ),
     CampaignItem(
-      title: 'Training',
-      img: 'assets/jinImages/20.png',
-      onTap: () async {
-        final deliveryType = await _getSavedDeliveryType();
+      title: 'Treatement Plan',
+      img: 'assets/jinImages/16.png',
+      onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => CourseScreen(deliveryType: deliveryType),
-          ),
+          MaterialPageRoute(builder: (context) => TreatmentPlanScreen()),
         );
       },
     ),
@@ -763,30 +926,252 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ),
   ];
-
-  List<CampaignItem> campaignItems4() => [
+  List<CampaignItem> campaignItems6() => [
     CampaignItem(
-      title: 'Health Campaigns',
-      img: 'assets/jinImages/25.png',
-      onTap: () {
+      title: 'Shop',
+      img: 'assets/jinImages/13.png',
+      onTap: () async {
+        final deliveryType = await _getSavedDeliveryType();
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const HealthCampaignScreen()),
+          MaterialPageRoute(
+            builder: (_) => ShopScreen(deliveryType: deliveryType),
+          ),
         );
       },
     ),
+    CampaignItem(
+      title: 'Treat Video',
+      img: 'assets/jinImages/14.png',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Treatment()),
+        );
+      },
+    ),
+    CampaignItem(
+      title: 'JIN Refle.Book',
+      img: 'assets/jinImages/15.png',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => EbookScreen()),
+        );
+      },
+    ),
+
+    CampaignItem(
+      title: 'Training',
+      img: 'assets/jinImages/20.png',
+      onTap: () async {
+        final deliveryType = await _getSavedDeliveryType();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CourseScreen(deliveryType: deliveryType),
+          ),
+        );
+      },
+    ),
+    // CampaignItem(
+    //   title: 'Seminar',
+    //   img: 'assets/jinImages/17.png',
+    //   onTap: () {
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(
+    //         builder:
+    //             (_) => CommonWebView(
+    //               url: "https://jinreflexology.in/seminar/",
+    //               title: "Seminar",
+    //             ),
+    //       ),
+    //     );
+    //   },
+    // ),
+    // CampaignItem(
+    //   title: 'Workshop',
+    //   img: 'assets/jinImages/18.png',
+    //   onTap: () {
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(
+    //         builder:
+    //             (_) => CommonWebView(
+    //               url: "https://jinreflexology.in/seminar/",
+    //               title: "Workshop",
+    //             ),
+    //       ),
+    //     );
+    //   },
+    // ),
+    //   CampaignItem(
+    //     title: 'Update',
+    //     img: 'assets/jinImages/38.png',
+    //     onTap: () {
+    //       //Navigator.pop(context);
+    //       launchUrl(
+    //         Uri.parse("https://www.facebook.com/profile.php?id=61580519183420"),
+    //         mode: LaunchMode.externalApplication,
+    //       );
+    //     },
+    //   ),
+    //  CampaignItem(
+    //     title: 'Treatement Plan',
+    //     img: 'assets/jinImages/16.png',
+    //     onTap: () {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(builder: (context) => TreatmentPlanScreen()),
+    //       );
+    //     },
+    //   ),
+    //   CampaignItem(
+    //     title: 'Free power Yoga',
+    //     img: 'assets/jinImages/19.png',
+    //     onTap: () {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(builder: (_) => const PowerYogaScreen()),
+    //       );
+    //     },
+    //   ),
+
+    //   CampaignItem(
+    //     title: 'Healthy Tips',
+    //     img: 'assets/jinImages/21.png',
+    //     onTap: () {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(builder: (_) => HealthyTipsScreen()),
+    //       );
+    //     },
+    //   ),
+    //   CampaignItem(
+    //     title: 'Health Meter',
+    //     img: 'assets/images/metericon.jpeg',
+    //     onTap: () {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(builder: (_) => HealthFormScreen()),
+    //       );
+    //     },
+    //   ),
+
+    //   CampaignItem(
+    //     title: 'Success Story',
+    //     img: 'assets/jinImages/24.png',
+    //     onTap: () {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(builder: (_) => SuccessStoryScreen()),
+    //       );
+    //     },
+    //   ),
+    //   CampaignItem(
+    //     title: 'Food',
+    //     img: 'assets/jinImages/food.png',
+    //     onTap: () {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(builder: (_) => FoodScreen()),
+    //       );
+    //     },
+    //   ),
+    //   CampaignItem(
+    //     title: 'Vitamin',
+    //     img: 'assets/jinImages/vitamin.png',
+    //     onTap: () {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(builder: (_) => VitaminsScreen()),
+    //       );
+    //     },
+    //   ),
+    //   CampaignItem(
+    //     title: 'Minerals',
+    //     img: 'assets/jinImages/minerals.png',
+    //     onTap: () {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(builder: (_) => MineralsScreen()),
+    //       );
+    //     },
+    //   ),
+    //   CampaignItem(
+    //     title: 'Speeches',
+    //     img: 'assets/jinImages/speech.png',
+    //     onTap: () {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(builder: (_) => SpeechesScreen()),
+    //       );
+    //     },
+    //   ),
+
+    //   CampaignItem(
+    //     title: 'Mudra',
+    //     img: 'assets/jinImages/mudra.png',
+    //     onTap: () {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(builder: (_) => MudrasScreen()),
+    //       );
+    //     },
+    //   ),
+    //   CampaignItem(
+    //     title: 'Yoga',
+    //     img: 'assets/jinImages/yoga.png',
+    //     onTap: () {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(builder: (_) => YogasScreen()),
+    //       );
+    //     },
+    //   ),
+
+    //   CampaignItem(
+    //     title: 'Color',
+    //     img: 'assets/jinImages/color.png',
+    //     onTap: () {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(builder: (_) => ColorsScreen()),
+    //       );
+    //     },
+    //   ),
+    // CampaignItem(
+    //   title: 'Spinal',
+    //   img: 'assets/jinImages/spinal.png',
+    //   onTap: () {
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(builder: (_) => SpinesScreen()),
+    //     );
+    //   },
+    // ),
+  ];
+  List<CampaignItem> campaignItems4() => [
+    // CampaignItem(
+    //   title: 'Health Campaigns',
+    //   img: 'assets/jinImages/25.png',
+    //   onTap: () {
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(
+    //         builder: (context) => const HealthCampaignPdfScreen(),
+    //       ),
+    //     );
+    //   },
+    // ),
     CampaignItem(
       title: 'JIN Day 2015',
       img: 'assets/jinImages/26.png',
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (context) => Wrw2015Screen(
-                
-                ),
-          ),
+          MaterialPageRoute(builder: (context) => const Wrw2015Screen()),
         );
       },
     ),
@@ -796,12 +1181,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (context) => Wrw2016Screen(
-                
-                ),
-          ),
+          MaterialPageRoute(builder: (context) => Wrw2016Screen()),
         );
       },
     ),
@@ -811,12 +1191,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (context) => Wrw2017Screen(
-                
-                ),
-          ),
+          MaterialPageRoute(builder: (context) => const Wrw2017Screen()),
         );
       },
     ),
@@ -826,12 +1201,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (context) => Wrw2018Screen(
-              
-                ),
-          ),
+          MaterialPageRoute(builder: (context) => const Wrw2018Screen()),
         );
       },
     ),
@@ -841,12 +1211,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (context) => Wrw2019Screen(
-              
-                ),
-          ),
+          MaterialPageRoute(builder: (context) => const Wrw2019Screen()),
         );
       },
     ),
@@ -854,15 +1219,10 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'JIN Day 2020',
       img: 'assets/jinImages/30.png',
       onTap: () {
-        // Navigator.push(
-        //   context,
-        //   MaterialPageRoute(
-        //     builder:
-        //         (_) => Wrw2020Screen(
-                
-        //         ),
-        //   ),
-        // );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const Wrw2020Screen()),
+        );
       },
     ),
     CampaignItem(
@@ -871,12 +1231,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (_) => Wrw2021Screen(
-                 
-                ),
-          ),
+          MaterialPageRoute(builder: (_) => const Wrw2021Screen()),
         );
       },
     ),
@@ -887,12 +1242,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (_) => Wrw2022Screen(
-              
-                ),
-          ),
+          MaterialPageRoute(builder: (_) => const Wrw2022Screen()),
         );
       },
     ),
@@ -902,48 +1252,30 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (_) => Wrw2023Screen(
-              
-                ),
-          ),
+          MaterialPageRoute(builder: (_) => const Wrw2023Screen()),
         );
       },
     ),
-     CampaignItem(
+    CampaignItem(
       title: 'JIN Day 2024',
       img: 'assets/jinImages/27.png',
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (_) => Wrw2024Screen(
-              
-                ),
-          ),
+          MaterialPageRoute(builder: (_) => const Wrw2024Screen()),
         );
       },
     ),
-     CampaignItem(
+    CampaignItem(
       title: 'JIN Day 2025',
       img: 'assets/jinImages/27.png',
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (_) => Wrw2025Screen(
-              
-                ),
-          ),
+          MaterialPageRoute(builder: (_) => const Wrw2025Screen()),
         );
       },
     ),
-
-
-    
 
     // CampaignItem(title: '2019', img: 'assets/jinImages/31.png', onTap: () {}),
     // CampaignItem(title: '2018', img: 'assets/jinImages/31.png', onTap: () {}),
@@ -1006,7 +1338,6 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'Review',
       img: 'assets/jinImages/41.png',
       onTap: () {
-        Navigator.pop(context);
         launchUrl(
           Uri.parse("https://maps.app.goo.gl/scfouzyb2nEzdBkr8?g_st=aw"),
           mode: LaunchMode.externalApplication,
@@ -1017,7 +1348,6 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'Facebook',
       img: 'assets/jinImages/42.png',
       onTap: () {
-        Navigator.pop(context);
         launchUrl(
           Uri.parse("https://www.facebook.com/profile.php?id=61580519183420"),
           mode: LaunchMode.externalApplication,
@@ -1028,7 +1358,6 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'Youtube',
       img: 'assets/jinImages/43.png',
       onTap: () {
-        Navigator.pop(context);
         launchUrl(
           Uri.parse("https://www.youtube.com/@JINReflexology"),
           mode: LaunchMode.externalApplication,
@@ -1257,8 +1586,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   SizedBox(height: 10),
-
-                  // Show mobile number if available
                   if (_welcomeMobile.isNotEmpty) ...[
                     Text(
                       _welcomeMobile,
@@ -1358,6 +1685,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.settings, color: Colors.indigo),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+              },
+            ),
             Container(
               alignment: Alignment.bottomCenter,
               margin: const EdgeInsets.only(bottom: 20),
@@ -1386,17 +1724,17 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(height: 10),
             // AutoSlider(pageController: _pageController),
             BannerSlider(),
+            _campaignSection(header: "JIN Reflexolog", items: campaignItems1()),
+            // const SizedBox(height: 4),
             _campaignSection(
-              header: "JIN Reflexology",
-              items: campaignItems1(),
-            ),
-            const SizedBox(height: 4),
-            _campaignSection(
-              header: "For JIN Reflexology                   For Patients",
+              header: "For JIN Reflexologist                   For Patients",
               items: campaignItems2(),
             ),
-            const SizedBox(height: 4),
-            _campaignSection(header: " For Premium", items: campaignItems3()),
+            // const SizedBox(height: 4),
+            _campaignSection(header: "Premium", items: campaignItems6()),
+
+            _campaignSection(header: "Utility", items: campaignItems3()),
+
             // const SizedBox(height: 4),
             _campaignSection(header: "Contact us", items: campaignItems5()),
 
@@ -1412,6 +1750,76 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             // const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => CommonWebView(
+                            url: "https://jinreflexology.in/news-2/",
+                            title: "All Event News Paper Clip 2010 to 2025",
+                          ),
+                    ),
+                  );
+                },
+                child: Container(
+                  //height: 55,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B3B8F),
+
+                    // borderRadius: BorderRadius.circular(25)
+                  ),
+                  child: Text(
+                    "All Event News Paper Clip 2010 to 2025",
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => CommonWebView(
+                            url: "https://jinreflexology.in/mi/",
+                            title: "Social Works in Mahavir International",
+                          ),
+                    ),
+                  );
+                },
+                child: Container(
+                  //height: 55,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B3B8F),
+
+                    // borderRadius: BorderRadius.circular(25)
+                  ),
+                  child: Text(
+                    "Social Works in Mahavir International",
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
           ],
         ),
       ),
@@ -1427,7 +1835,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       width: double.infinity,
       color: const Color(0xFF3B3B8F),
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Column(
         children: [
           Text(

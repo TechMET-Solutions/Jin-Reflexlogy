@@ -24,13 +24,13 @@ class _BannerSliderState extends State<BannerSlider> {
       id: 1,
       title: "Welcome",
       desc: "Jin Reflexology",
-      image: "assets/images/jin_slide1.png",
+      image:   "assets/images/bannar_new.jpeg",
     ),
     BannerModel(
       id: 2,
       title: "Therapy",
       desc: "Natural Healing",
-      image: "assets/images/jin_slide2.png",
+      image:  "assets/images/bannar_new.jpeg",
     ),
   ];
 
@@ -217,7 +217,7 @@ class _BannerSliderState extends State<BannerSlider> {
         errorBuilder:
             (context, error, stackTrace) {
           return Image.asset(
-            "assets/images/jin_slide1.png",
+            "assets/images/bannar_new.jpeg",
             fit: BoxFit.fill,
             width: double.infinity,
           );

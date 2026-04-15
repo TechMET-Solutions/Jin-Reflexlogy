@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_balance_guard.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_details_card.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_record_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diganosis_update_screen.dart';
@@ -61,15 +62,15 @@ class PatientDiagnosisScreen extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {
+                  ensureDiagnosisBalanceAvailable(context).then((hasBalance) {
+                    if (!hasBalance || !context.mounted) return;
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>  DiagnosisScreen(isNew: true,),
+                        builder: (context) => const DiagnosisScreen(isNew: true),
                       ),
                     );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Add Diagnosis Clicked")),
-                  );
+                  });
                 },
                 icon: const Icon(Icons.add, color: Colors.white, size: 22),
                 label: const Text(

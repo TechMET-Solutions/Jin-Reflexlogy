@@ -5,5 +5,6 @@ class PreferencesKey {
   static String email = "name";
   static String contactNumber = "contactNumber";
   static String type = "type";
+  static String diagnosisImageFlip = "diagnosisImageFlip";
 
 }

@@ -230,6 +230,64 @@ class BodyCellOverlayPainter extends CustomPainter {
 
 // Screenshot utility class
 class ScreenshotHelper {
+  static void _printLongLog(String message) {
+    const int chunkSize = 800;
+    for (int i = 0; i < message.length; i += chunkSize) {
+      final end = (i + chunkSize < message.length)
+          ? i + chunkSize
+          : message.length;
+      debugPrint(message.substring(i, end));
+    }
+  }
+
+  static String _mapPainForBackend(String severity, String day) {
+    final normalizedSeverity = severity.trim();
+    final normalizedKey = normalizedSeverity.toLowerCase();
+
+    if (day == 'first') {
+      switch (normalizedKey) {
+        case 'severe':
+          return 'severe';
+        case 'moderate50':
+          return 'moderate50';
+        case 'mild25':
+          return 'mild25';
+        case 'painful':
+          return 'painful';
+        case 'moderate':
+          return 'moderate50';
+        default:
+          return 'severe';
+      }
+    }
+
+    switch (normalizedKey) {
+      case 'fullyrecovered':
+        return 'fullyRecovered';
+      case 'moderate':
+        return 'moderate';
+      case 'temporary':
+        return 'temporary';
+      case 'minimild':
+        return 'miniMild';
+      case 'progressive':
+        return 'progressive';
+      case 'relax25':
+        return 'relax25';
+      case 'none0':
+        return 'none0';
+      case 'mild50':
+      case 'moderate50':
+        return 'moderate';
+      case 'recovered':
+        return 'fullyRecovered';
+      case 'relax':
+        return 'relax25';
+      default:
+        return 'fullyRecovered';
+    }
+  }
+
   static Future<File?> captureWidget(GlobalKey key) async {
     try {
       await Future.delayed(const Duration(milliseconds: 200)); // ⭐ add this
@@ -295,13 +353,13 @@ class ScreenshotHelper {
       List<Map<String, String>> diagnosisList = [];
 
       for (final item in items) {
-        String pain = (item.severity ?? '').toLowerCase();
+        final String pain = _mapPainForBackend(item.severity, day);
 
         diagnosisList.add({"bodyPart": item.name.trim(), "pain": pain});
       }
       final diagnosisJson = jsonEncode(diagnosisList);
 
-      debugPrint("FINAL JSON => $diagnosisJson");
+      _printLongLog("FINAL JSON => $diagnosisJson");
 
       final formData = FormData.fromMap({
         'therapistId': therapistId, // ✅ send it
@@ -329,7 +387,7 @@ class ScreenshotHelper {
       debugPrint("📤 SENDING DATA TO API");
 
       for (var field in formData.fields) {
-        debugPrint("FIELD => ${field.key} : ${field.value}");
+        _printLongLog("FIELD => ${field.key} : ${field.value}");
       }
 
       for (var file in formData.files) {
@@ -338,10 +396,9 @@ class ScreenshotHelper {
       // print(response.data);
       final body = response.data.toString();
       debugPrint("📥 RESPONSE STATUS => ${response.statusCode}");
-      debugPrint("📥 RESPONSE DATA => ${response.data}");
+      _printLongLog("📥 RESPONSE DATA => ${response.data}");
       if (response.statusCode == 200) {
         final decoded = jsonDecode(body);
-
         return decoded['success'] == true;
       }
 

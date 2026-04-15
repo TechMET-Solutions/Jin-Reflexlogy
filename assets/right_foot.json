@@ -116,7 +116,7 @@
       "id": "customClickButton16",
       "x": 201.6345648871529,
       "y": 391.65960105613397,
-      "tag": "Large intestine",
+      "tag": "Large Intestine",
       "index": 203,
       "group": "normal"
     },
@@ -404,7 +404,7 @@
       "id": "customClickButton221",
       "x": 155.9,
       "y": 317.5,
-      "tag": "Solar Plexues",
+      "tag": "Solar Plexus",
       "index": 239,
       "group": "normal"
     },
@@ -460,7 +460,7 @@
       "id": "customClickButton228",
       "x": 117.24364872685184,
       "y": 355.7,
-      "tag": "Gallbladder",
+      "tag": "GallBladder",
       "index": 246,
       "group": "normal"
     },
@@ -468,7 +468,7 @@
       "id": "customClickButton229",
       "x": 95.65449399594907,
       "y": 371.86048900462964,
-      "tag": "Gallbladder",
+      "tag": "GallBladder",
       "index": 247,
       "group": "normal"
     },
@@ -548,7 +548,7 @@
       "id": "customClickButton379",
       "x": 113.67689163773149,
       "y": 636.518532986111,
-      "tag": "Small intestine",
+      "tag": "Small Intestine",
       "index": 379,
       "group": "normal"
     },
@@ -996,7 +996,7 @@
       "id": "customClickButton288",
       "x": 212.19087818287056,
       "y": 594.6185185185192,
-      "tag": "Urinary bladder",
+      "tag": "Urinary Bladder",
       "index": 305,
       "group": "normal"
     },
@@ -1004,7 +1004,7 @@
       "id": "customClickButton289",
       "x": 211.78744936342594,
       "y": 573.8185185185191,
-      "tag": "Urinary bladder",
+      "tag": "Urinary Bladder",
       "index": 306,
       "group": "normal"
     },
@@ -1012,7 +1012,7 @@
       "id": "customClickButton290",
       "x": 213.652097800926,
       "y": 553.3999855324078,
-      "tag": "Urinary bladder",
+      "tag": "Urinary Bladder",
       "index": 307,
       "group": "normal"
     },

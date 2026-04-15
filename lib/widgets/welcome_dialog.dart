@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jin_reflex_new/services/first_time_service.dart';
+import 'package:jin_reflex_new/services/welcome_dialog_prefs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 
@@ -117,23 +118,14 @@ void _handleSubmit() async {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       final prefs = await SharedPreferences.getInstance();
-
-      // ✅ Save user data FIRST
-      await prefs.setString('welcome_name', _nameController.text.trim());
-      await prefs.setString('welcome_mobile', _mobileController.text.trim());
-      await prefs.setString('welcome_email', _emailController.text.trim());
-      await prefs.setString('welcome_dealer_id', _dealerIdController.text.trim());
-
-      // ✅ MAIN LOGIC - Dealer ID check
-      if (_dealerIdController.text.trim().isNotEmpty) {
-        await prefs.setBool('dealer_completed', true);
-        debugPrint("✅ Dealer ID present → Popup permanently closed");
-      } else {
-        await prefs.setBool('dealer_completed', false);
-        debugPrint("⚠️ Dealer ID missing → Popup will show again");
-      }
-
-      // ✅ Force immediate save
+      await WelcomeDialogPrefs.saveSubmission(
+        name: _nameController.text,
+        mobile: _mobileController.text,
+        email: _emailController.text,
+        dealerId: _dealerIdController.text,
+      );
+      await FirstTimeService.setWelcomeShown();
+      await FirstTimeService.setNotFirstTime();
       await prefs.reload();
 
       if (!mounted) return;
@@ -146,8 +138,11 @@ void _handleSubmit() async {
         ),
       );
 
-      // Close the welcome dialog
-      Navigator.of(context).pop();
+      // Close the welcome dialog from the root navigator so the popup actually disappears
+      final navigator = Navigator.of(context, rootNavigator: true);
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
       
       // Call callback to refresh home screen
       widget.onGetStarted?.call();

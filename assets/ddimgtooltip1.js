@@ -10,13 +10,13 @@ var ddimgtooltip = {
 		var baseUrl = "https://jinreflexology.in/wp-content/uploads/2016/04/";
 
 		tooltips[1] = [baseUrl + "1-Brain-Head.jpg", "Brain-Head", { background: "white", font: "bold 18px Arial" }]
-		tooltips[2] = [baseUrl + "2-Pituitary-Gland-1.jpg", "Pituitary Gland", { background: "white", font: "bold 18px Arial" }]
+		tooltips[2] = [baseUrl + "2-Pituitary-Gland.jpg", "Pituitary Gland", { background: "white", font: "bold 18px Arial" }]
 		tooltips[3] = [baseUrl + "3-Throat.jpg", "Throat", { background: "white", font: "bold 18px Arial" }]
 		tooltips[4] = [baseUrl + "4-Parathyroid.jpg", "Parathyroid Gland", { background: "white", font: "bold 18px Arial" }]
 		tooltips[6] = [baseUrl + "6-Thyroid-Gland.jpg", "Thyroid", { background: "white", font: "bold 18px Arial" }]
-		tooltips[7] = [baseUrl + "7-Eesophagus_4.jpg", "Esophagus", { background: "white", font: "bold 18px Arial" }]
-		tooltips[8] = [baseUrl + "8-Chest_2.jpg", "Chest", { background: "white", font: "bold 18px Arial" }]
-		tooltips[9] = [baseUrl + "9-Solar-Plexus-1.jpg", "Solar Plexues", { background: "white", font: "bold 18px Arial" }]
+		tooltips[7] = [baseUrl + "7-Eesophagus.jpg", "Esophagus", { background: "white", font: "bold 18px Arial" }]
+		tooltips[8] = [baseUrl + "8-Chest.jpg", "Chest", { background: "white", font: "bold 18px Arial" }]
+		tooltips[9] = [baseUrl + "9-Solar-Plexus.jpg", "Solar Plexues", { background: "white", font: "bold 18px Arial" }]
 		tooltips[10] = [baseUrl + "10-Pancreas.jpg", "Pancreas-Gland", { background: "white", font: "bold 18px Arial" }]
 		tooltips[11] = [baseUrl + "11-Adrenal.jpg", "Adrinal-Gland", { background: "white", font: "bold 18px Arial" }]
 		tooltips[121] = [baseUrl + "12-Thoracic-Vertebra-T1.jpg", "Throcic T-1", { background: "white", font: "bold 18px Arial" }]
@@ -66,19 +66,19 @@ var ddimgtooltip = {
 		tooltips[41] = [baseUrl + "41-Duodinum.jpg", "Duodinum", { background: "white", font: "bold 18px Arial" }]
 		tooltips[42] = [baseUrl + "42-Large-Intestine.jpg", "Large Intestine", { background: "white", font: "bold 18px Arial" }]
 		tooltips[43] = [baseUrl + "43-Small-Intestine.jpg", "Small Intestine", { background: "white", font: "bold 18px Arial" }]
-		tooltips[44] = [baseUrl + "44-Tongue-1.jpg", "Tongue", { background: "white", font: "bold 18px Arial" }]
+		tooltips[44] = [baseUrl + "44-Tongue.jpg", "Tongue", { background: "white", font: "bold 18px Arial" }]
 		tooltips[45] = [baseUrl + "45-Spleen.jpg", "Spleen", { background: "white", font: "bold 18px Arial" }]
 		tooltips[47] = [baseUrl + "47-Female-Sex-Organ.jpg", "Female Sex Organ", { background: "white", font: "bold 18px Arial" }]
 		tooltips[48] = [baseUrl + "48-Rectum.jpg", "Rectum", { background: "white", font: "bold 18px Arial" }]
 
-		tooltips[51] = [baseUrl + "5-Cervical-C1_5.jpg", "Cervical C-1", { background: "white", font: "bold 18px Arial" }]
+		tooltips[51] = [baseUrl + "5-Cervical-C1.jpg", "Cervical C-1", { background: "white", font: "bold 18px Arial" }]
 
-		tooltips[52] = [baseUrl + "5-Cervical-C2-1.jpg", "Cervical C-2", { background: "white", font: "bold 18px Arial" }]
-		tooltips[53] = [baseUrl + "5-Cervical-C3-1.jpg", "Cervical C-3", { background: "white", font: "bold 18px Arial" }]
-		tooltips[54] = [baseUrl + "5-Cervical-C4-1.jpg", "Cervical C-4", { background: "white", font: "bold 18px Arial" }]
-		tooltips[55] = [baseUrl + "5-Cervical-C5-1.jpg", "Cervical C-5", { background: "white", font: "bold 18px Arial" }]
-		tooltips[56] = [baseUrl + "5-Cervical-C6-1.jpg", "Cervical C-6", { background: "white", font: "bold 18px Arial" }]
-		tooltips[57] = [baseUrl + "5-Cervical-C7-1.jpg", "Cervical C-7", { background: "white", font: "bold 18px Arial" }]
+		tooltips[52] = [baseUrl + "5-Cervical-C2.jpg", "Cervical C-2", { background: "white", font: "bold 18px Arial" }]
+		tooltips[53] = [baseUrl + "5-Cervical-C3.jpg", "Cervical C-3", { background: "white", font: "bold 18px Arial" }]
+		tooltips[54] = [baseUrl + "5-Cervical-C4.jpg", "Cervical C-4", { background: "white", font: "bold 18px Arial" }]
+		tooltips[55] = [baseUrl + "5-Cervical-C5.jpg", "Cervical C-5", { background: "white", font: "bold 18px Arial" }]
+		tooltips[56] = [baseUrl + "5-Cervical-C6.jpg", "Cervical C-6", { background: "white", font: "bold 18px Arial" }]
+		tooltips[57] = [baseUrl + "5-Cervical-C7.jpg", "Cervical C-7", { background: "white", font: "bold 18px Arial" }]
 
 
 		return tooltips //do not remove/change this line
@@ -100,6 +100,45 @@ var ddimgtooltip = {
 				.appendTo(document.body)
 		}
 		return null
+	},
+
+	createmodal: function ($) {
+		if ($('#ddimgtooltip-modal').length) {
+			return $('#ddimgtooltip-modal')
+		}
+
+		var $modal = $(
+			'<div id="ddimgtooltip-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:99999; padding:16px; box-sizing:border-box;">' +
+				'<div style="max-width:420px; width:100%; margin:40px auto; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.3);">' +
+					'<div style="display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid #eee;">' +
+						'<div id="ddimgtooltip-modal-title" style="font:bold 18px Arial; color:#222; padding-right:12px;"></div>' +
+						'<button id="ddimgtooltip-modal-close" style="border:none; background:none; font-size:28px; line-height:1; color:#666; cursor:pointer;">&times;</button>' +
+					'</div>' +
+					'<div style="padding:16px; text-align:center;">' +
+						'<img id="ddimgtooltip-modal-img" src="" style="max-width:100%; max-height:55vh; width:auto; height:auto; border:2px solid #2d5bff; border-radius:12px;" />' +
+					'</div>' +
+				'</div>' +
+			'</div>'
+		).appendTo(document.body)
+
+		$modal.on('click', function (e) {
+			if (e.target === this || e.target.id === 'ddimgtooltip-modal-close') {
+				ddimgtooltip.hidemodal($)
+			}
+		})
+
+		return $modal
+	},
+
+	showmodal: function ($, tipinfo) {
+		var $modal = this.createmodal($)
+		$('#ddimgtooltip-modal-img').attr('src', tipinfo[0] || '')
+		$('#ddimgtooltip-modal-title').text(tipinfo[1] || 'Details')
+		$modal.css('display', 'block')
+	},
+
+	hidemodal: function ($) {
+		$('#ddimgtooltip-modal').css('display', 'none')
 	},
 
 	positiontooltip: function ($, $tooltip, e) {
@@ -129,8 +168,15 @@ var ddimgtooltip = {
 			var tipids = []
 			$targets.each(function () {
 				var $target = $(this)
+				if (!$target.attr('href')) {
+					$target.attr('href', '#')
+				}
+				$target.css('cursor', 'pointer')
 				$target.attr('rel').match(/\[(\d+)\]/) //match d of attribute rel="imgtip[d]"
 				var tipsuffix = parseInt(RegExp.$1) //get d as integer
+				if (!tiparray[tipsuffix]) {
+					return
+				}
 				var tipid = this._tipid = ddimgtooltip.tipprefix + tipsuffix //construct this tip's ID value and remember it
 				var $tooltip = ddimgtooltip.createtip($, tipid, tiparray[tipsuffix])
 				$target.mouseenter(function (e) {
@@ -149,6 +195,18 @@ var ddimgtooltip = {
 					$tooltip.mouseenter(function () {
 						ddimgtooltip.hidebox($, $(this))
 					})
+				}
+				$target.on('click touchstart touchend', function (e) {
+					e.preventDefault()
+					e.stopPropagation()
+					ddimgtooltip.showmodal($, tiparray[tipsuffix])
+					return false
+				})
+			})
+
+			$(document).on('keyup', function (e) {
+				if (e.key === 'Escape') {
+					ddimgtooltip.hidemodal($)
 				}
 			})
 

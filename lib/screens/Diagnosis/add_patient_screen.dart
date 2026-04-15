@@ -13,6 +13,7 @@ import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/api_service/urls.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_record_screen.dart';
+import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_balance_guard.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:jin_reflex_new/widgets/offline_country_state_city_widget.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
@@ -1255,6 +1256,10 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                   onPressed: isLoading
                       ? null
                       : () async {
+                          final hasBalance =
+                              await ensureDiagnosisBalanceAvailable(context);
+                          if (!hasBalance) return;
+
                           final result = await addPatient();
 
                           if (result != null &&
@@ -1267,6 +1272,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                                   patient_id: result["id"],
                                   name: result["name"],
                                   diagnosis_id: widget.diagnosisId,
+                                  gender: gender,
                                 ),
                               ),
                             );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jin_reflex_new/screens/health_campaign_pdf_screen.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 
 class Wrw2017Screen extends StatefulWidget {
@@ -554,6 +555,33 @@ class _Wrw2017ScreenState extends State<Wrw2017Screen> {
           SizedBox(height: 20),
 
           Container(height: 200, width: double.infinity, color: Colors.grey),
+
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+              "2017 Glimpses PDF",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 560,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: const CampaignPdfViewer(year: 2017),
+            ),
+          ),
         ],
       ),
     );
@@ -586,7 +614,7 @@ class _Wrw2017ScreenState extends State<Wrw2017Screen> {
 
             Wrw2017Screen.buildRow(
               "Advisory Member",
-              "Prof. P.B. Lohiya, Dr. Sarvdeo Prasad Gupta",
+              "Prof. P.B. Lohiya, Dr. Anant Biradar, Dr. Sarvdeo Prasad Gupta",
             ),
 
             Wrw2017Screen.sectionTitle(

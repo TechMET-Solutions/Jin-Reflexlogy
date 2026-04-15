@@ -20,7 +20,7 @@ class _HealthMeterExampleScreenState extends State<HealthMeterExampleScreen> {
         title: const Text('Health Meter'),
         backgroundColor: Colors.teal,
       ), 
-      body: SingleChildScrollView(
+      body: SingleChildScrollView(    
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(

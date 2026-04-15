@@ -200,12 +200,12 @@ class _CourseScreenState extends State<CourseScreen> {
       ),
     );
 
-    // Call enrollment API on failure
-    await _callSubmitEnrollmentAPI(
-      paymentId: null,
-      orderId: null,
+    final userData = await _refreshUserData();
+    await sendPaymentToBackend(
+      userId: userData['userId'] ?? '',
       status: "failed",
-      paymentGateway: "razorpay",
+      reason: response.message,
+      amount: (selectedCourse?['total'] ?? 0).toInt(),
     );
   }
 
@@ -274,6 +274,15 @@ class _CourseScreenState extends State<CourseScreen> {
         final res = jsonDecode(response.body);
         print("Enrollment Response: $res");
         fetchCourses();
+        final bool apiSuccess =
+            res["success"] == true ||
+            res["success"] == 1 ||
+            res["status"] == "success";
+        final String message =
+            res["message"] ??
+            (apiSuccess
+                ? "Course enrolled successfully"
+                : "Course enrollment failed");
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

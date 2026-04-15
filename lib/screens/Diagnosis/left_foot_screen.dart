@@ -6,9 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:dio/dio.dart';
 import 'package:jin_reflex_new/api_service/global/utils.dart';
+import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:image/image.dart' as img;
+import 'package:screenshot/screenshot.dart';
+
+const String _diagnosisImageFlipPrefKey = "diagnosisImageFlip";
 
 class PointData {
   final String id;
@@ -43,11 +47,13 @@ class PointData {
 class LeftFootScreenNew extends StatefulWidget {
   final String diagnosisId;
   final String patientId;
+  final String? gender;
   final bool isNew;
 
   const LeftFootScreenNew({
     required this.diagnosisId,
     required this.patientId,
+    this.gender,
     this.isNew = false,
     Key? key,
   }) : super(key: key);
@@ -97,11 +103,18 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
       final List<dynamic> jsonList = jsonMap["buttons"] as List<dynamic>;
       points = jsonList.map((p) => PointData.fromJson(p)).toList();
 
+      final hasLocalDraft =
+          AppPreference()
+              .getString("LF_DATA_${widget.diagnosisId}_${widget.patientId}")
+              .isNotEmpty;
+
       // load saved local selections first (if any)
       loadSavedLocal();
 
-      // fetch server states and merge
-      await fetchServerStates();
+      // fetch server states only when no local draft exists
+      if (!hasLocalDraft) {
+        await fetchServerStates();
+      }
 
       if (_isMounted) {
         setState(() => isLoading = false);
@@ -331,47 +344,26 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
     }
   }
 
+  ScreenshotController screenshotController = ScreenshotController();
   Future<String?> captureScreenshot() async {
     try {
-      await WidgetsBinding.instance.endOfFrame;
-      await Future.delayed(const Duration(milliseconds: 80));
-
-      final boundary =
-          screenshotKey.currentContext?.findRenderObject()
-              as RenderRepaintBoundary?;
-
-      if (boundary == null) return null;
-
-      final ui.Image image = await boundary.toImage(
-        pixelRatio: MediaQuery.of(context).devicePixelRatio,
+      final bytes = await screenshotController.capture(
+        pixelRatio: 2,
+        delay: const Duration(milliseconds: 350),
       );
 
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (bytes == null) return null;
 
-      if (byteData == null) return null;
+      img.Image? image = img.decodeImage(bytes);
+      if (image == null) return null;
 
-      final bytes = byteData.buffer.asUint8List();
-
-      final decoded = img.decodeImage(bytes);
-      if (decoded == null) return null;
-
-      img.Image fixed = decoded;
-
-      /// ⭐ AUTO FLIP DETECTION LOGIC
-      /// top pixel vs bottom pixel compare
-      /// काही device मध्ये buffer उलटा असतो
-
-      final topPixel = decoded.getPixel(10, 10);
-      final bottomPixel = decoded.getPixel(10, decoded.height - 10);
-
-      // जर top खूप dark आणि bottom light असेल → उलटा आहे
-      if (img.getLuminance(topPixel) < img.getLuminance(bottomPixel)) {
-        fixed = img.flipVertical(decoded);
+      if (AppPreference().getBool(_diagnosisImageFlipPrefKey, defValue: true)) {
+        image = img.flipVertical(image);
       }
+      image = img.copyResize(image, width: 900);
+      final compressed = img.encodePng(image, level: 6);
 
-      final fixedBytes = img.encodePng(fixed);
-
-      return base64Encode(fixedBytes);
+      return base64Encode(compressed);
     } catch (e) {
       debugPrint("Screenshot error: $e");
       return null;
@@ -420,10 +412,11 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
     final Set<String> greenTags = {};
 
     for (var point in points) {
-      if (point.state == 1 && point.tag.isNotEmpty) {
-        redTags.add(point.tag); // red
-      } else if (point.state == 2 && point.tag.isNotEmpty) {
-        greenTags.add(point.tag); // green
+      final effectiveTag = _effectiveTag(point);
+      if (point.state == 1 && effectiveTag.isNotEmpty) {
+        redTags.add(effectiveTag); // red
+      } else if (point.state == 2 && effectiveTag.isNotEmpty) {
+        greenTags.add(effectiveTag); // green
       }
     }
 
@@ -445,6 +438,27 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
     }
 
     return resultBuffer.toString();
+  }
+
+  String _effectiveTag(PointData point) {
+    final normalizedGender = (widget.gender ?? "").trim().toLowerCase();
+    final isFemale = normalizedGender == "female" || normalizedGender == "f";
+    if (!isFemale) return point.tag;
+
+    switch (point.index) {
+      case 98:
+      case 99:
+        return "Ovaries Gland";
+      case 100:
+      case 101:
+        return "Uterus";
+      case 102:
+      case 103:
+      case 104:
+        return "Vagina";
+      default:
+        return point.tag;
+    }
   }
 
   bool _isDisabledIndex(PointData p) {
@@ -644,22 +658,18 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
     double desiredAspect = baseWidth / baseHeight;
     double screenW = MediaQuery.of(context).size.width * 0.95;
     double screenH = MediaQuery.of(context).size.height * 0.8;
-
     double containerW = math.min(screenW, screenH * desiredAspect);
     double containerH = containerW / desiredAspect;
-
     double scaleX = containerW / baseWidth;
     double scaleY = containerH / baseHeight;
     double scale = math.min(scaleX, scaleY);
-
     return Scaffold(
       // appBar: AppBar(title: const Text("Left Foot Editor")),
       appBar: CommonAppBar(title: "Left Foot"),
-
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _saveAndExit,
         label: const Text("Save", style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.green,
+        backgroundColor: const Color.fromARGB(255, 118, 202, 121),
       ),
       body:
           isLoading
@@ -668,8 +678,8 @@ class _LeftFootScreenNewState extends State<LeftFootScreenNew> {
                 child: Container(
                   width: containerW,
                   height: containerH,
-                  child: RepaintBoundary(
-                    key: screenshotKey,
+                  child: Screenshot(
+                    controller: screenshotController,
                     child: Stack(
                       alignment: Alignment.topLeft,
                       children: [

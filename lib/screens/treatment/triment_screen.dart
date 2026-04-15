@@ -63,20 +63,35 @@ class Treatment extends StatelessWidget {
           child: Column(
             children: [
               // IMAGE BOX
-              Container(
-                height: 180,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFF7C85A), width: 2),
-                ),
-                child: const Center(child: Icon(Icons.image, size: 50)),
-              ),
+              // Container(
+              //   height: 180,
+              //   width: double.infinity,
+              //   decoration: BoxDecoration(
+              //     color: Colors.grey.shade200,
+              //     borderRadius: BorderRadius.circular(12),
+              //     border: Border.all(color: const Color(0xFFF7C85A), width: 2),
+              //   ),
+              //   child: const Center(child: Icon(Icons.image, size: 50)),
+              // ),
 
               const SizedBox(height: 10),
 
               // TITLE
+               Container(
+                padding: const EdgeInsets.all(10),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Center(
+                  child: Text(
+                    "Free With E-book",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              SizedBox(height: 10,),
               Container(
                 padding: const EdgeInsets.all(10),
                 width: double.infinity,

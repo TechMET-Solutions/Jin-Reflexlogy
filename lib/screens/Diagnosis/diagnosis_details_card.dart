@@ -1,16 +1,21 @@
 import 'dart:convert';
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/api_service/urls.dart';
 import 'package:jin_reflex_new/dashbord_forlder/freddback_list.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_history_screen.dart';
 import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_record_screen.dart';
+import 'package:jin_reflex_new/screens/Diagnosis/diagnosis_balance_guard.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
+
+const String _diagnosisImageFlipPrefKey = "diagnosisImageFlip";
+const String _diagnosisImageFlipDetailsOverridePrefix =
+    "diagnosisImageFlip_details_override";
 
 class DiagnosisDetailsCard extends StatefulWidget {
   final String patientName;
@@ -19,6 +24,7 @@ class DiagnosisDetailsCard extends StatefulWidget {
   final String date;
   final String time;
   final String title;
+  final String? gender;
 
   DiagnosisDetailsCard({
     required this.patientName,
@@ -27,6 +33,7 @@ class DiagnosisDetailsCard extends StatefulWidget {
     required this.date,
     required this.time,
     required this.title,
+    this.gender,
   });
 
   @override
@@ -38,13 +45,39 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
   Uint8List? rf;
   Uint8List? lh;
   Uint8List? rh;
+  bool _flipImagesOnDetails = false;
 
   bool loading = true;
 
   @override
   void initState() {
     super.initState();
+    final overrideKey =
+        "${_diagnosisImageFlipDetailsOverridePrefix}_${widget.diagnosisId}_${widget.patientId}";
+    final overrideRaw = AppPreference().getString(overrideKey);
+
+    if (overrideRaw == "1" || overrideRaw.toLowerCase() == "true") {
+      _flipImagesOnDetails = true;
+    } else if (overrideRaw == "0" || overrideRaw.toLowerCase() == "false") {
+      _flipImagesOnDetails = false;
+    } else {
+      // Default to the global setting.
+      _flipImagesOnDetails = AppPreference().getBool(
+        _diagnosisImageFlipPrefKey,
+        defValue: true,
+      );
+    }
     fetchDiagnosisImages();
+  }
+
+  Future<void> _setFlipOnDetails(bool value) async {
+    final overrideKey =
+        "${_diagnosisImageFlipDetailsOverridePrefix}_${widget.diagnosisId}_${widget.patientId}";
+    await AppPreference().setString(overrideKey, value ? "1" : "0");
+    if (!mounted) return;
+    setState(() {
+      _flipImagesOnDetails = value;
+    });
   }
 
   Future<void> fetchDiagnosisImages() async {
@@ -80,10 +113,10 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
         final data = jsonBody["data"];
 
         setState(() {
-          lf = data["lf"] != null ? base64Decode(data["lf"]) : null;
-          rf = data["rf"] != null ? base64Decode(data["rf"]) : null;
-          lh = data["lh"] != null ? base64Decode(data["lh"]) : null;
-          rh = data["rh"] != null ? base64Decode(data["rh"]) : null;
+          lf = _sanitizeImageBytes(data["lf"]);
+          rf = _sanitizeImageBytes(data["rf"]);
+          lh = _sanitizeImageBytes(data["lh"]);
+          rh = _sanitizeImageBytes(data["rh"]);
           loading = false;
         });
       } else {
@@ -95,6 +128,20 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
     }
 
     setState(() {});
+  }
+
+  Uint8List? _sanitizeImageBytes(dynamic base64Value) {
+    if (base64Value == null) return null;
+
+    try {
+      final bytes = base64Decode(base64Value.toString());
+      final decoded = img.decodeImage(bytes);
+      if (decoded == null) return bytes;
+
+      return Uint8List.fromList(img.encodePng(decoded));
+    } catch (_) {
+      return null;
+    }
   }
 
   Widget imageBox(Uint8List? image, String label) {
@@ -118,14 +165,21 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
           const SizedBox(height: 10),
-  
+
           Container(
             width: double.infinity,
             color: Colors.white, // 👈 black काढण्यासाठी
             padding: const EdgeInsets.all(8),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.memory(image, fit: BoxFit.contain),
+              child:
+                  _flipImagesOnDetails
+                      ? Transform(
+                        alignment: Alignment.center,
+                        transform: Matrix4.identity()..scale(1.0, -1.0, 1.0),
+                        child: Image.memory(image, fit: BoxFit.contain),
+                      )
+                      : Image.memory(image, fit: BoxFit.contain),
             ),
           ),
         ],
@@ -234,8 +288,6 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
               ],
             ),
 
-            const SizedBox(height: 20),
-
             /// -------- IMAGES (VERTICAL) ----------
             Expanded(
               child:
@@ -244,6 +296,40 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
                       : SingleChildScrollView(
                         child: Column(
                           children: [
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.white,
+                                    blurRadius: 6,
+                                    offset: Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      "Flip images (Day 1 Details)",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                  Switch(
+                                    value: _flipImagesOnDetails,
+                                    onChanged: _setFlipOnDetails,
+                                  ),
+                                ],
+                              ),
+                            ),
                             imageBox(lf, "Left Foot"),
                             imageBox(rf, "Right Foot"),
                             imageBox(lh, "Left Hand"),
@@ -270,17 +356,27 @@ class _DiagnosisDetailsCardState extends State<DiagnosisDetailsCard> {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (_) => DiagnosisScreen(
-                              patient_id: widget.patientId,
-                              name: widget.patientName,
-                              diagnosis_id: widget.diagnosisId,
-                            ),
-                      ),
-                    );
+                    ensureDiagnosisBalanceAvailable(context).then((
+                      hasBalance,
+                    ) async {
+                      if (!hasBalance || !context.mounted) return;
+                      final submitted = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) => DiagnosisScreen(
+                                patient_id: widget.patientId,
+                                name: widget.patientName,
+                                diagnosis_id: widget.diagnosisId,
+                                gender: widget.gender,
+                              ),
+                        ),
+                      );
+
+                      if (submitted == true && context.mounted) {
+                        Navigator.pop(context);
+                      }
+                    });
                   },
                   child: const Text(
                     "UPDATE",

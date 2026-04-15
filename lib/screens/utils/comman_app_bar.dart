@@ -31,6 +31,7 @@ class CommonAppBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onBack;
   final bool showBalance;
   final String? userId;
+  final int balanceRefreshTrigger;
 
   const CommonAppBar({
     super.key,
@@ -40,6 +41,7 @@ class CommonAppBar extends StatefulWidget implements PreferredSizeWidget {
     this.onBack,
     this.showBalance = false,
     this.userId,
+    this.balanceRefreshTrigger = 0,
   });
 
   @override
@@ -60,6 +62,18 @@ class _CommonAppBarState extends State<CommonAppBar> {
       _balanceFuture = fetchBalance();
 
       _loadCurrencySymbol();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant CommonAppBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.showBalance &&
+        (oldWidget.userId != widget.userId ||
+            oldWidget.balanceRefreshTrigger != widget.balanceRefreshTrigger)) {
+      setState(() {
+        _balanceFuture = fetchBalance();
+      });
     }
   }
 

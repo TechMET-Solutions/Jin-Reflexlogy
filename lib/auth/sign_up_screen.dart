@@ -13,6 +13,8 @@ import 'package:jin_reflex_new/api_service/payment_getway_keys.dart';
 import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/api_service/urls.dart';
+import 'package:jin_reflex_new/screens/main_home_dashoabrd_screen.dart';
+import 'package:jin_reflex_new/widgets/offline_country_state_city_widget.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -56,6 +58,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
@@ -63,6 +68,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final TextEditingController _countryController = TextEditingController();
   final TextEditingController _postalCodeController = TextEditingController();
   final TextEditingController _educationController = TextEditingController();
+
   List<int> selectedCourseIds = [];
   double selectedCourseTotal = 0.0;
   String selectedCountryCode = "in";
@@ -72,6 +78,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
   int _currentStep = 0;
   bool _isSubmitting = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  String? _registeredUserId;
+  bool _isPaymentInProgress = false;
 
   final List<String> _uploadTitles = [
     "Passport Size Photo",
@@ -140,6 +150,44 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       print("Error converting file to base64: $e");
       return null;
     }
+  }
+
+  String _formatBodyValue(String key, Object? value) {
+    if (value == null) return "null";
+
+    final normalizedKey = key.trim().toLowerCase();
+    if (normalizedKey == "password") {
+      final password = value.toString();
+      return "<masked len=${password.length}>";
+    }
+
+    if (normalizedKey.startsWith("image")) {
+      final str = value.toString();
+      if (str.isEmpty) return "null";
+      return "<base64 len=${str.length}>";
+    }
+
+    final str = value.toString();
+    if (str.length > 120) {
+      return "${str.substring(0, 60)}...<len=${str.length}>";
+    }
+    return str;
+  }
+
+  void _logApiBody(String tag, Map<String, dynamic> body) {
+    final buffer = StringBuffer();
+    buffer.writeln("📤 API BODY [$tag]");
+    body.forEach((key, value) {
+      buffer.writeln("  - $key: ${_formatBodyValue(key, value)}");
+    });
+    debugPrint(buffer.toString());
+  }
+
+  void _logApiResponse(String tag, int? statusCode, String body) {
+    log(
+      "Status: ${statusCode ?? 'null'}\nBody: $body",
+      name: "API RESPONSE [$tag]",
+    );
   }
 
   void _showSuccessDialog(String title, String message) {
@@ -595,6 +643,48 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         ),
         const SizedBox(height: 15),
 
+        // Password
+        _buildTextField(
+          controller: _passwordController,
+          label: "Password *",
+          prefixIcon: Icons.lock_outline,
+          keyboardType: TextInputType.visiblePassword,
+          obscureText: _obscurePassword,
+          suffixIcon: IconButton(
+            onPressed: () {
+              setState(() {
+                _obscurePassword = !_obscurePassword;
+              });
+            },
+            icon: Icon(
+              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+              color: Colors.grey[600],
+            ),
+          ),
+        ),
+        const SizedBox(height: 15),
+
+        // Confirm Password
+        _buildTextField(
+          controller: _confirmPasswordController,
+          label: "Confirm Password *",
+          prefixIcon: Icons.lock_outline,
+          keyboardType: TextInputType.visiblePassword,
+          obscureText: _obscureConfirmPassword,
+          suffixIcon: IconButton(
+            onPressed: () {
+              setState(() {
+                _obscureConfirmPassword = !_obscureConfirmPassword;
+              });
+            },
+            icon: Icon(
+              _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+              color: Colors.grey[600],
+            ),
+          ),
+        ),
+        const SizedBox(height: 15),
+
         // Mobile Number
         _buildTextField(
           controller: _mobileController,
@@ -615,52 +705,34 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         ),
         const SizedBox(height: 15),
 
-        // City & State Row
-        Row(
-          children: [
-            Expanded(
-              child: _buildTextField(
-                controller: _cityController,
-                label: "City *",
-                prefixIcon: Icons.location_city_outlined,
-                validator: (value) => _validateRequired(value, "City"),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildTextField(
-                controller: _stateController,
-                label: "State *",
-                prefixIcon: Icons.map_outlined,
-                validator: (value) => _validateRequired(value, "State"),
-              ),
-            ),
-          ],
+        OfflineCountryStateCityWidget(
+          initialCountry:
+              _countryController.text.isEmpty ? null : _countryController.text,
+          initialState:
+              _stateController.text.isEmpty ? null : _stateController.text,
+          initialCity:
+              _cityController.text.isEmpty ? null : _cityController.text,
+          onChanged: (country, state, city) {
+            _countryController.text = country ?? '';
+            _stateController.text = state ?? '';
+            _cityController.text = city ?? '';
+
+            final normalizedCountry = (country ?? '').toLowerCase();
+            if (normalizedCountry == 'india') {
+              selectedCountryCode = 'in';
+            } else if (normalizedCountry.isNotEmpty) {
+              selectedCountryCode = 'us';
+            }
+          },
         ),
         const SizedBox(height: 15),
 
-        // Country & Postal Code Row
-        Row(
-          children: [
-            Expanded(
-              child: _buildTextField(
-                controller: _countryController,
-                label: "Country *",
-                prefixIcon: Icons.public_outlined,
-                validator: (value) => _validateRequired(value, "Country"),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildTextField(
-                controller: _postalCodeController,
-                label: "Postal Code *",
-                prefixIcon: Icons.numbers_outlined,
-                keyboardType: TextInputType.number,
-                validator: _validatePostalCode,
-              ),
-            ),
-          ],
+        _buildTextField(
+          controller: _postalCodeController,
+          label: "Postal Code *",
+          prefixIcon: Icons.numbers_outlined,
+          keyboardType: TextInputType.number,
+          validator: _validatePostalCode,
         ),
       ],
     );
@@ -904,6 +976,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     int maxLines = 1,
     bool readOnly = false,
     VoidCallback? onTap,
+    bool obscureText = false,
+    Widget? suffixIcon,
   }) {
     return TextFormField(
       controller: controller,
@@ -912,11 +986,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       readOnly: readOnly,
       onTap: onTap,
       validator: validator,
+      obscureText: obscureText,
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.grey[600]),
         prefixIcon: Icon(prefixIcon, color: Colors.grey[600]),
+        suffixIcon: suffixIcon,
         filled: true,
         fillColor: Colors.grey[50],
         border: OutlineInputBorder(
@@ -1074,6 +1150,21 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           hasErrors = true;
           errorMessage += "Valid Email, ";
         }
+        if (_passwordController.text.trim().isEmpty) {
+          hasErrors = true;
+          errorMessage += "Password, ";
+        } else if (_passwordController.text.trim().length < 6) {
+          hasErrors = true;
+          errorMessage += "Password (min 6), ";
+        }
+        if (_confirmPasswordController.text.trim().isEmpty) {
+          hasErrors = true;
+          errorMessage += "Confirm Password, ";
+        } else if (_confirmPasswordController.text.trim() !=
+            _passwordController.text.trim()) {
+          hasErrors = true;
+          errorMessage += "Password Match, ";
+        }
         if (_mobileController.text.isEmpty ||
             _mobileController.text.length != 10) {
           hasErrors = true;
@@ -1122,7 +1213,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     }
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (selectedCourseIds.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -1130,7 +1221,43 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       return;
     }
 
-    _openPaymentGateway(); // ✅ FIRST payment
+    if (_isSubmitting || _isPaymentInProgress) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      // ✅ Register first (like e-book flow)
+      if (_registeredUserId == null) {
+        final userId = await _callSignUpAPI();
+        if (!mounted) return;
+
+        if (userId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Registration failed. Please try again."),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
+        _registeredUserId = userId;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Registration successful. Please complete payment."),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      if (!mounted) return;
+      _isPaymentInProgress = true;
+      _openPaymentGateway();
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   late Razorpay _razorpay;
@@ -1151,6 +1278,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     _lastNameController.dispose();
     _dobController.dispose();
     _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _mobileController.dispose();
     _addressController.dispose();
     _cityController.dispose();
@@ -1167,16 +1296,26 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     if (isIndia) {
       // 🇮🇳 Razorpay
-      _razorpay.open({
-        'key': razorpayKey,
-        'amount': (selectedCourseTotal * 100).toInt(), // ✅ course amount
-        'name': _firstNameController.text.trim(),
-        'description': 'Course Registration Payment',
-        'prefill': {
-          'contact': _mobileController.text.trim(),
-          'email': _emailController.text.trim(),
-        },
-      });
+      try {
+        _razorpay.open({
+          'key': razorpayKey,
+          'amount': (selectedCourseTotal * 100).toInt(), // ✅ course amount
+          'name': _firstNameController.text.trim(),
+          'description': 'Course Registration Payment',
+          'prefill': {
+            'contact': _mobileController.text.trim(),
+            'email': _emailController.text.trim(),
+          },
+        });
+      } catch (e) {
+        _isPaymentInProgress = false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Payment gateway error: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } else {
       // 🌍 PayPal
       _startPayPalPayment(context);
@@ -1191,27 +1330,55 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       ),
     );
 
-    // ✅ REGISTER AFTER PAYMENT
-    final userId = await _callSignUpAPI();
-
+    final userId = _registeredUserId;
     if (userId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Registration failed")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please register first.")),
+      );
+      _isPaymentInProgress = false;
       return;
     }
 
-    // ✅ CALLBACK AFTER REGISTER
-    await sendPaymentToBackend(
+    final ok = await sendPaymentToBackend(
       userId: userId,
       status: "success",
       paymentId: response.paymentId,
       orderId: response.orderId,
       amount: selectedCourseTotal.toInt(),
     );
+
+    _isPaymentInProgress = false;
+
+    if (ok) {
+      _navigateToHome();
+    }
   }
 
-  Future<String?> _callSignUpAPI() async {
+  Future<void> _handlePaymentError(PaymentFailureResponse response) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Payment Failed\n${response.message}"),
+        backgroundColor: Colors.red,
+      ),
+    );
+
+    final userId = _registeredUserId;
+    if (userId == null) {
+      _isPaymentInProgress = false;
+      return;
+    }
+
+    await sendPaymentToBackend(
+        userId: userId,
+        status: "failed",
+        reason: response.message,
+        amount: selectedCourseTotal.toInt(),
+      );
+
+    _isPaymentInProgress = false;
+  }
+
+  Future<String?> _callSignUpAPI({String? paymentId}) async {
     try {
       final uploadFiles = ref.read(uploadProvider.notifier).getFiles();
 
@@ -1225,6 +1392,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         "name":
             "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}",
         "email": _emailController.text.trim(),
+        "password": _passwordController.text.trim(),
+        if (paymentId != null && paymentId.trim().isNotEmpty)
+          "payment_id": paymentId.trim(),
         "gender": _selectedGender ?? "",
         "date": _dobController.text.trim(),
         "address": _addressController.text.trim(),
@@ -1236,8 +1406,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         "m_no": _mobileController.text.trim(),
         "pid": "1",
         "education": _educationController.text.trim(),
-
-        // ✅ Safe image convert
         "image1": _fileToBase64(uploadFiles[0]),
         "image2": _fileToBase64(uploadFiles[1]),
         "image3": _fileToBase64(uploadFiles[2]),
@@ -1247,6 +1415,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       };
 
       final dio = Dio();
+
+      _logApiBody("THERAPIST_REGISTER", formData);
 
       final response = await dio.post(
         therapist,
@@ -1260,12 +1430,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         ),
       );
 
-      // ✅ Print response for debugging
-      debugPrint("Status: ${response.statusCode}");
-      debugPrint("Body: ${response.data}");
-
       // ✅ Convert to String
       final body = response.data.toString();
+      _logApiResponse("THERAPIST_REGISTER", response.statusCode, body);
 
       // ✅ HTML check
       if (body.startsWith('<')) {
@@ -1275,6 +1442,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
       // ✅ Decode JSON safely
       final Map<String, dynamic> json = jsonDecode(body);
+      log(
+        const JsonEncoder.withIndent("  ").convert(json),
+        name: "API RESPONSE JSON [THERAPIST_REGISTER]",
+      );
 
       if (json["success"] == 1) {
         return json["data"]["id"].toString();
@@ -1289,101 +1460,122 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     }
   }
 
-  void _handlePaymentError(PaymentFailureResponse response) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Payment Failed\n${response.message}"),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-
   void _startPayPalPayment(BuildContext context) {
     // String amount = amountController.text.trim();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder:
-            (_) => PaypalCheckoutView(
-              sandboxMode: isSandboxMode,
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder:
+                (_) => PaypalCheckoutView(
+                  sandboxMode: isSandboxMode,
 
-              clientId: paypalClientId,
-              secretKey: paypalSecret,
+                  clientId: paypalClientId,
+                  secretKey: paypalSecret,
 
-              /// ✅ ONLY AMOUNT – NO PRODUCT
-              transactions: [
-                {
-                  "amount": {
-                    "total": "${selectedCourseTotal}",
-                    "currency": "USD",
+                  /// ✅ ONLY AMOUNT – NO PRODUCT
+                  transactions: [
+                    {
+                      "amount": {
+                        "total": "${selectedCourseTotal}",
+                        "currency": "USD",
+                      },
+                      "description": "Wallet / Service Payment",
+                    },
+                  ],
+
+                  note: "Demo PayPal payment",
+
+                  onSuccess: (Map params) async {
+                    final paypalPaymentId = params["data"]?["id"]; // PAYID-XXXX
+
+                    debugPrint("PayPal Payment ID: $paypalPaymentId");
+
+                    // 🔒 Safety check
+                    if (paypalPaymentId == null) {
+                      debugPrint("❌ PayPal paymentId null");
+                      _isPaymentInProgress = false;
+                      return;
+                    }
+
+                    // Close PayPal screen first (like e-book dialog flow)
+                    Navigator.pop(context);
+
+                    final userId = _registeredUserId;
+                    if (userId == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Please register first.")),
+                      );
+                      _isPaymentInProgress = false;
+                      return;
+                    }
+
+                    final ok = await sendPaymentToBackend(
+                      userId: userId,
+                      status: "success",
+                      paymentId: paypalPaymentId.toString(),
+                      orderId: null,
+                      amount: selectedCourseTotal.toInt(),
+                    );
+
+                    _isPaymentInProgress = false;
+
+                    if (ok) {
+                      _navigateToHome();
+                    }
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("PayPal Payment Successful"),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
                   },
-                  "description": "Wallet / Service Payment",
-                },
-              ],
 
-              note: "Demo PayPal payment",
+                  onError: (error) async {
+                    final userId = _registeredUserId;
+                    if (userId == null) {
+                      _isPaymentInProgress = false;
+                      return;
+                    }
 
-              onSuccess: (Map params) async {
-                final paypalPaymentId = params["data"]?["id"]; // PAYID-XXXX
+                    await sendPaymentToBackend(
+                      userId: userId,
+                      status: "failed",
+                      reason: error.toString(),
+                      amount: selectedCourseTotal.toInt(),
+                    );
+                    debugPrint("❌ PayPal Error: $error");
 
-                debugPrint("PayPal Payment ID: $paypalPaymentId");
+                    _isPaymentInProgress = false;
+                    Navigator.pop(context);
+                  },
 
-                // 🔒 Safety check
-                if (paypalPaymentId == null) {
-                  debugPrint("❌ PayPal paymentId null");
-                  return;
-                }
-                final userId = await _callSignUpAPI();
+                  onCancel: () async {
+                    final userId = _registeredUserId;
+                    if (userId == null) {
+                      _isPaymentInProgress = false;
+                      return;
+                    }
 
-                await sendPaymentToBackend(
-                  userId: userId!,
-                  status: "success",
-                  paymentId: paypalPaymentId,
-                  orderId: null, // PayPal मध्ये orderId नसतो
-                  amount: selectedCourseTotal.toInt(),
-                );
-
-                if (!mounted) return;
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("PayPal Payment Successful"),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-                Navigator.pop(context); // close popup
-
-                Navigator.pop(context); // close PayPal screen
-              },
-
-              onError: (error) async {
-                final userId = await _callSignUpAPI();
-
-                await sendPaymentToBackend(
-                  userId: userId!,
-                  status: "failed",
-                  reason: error.toString(),
-                  amount: selectedCourseTotal.toInt(),
-                );
-                debugPrint("❌ PayPal Error: $error");
-
-                Navigator.pop(context);
-              },
-
-              onCancel: () async {
-                final userId = await _callSignUpAPI();
-
-                await sendPaymentToBackend(
-                  userId: userId!,
-                  status: "failed",
-                  reason: "Payment cancelled",
-                  amount: selectedCourseTotal.toInt(),
-                );
-                debugPrint("⚠️ PayPal Cancelled");
-                Navigator.pop(context);
-              },
-            ),
-      ),
-    );
+                    await sendPaymentToBackend(
+                      userId: userId,
+                      status: "failed",
+                      reason: "Payment cancelled",
+                      amount: selectedCourseTotal.toInt(),
+                    );
+                    debugPrint("⚠️ PayPal Cancelled");
+                    _isPaymentInProgress = false;
+                    Navigator.pop(context);
+                  },
+                ),
+          ),
+        )
+        .then((_) {
+          if (!mounted) return;
+          if (_isPaymentInProgress) {
+            setState(() => _isPaymentInProgress = false);
+          }
+        });
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
@@ -1398,73 +1590,98 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     return deliveryType == "india";
   }
 
-  Future<void> sendPaymentToBackend({
-    required String userId,
-    required String status,
-    String? paymentId,
-    String? orderId,
-    String? reason,
-    required int amount,
-  }) async {
-    final isIndia = await isIndianUser();
-
-final countryCode = isIndia ? "in" : "us";
-    try {
-      final data = {
-        "user_id": userId,
-        "payment_id": paymentId,
-        "orderid": orderId,
-        "amount": amount.toString(),
-        "status": status,
-        "email": _emailController.text.trim(),
-        "userType": "therapist",
-        "country":countryCode,
-        "name":
-            "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}",
-        "contact": _mobileController.text.trim(),
-      };
-
-      log("Call Back Data: $data");
-
-      final dio = Dio();
-
-      final response = await dio.post(
-        "https://admin.jinreflexology.in/api/process-payment",
-        data: data,
-      );
-
-      // ✅ Check Success
-      print(response.data);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final resData = response.data;
-        Navigator.pop(context);
-        // Navigator.pop(context);
-        // Navigator.pop(context);
-        if (resData["status"] == "success") {
-          // ✅ Success → Go to Logi[]
-          // Navigator.pushAndRemoveUntil(
-          //   context,
-          //   MaterialPageRoute(builder: (_) => const ()),
-          //   (route) => false,
-          // );
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text("Payment Successful ✅")));
-        } else {
-          // ❌ API Error
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(resData["message"] ?? "Payment Failed")),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint("❌ Callback error: $e");
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Server Error. Try again later ❌")),
-      );
-    }
+  void _navigateToHome() {
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const MainHomeScreenDashBoard()),
+      (route) => false,
+    );
   }
+
+ Future<bool> sendPaymentToBackend({
+  required String userId,
+  required String status,
+  String? paymentId,
+  String? orderId,
+  String? reason,
+  required int amount,
+}) async {
+  final isIndia = await isIndianUser();
+  final countryCode = isIndia ? "in" : "us";
+
+  try {
+    final data = {
+      "user_id": userId,
+      "payment_id": paymentId,
+      "orderid": orderId,
+      "amount": amount.toString(),
+      "status": status,
+      "email": _emailController.text.trim(),
+      "userType": "therapist",
+      "country": countryCode,
+      "name":
+          "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}",
+      "contact": _mobileController.text.trim(),
+    };
+
+    /// 🔥 PRINT FULL REQUEST
+    print("=========== API REQUEST ===========");
+    print("URL: https://admin.jinreflexology.in/api/process-payment");
+    print("BODY: ${jsonEncode(data)}");
+
+    final dio = Dio();
+
+    final response = await dio.post(
+      "https://admin.jinreflexology.in/api/process-payment",
+      data: data,
+      options: Options(
+        headers: {
+          "Content-Type": "application/json",
+        },
+      ),
+    );
+
+    /// 🔥 PRINT FULL RESPONSE
+    print("=========== API RESPONSE ===========");
+    print("STATUS CODE: ${response.statusCode}");
+    print("RESPONSE DATA: ${jsonEncode(response.data)}");
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final resData = response.data;
+
+      if (resData["status"] == "success") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Payment Successful ✅")),
+        );
+        return true;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(resData["message"] ?? "Payment Failed"),
+          ),
+        );
+        return false;
+      }
+    }
+
+    return false;
+  } catch (e) {
+    /// 🔥 ERROR PRINT
+    print("=========== API ERROR ===========");
+    print("ERROR: $e");
+
+    if (e is DioException) {
+      print("ERROR RESPONSE: ${e.response?.data}");
+      print("ERROR STATUS: ${e.response?.statusCode}");
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Server Error. Try again later ❌")),
+    );
+
+    return false;
+  }
+}
 }
 
 /// Custom clipper for Sign Up screen wave
@@ -1546,12 +1763,12 @@ class _CourseSelectionScreenState extends State<CourseSelectionScreen> {
     final prefs = await SharedPreferences.getInstance();
     final deliveryType = newCountryCode == "in" ? "india" : "outside";
     await prefs.setString("delivery_type", deliveryType);
-    
+
     setState(() {
       countryCode = newCountryCode;
       isLoading = true;
     });
-    
+
     await fetchCourses();
   }
 
@@ -1560,6 +1777,7 @@ class _CourseSelectionScreenState extends State<CourseSelectionScreen> {
     super.initState();
     fetchCourses();
   }
+
   Future<void> fetchCourses() async {
     try {
       // Get country code correctly
@@ -1687,15 +1905,15 @@ class _CourseSelectionScreenState extends State<CourseSelectionScreen> {
                 onChanged: (value) async {
                   if (value != null && value != countryCode) {
                     await setCountryCode(value);
-                    
+
                     // Show feedback
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            value == "in" 
-                              ? "Switched to India 🇮🇳 - Prices in ₹" 
-                              : "Switched to International 🌍 - Prices in \$",
+                            value == "in"
+                                ? "Switched to India 🇮🇳 - Prices in ₹"
+                                : "Switched to International 🌍 - Prices in \$",
                           ),
                           duration: const Duration(seconds: 2),
                           backgroundColor: Colors.green,

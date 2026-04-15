@@ -6,9 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:dio/dio.dart';
 import 'package:jin_reflex_new/api_service/global/utils.dart';
+import 'package:jin_reflex_new/api_service/prefs/PreferencesKey.dart';
 import 'package:jin_reflex_new/api_service/prefs/app_preference.dart';
 import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 import 'package:image/image.dart' as img;
+import 'package:screenshot/screenshot.dart';
+
+const String _diagnosisImageFlipPrefKey = "diagnosisImageFlip";
 
 /// --------------------------------------------------
 /// MODEL
@@ -89,10 +93,10 @@ class _RightHandScreenState extends State<RightHandScreen> {
     _loadedOnce = true;
 
     try {
+      final normalizedGender = (widget.gender ?? "").trim().toLowerCase();
+      final isFemale = normalizedGender == "female" || normalizedGender == "f";
       final jsonPath =
-          widget.gender?.toLowerCase() == "female"
-              ? "assets/right_handf_btn.json"
-              : "assets/right_hand_btn.json";
+          isFemale ? "assets/right_handf_btn.json" : "assets/right_hand_btn.json";
 
       final jsonString = await rootBundle.loadString(jsonPath);
       final jsonMap = jsonDecode(jsonString);
@@ -102,8 +106,15 @@ class _RightHandScreenState extends State<RightHandScreen> {
               .map((e) => PointData.fromJson(e))
               .toList();
 
+      final hasLocalDraft =
+          AppPreference()
+              .getString("RH_DATA_${widget.diagnosisId}_${widget.pid}")
+              .isNotEmpty;
+
       loadSavedState();
-      await fetchServer();
+      if (!hasLocalDraft) {
+        await fetchServer();
+      }
 
       setState(() => isLoading = false);
     } catch (e) {
@@ -205,44 +216,26 @@ class _RightHandScreenState extends State<RightHandScreen> {
 
   /// --------------------------------------------------
   /// SCREENSHOT
+  ScreenshotController screenshotController = ScreenshotController();
   Future<String?> captureScreenshot() async {
     try {
-      await Future.delayed(const Duration(milliseconds: 120));
-
-      final boundary =
-          screenshotKey.currentContext?.findRenderObject()
-              as RenderRepaintBoundary?;
-
-      if (boundary == null) return null;
-
-      // ⭐ FIXED RATIO (NEVER devicePixelRatio)
-      final ui.Image rawImage = await boundary.toImage(pixelRatio: 2.0);
-
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
-      final paint = Paint();
-
-      final w = rawImage.width.toDouble();
-      final h = rawImage.height.toDouble();
-
-      // ⭐ SAFE DRAW METHOD
-      canvas.drawImageRect(
-        rawImage,
-        Rect.fromLTWH(0, 0, w, h),
-        Rect.fromLTWH(0, 0, w, h),
-        paint,
+      final bytes = await screenshotController.capture(
+        pixelRatio: 2,
+        delay: const Duration(milliseconds: 350),
       );
 
-      final picture = recorder.endRecording();
-      final finalImage =
-          await picture.toImage(rawImage.width, rawImage.height);
+      if (bytes == null) return null;
 
-      final byteData =
-          await finalImage.toByteData(format: ui.ImageByteFormat.png);
+      img.Image? image = img.decodeImage(bytes);
+      if (image == null) return null;
 
-      if (byteData == null) return null;
+      if (AppPreference().getBool(_diagnosisImageFlipPrefKey, defValue: true)) {
+        image = img.flipVertical(image);
+      }
+      image = img.copyResize(image, width: 900);
+      final compressed = img.encodePng(image, level: 6);
 
-      return base64Encode(byteData.buffer.asUint8List());
+      return base64Encode(compressed);
     } catch (e) {
       debugPrint("Screenshot error: $e");
       return null;
@@ -367,8 +360,8 @@ Widget _buildDot(PointData p, double scaleX, double scaleY) {
                   child: SizedBox(
                     width: containerW,
                     height: containerH,
-                    child: RepaintBoundary(
-                      key: screenshotKey,
+                    child: Screenshot(
+                      controller: screenshotController,
                       child: Stack(
                         children: [
                           Positioned.fill(
@@ -377,12 +370,10 @@ Widget _buildDot(PointData p, double scaleX, double scaleY) {
                               fit: BoxFit.contain,
                             ),
                           ),
-
                           ...points.map(
                             (p) => Positioned(
                               left: (p.x * scaleX) - 12.5,
                               top: (p.y * scaleY) - 5.5,
-
                               child: _buildDot(p, scaleX, scaleY),
                             ),
                           ),

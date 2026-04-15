@@ -3,4 +3,6 @@ final String paypalClientId =
 final String paypalSecret =
     "ENWjMESfhbDFJUz-tSLJ25SFj4mAu5Gg7BiWtQaqtVqF68UcE6LHNHZ6ZTo1ZKY_JMjD-1i-tgfLUK8h";
 final bool isSandboxMode = false;
-final String razorpayKey = "rzp_live_SC4hJgIcCj6VCP";
+// final String razorpayKey = "rzp_live_SC4hJgIcCj6VCP";
+
+final String razorpayKey = "rzp_test_RvkSLd55D0e5sj";
