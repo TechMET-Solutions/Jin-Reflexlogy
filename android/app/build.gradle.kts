@@ -27,7 +27,7 @@ android {
 
         applicationId = "com.jin.reflexology"
 
-        minSdk = 21   // 🔥 MUST BE 21+
+        minSdk = flutter.minSdkVersion   // 🔥 MUST BE 21+
         targetSdk = flutter.targetSdkVersion
 
         versionCode = flutter.versionCode
@@ -47,10 +47,22 @@ android {
     // Signing Config
     signingConfigs {
     create("release") {
-        keyAlias = keystoreProperties["keyAlias"] as String
-        keyPassword = keystoreProperties["keyPassword"] as String
-        storeFile = file(keystoreProperties["storeFile"] as String)
-        storePassword = keystoreProperties["storePassword"] as String
+        val keyAliasVal = keystoreProperties["keyAlias"]?.toString()
+        val keyPasswordVal = keystoreProperties["keyPassword"]?.toString()
+        val storeFileVal = keystoreProperties["storeFile"]?.toString()
+        val storePasswordVal = keystoreProperties["storePassword"]?.toString()
+
+        if (
+            keyAliasVal != null &&
+            keyPasswordVal != null &&
+            storeFileVal != null &&
+            storePasswordVal != null
+        ) {
+            keyAlias = keyAliasVal
+            keyPassword = keyPasswordVal
+            storeFile = file(storeFileVal)
+            storePassword = storePasswordVal
+        }
     }
 }
 
