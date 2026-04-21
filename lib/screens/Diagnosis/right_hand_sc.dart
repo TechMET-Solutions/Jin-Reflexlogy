@@ -289,13 +289,15 @@ class _RightHandScreenState extends State<RightHandScreen> {
     });
   }
 
-Widget _buildDot(PointData p, double scaleX, double scaleY) {
+  double _dotSize(double scaleX, double scaleY) {
+    return 25 * ((scaleX + scaleY) / 2);
+  }
 
-  final double dotSize = 25 * ((scaleX + scaleY) / 2);
-
-  Color color =
-      p.state == 1
-          ? const Color(0xFF8B0000)
+ Widget _buildDot(PointData p, double dotSize) {
+ 
+   Color color =
+       p.state == 1
+           ? const Color(0xFF8B0000)
           : p.state == 2
               ? Colors.green
               : Colors.white;
@@ -319,10 +321,10 @@ Widget _buildDot(PointData p, double scaleX, double scaleY) {
       // });
     },
 
-    child: Container(
-      width: dotSize,
-      height: dotSize,
-      decoration: BoxDecoration(
+     child: Container(
+       width: dotSize,
+       height: dotSize,
+       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.black, width: 2),
@@ -343,6 +345,7 @@ Widget _buildDot(PointData p, double scaleX, double scaleY) {
 
     double scaleX = containerW / baseWidth;
     double scaleY = containerH / baseHeight;
+    final double dotSize = _dotSize(scaleX, scaleY);
 
     return Scaffold(
       appBar: CommonAppBar(title: "Right Hand"),
@@ -370,15 +373,15 @@ Widget _buildDot(PointData p, double scaleX, double scaleY) {
                               fit: BoxFit.contain,
                             ),
                           ),
-                          ...points.map(
-                            (p) => Positioned(
-                              left: (p.x * scaleX) - 12.5,
-                              top: (p.y * scaleY) - 5.5,
-                              child: _buildDot(p, scaleX, scaleY),
-                            ),
-                          ),
-                        ],
-                      ),
+                           ...points.map(
+                             (p) => Positioned(
+                               left: (p.x * scaleX) - (dotSize / 2),
+                               top: (p.y * scaleY) - (dotSize / 2),
+                               child: _buildDot(p, dotSize),
+                             ),
+                           ),
+                         ],
+                       ),
                     ),
                   ),
                 ),

@@ -105,7 +105,9 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
         final List list =
             (decoded["data"] is List) ? (decoded["data"] as List) : <dynamic>[];
         final totals =
-            (decoded["totals"] is Map) ? (decoded["totals"] as Map) : <dynamic, dynamic>{};
+            (decoded["totals"] is Map)
+                ? (decoded["totals"] as Map)
+                : <dynamic, dynamic>{};
 
         setState(() {
           cartItems = list.map<CartItem>((e) => CartItem.fromJson(e)).toList();
@@ -245,7 +247,9 @@ class _CartScreenState extends State<CartScreen> with RouteAware {
               }
               final idx = cartItems.indexWhere((item) => item.id == cartId);
               if (idx != -1) {
-                cartItems[idx] = cartItems[idx].copyWith(quantity: oldQuantity!);
+                cartItems[idx] = cartItems[idx].copyWith(
+                  quantity: oldQuantity!,
+                );
               }
             });
             _recomputeTotalsFromItems();

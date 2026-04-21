@@ -36,6 +36,25 @@ class _ShopScreenState extends State<ShopScreen> {
     super.initState();
     _deliveryType = widget.deliveryType;
     loadProducts();
+    _preloadCart();
+  }
+
+  Future<void> _preloadCart() async {
+    try {
+      final prefs = AppPreference();
+      final userId = int.tryParse(prefs.getString(PreferencesKey.userId)) ?? 0;
+      
+      if (userId > 0) {
+        final type = prefs.getString(PreferencesKey.type);
+        final country = _deliveryType == "india" ? "in" : "us";
+        final url =
+            "https://admin.jinreflexology.in/api/cart?user_id=$userId&country=$country&type=$type";
+
+        await http.get(Uri.parse(url));
+      }
+    } catch (e) {
+      debugPrint("❌ Cart preload error: $e");
+    }
   }
 
   // ================= LOAD PRODUCTS =================
@@ -113,13 +132,14 @@ class _ShopScreenState extends State<ShopScreen> {
             initialValue: _deliveryType,
             tooltip: "Currency",
             onSelected: _changeDeliveryType,
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: "india", child: Text("Rupees (India)")),
-              PopupMenuItem(
-                value: "outside",
-                child: Text("Dollar (International)"),
-              ),
-            ],
+            itemBuilder:
+                (context) => const [
+                  PopupMenuItem(value: "india", child: Text("Rupees (India)")),
+                  PopupMenuItem(
+                    value: "outside",
+                    child: Text("Dollar (International)"),
+                  ),
+                ],
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 10),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -137,7 +157,7 @@ class _ShopScreenState extends State<ShopScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.shopping_cart_outlined),
+            icon: const Icon(Icons.shopping_cart_outlined,color: Colors.white,),
             onPressed: () {
               Navigator.push(
                 context,
@@ -149,180 +169,177 @@ class _ShopScreenState extends State<ShopScreen> {
           ),
         ],
       ),
-      body:
-           Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 10, top: 5, bottom: 5),
-                    child: SizedBox(
-                      width: 200,
-                      child: DropdownButtonFormField<String>(
-                        value: selectedCategory,
-                        isDense: true,
-                        decoration: const InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                          labelText: "Select Category",
-                          border: OutlineInputBorder(),
-                        ),
-                        items:
-                            categories
-                                .map(
-                                  (cat) => DropdownMenuItem(
-                                    value: cat,
-                                    child: Text(
-                                      cat,
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            filterByCategory(value);
-                          }
-                        },
-                      ),
-                    ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(left: 10, top: 5, bottom: 5),
+            child: SizedBox(
+              width: 200,
+              child: DropdownButtonFormField<String>(
+                value: selectedCategory,
+                isDense: true,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
                   ),
-
-                  // 🔲 PRODUCTS GRID
-                  Expanded(
-                    child:
-                        filteredProducts.isEmpty
-                            ? const Center(child: Text("No products found"))
-                            : GridView.builder(
-                              padding: const EdgeInsets.all(10),
-                              itemCount: filteredProducts.length,
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 3,
-                                    mainAxisSpacing: 8,
-                                    crossAxisSpacing: 8,
-                                    childAspectRatio: 0.65,
-                                  ),
-                              itemBuilder: (context, index) {
-                                final product = filteredProducts[index];
-
-                                return  GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (_) => ProductDetailScreen(
-                                              product: product,
-                                              deliveryType: _deliveryType,
-                                            ),
-                                      ),
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: const Color(0xFFf7c85a),
-                                      ),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Expanded(
-                                          child:
-                                              product.image.isNotEmpty
-                                                  ? Image.network(
-                                                    product.image,
-                                                    fit: BoxFit.contain,
-                                                  )
-                                                  : const Icon(
-                                                    Icons.image,
-                                                    size: 40,
-                                                  ),
-                                        ),
-                                        const Divider(color: Color(0xFFf7c85a)),
-                                        Text(
-                                          product.title,
-                                          textAlign: TextAlign.center,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          "${_deliveryType == "india" ? "₹" : "\$"}${product.unitPrice.toStringAsFixed(0)}",
-                                          style: const TextStyle(fontSize: 13),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
+                  labelText: "Select Category",
+                  border: OutlineInputBorder(),
+                ),
+                items:
+                    categories
+                        .map(
+                          (cat) => DropdownMenuItem(
+                            value: cat,
+                            child: Text(
+                              cat,
+                              style: const TextStyle(fontSize: 14),
                             ),
-                  ),
-                ],
+                          ),
+                        )
+                        .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    filterByCategory(value);
+                  }
+                },
               ),
+            ),
+          ),
+
+          // 🔲 PRODUCTS GRID
+          Expanded(
+            child:
+                filteredProducts.isEmpty
+                    ? const Center(child: Text("No products found"))
+                    : GridView.builder(
+                      padding: const EdgeInsets.all(10),
+                      itemCount: filteredProducts.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                            childAspectRatio: 0.65,
+                          ),
+                      itemBuilder: (context, index) {
+                        final product = filteredProducts[index];
+
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => ProductDetailScreen(
+                                      product: product,
+                                      deliveryType: _deliveryType,
+                                    ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: const Color(0xFFf7c85a),
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child:
+                                      product.image.isNotEmpty
+                                          ? Image.network(
+                                            product.image,
+                                            fit: BoxFit.contain,
+                                          )
+                                          : const Icon(Icons.image, size: 40),
+                                ),
+                                const Divider(color: Color(0xFFf7c85a)),
+                                Text(
+                                  product.title,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "${_deliveryType == "india" ? "₹" : "\$"}${product.unitPrice.toStringAsFixed(0)}",
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+          ),
+        ],
+      ),
     );
   }
 
   // ================= API =================
-Future<List<Product>> fetchProducts() async {
-  final String country = _deliveryType == "india" ? "in" : "us";
+  Future<List<Product>> fetchProducts() async {
+    final String country = _deliveryType == "india" ? "in" : "us";
 
-  const String url =
-      "https://admin.jinreflexology.in/api/products/by-country";
+    const String url =
+        "https://admin.jinreflexology.in/api/products/by-country";
 
-  final response = await http.post(
-    Uri.parse(url),
-    headers: {"Content-Type": "application/json"},
-    body: jsonEncode({"country": country}),
-  );
-
-  final Map<String, dynamic> jsonData = json.decode(response.body);
-  final List list = jsonData["data"] ?? [];
-
-  // फक्त non-course प्रोडक्ट (course = 0) घ्या
-  final List nonCourseProducts = list.where((e) {
-    final isCourse = e["course"] == 1;
-    return !isCourse; // फक्त course = 0 प्रोडक्ट घ्या
-  }).toList();
-
-  return nonCourseProducts.map<Product>((e) {
-    final List images = e["images"] ?? [];
-    final List pricing = e["pricing"] ?? [];
-    final List categoryList = e["categories"] ?? [];
-
-    final pricingForCountry = pricing.firstWhere(
-      (p) => p["country"] == country,
-      orElse: () => null,
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"country": country}),
     );
 
-    final double unitPrice =
-        pricingForCountry != null
-            ? double.parse(pricingForCountry["unit_price"].toString())
-            : 0;
+    final Map<String, dynamic> jsonData = json.decode(response.body);
+    final List list = jsonData["data"] ?? [];
 
-    return Product(
-      id: e["id"].toString(),
-      title: e["title"] ?? "",
-      image: images.isNotEmpty ? images.first : "",
-      unitPrice: unitPrice,
-      shippingPrice: 0,
-      description: e["description"] ?? "",
-      details: e["description"] ?? "",
-      additionalInfo: "",
-      categories:
-          categoryList
-              .map<String>((c) => c['name']?.toString() ?? "")
-              .where((e) => e.isNotEmpty)
-              .toList(),
-    );
-  }).toList();
-}
+    // फक्त non-course प्रोडक्ट (course = 0) घ्या
+    final List nonCourseProducts =
+        list.where((e) {
+          final isCourse = e["course"] == 1;
+          return !isCourse; // फक्त course = 0 प्रोडक्ट घ्या
+        }).toList();
+
+    return nonCourseProducts.map<Product>((e) {
+      final List images = e["images"] ?? [];
+      final List pricing = e["pricing"] ?? [];
+      final List categoryList = e["categories"] ?? [];
+
+      final pricingForCountry = pricing.firstWhere(
+        (p) => p["country"] == country,
+        orElse: () => null,
+      );
+
+      final double unitPrice =
+          pricingForCountry != null
+              ? double.parse(pricingForCountry["unit_price"].toString())
+              : 0;
+
+      return Product(
+        id: e["id"].toString(),
+        title: e["title"] ?? "",
+        image: images.isNotEmpty ? images.first : "",
+        unitPrice: unitPrice,
+        shippingPrice: 0,
+        description: e["description"] ?? "",
+        details: e["description"] ?? "",
+        additionalInfo: "",
+        categories:
+            categoryList
+                .map<String>((c) => c['name']?.toString() ?? "")
+                .where((e) => e.isNotEmpty)
+                .toList(),
+      );
+    }).toList();
+  }
 }

@@ -62,12 +62,18 @@ class _CourseScreenState extends State<CourseScreen> {
   // Helper method to refresh user data from SharedPreferences
   Future<Map<String, String>> _refreshUserData() async {
     final prefs = await SharedPreferences.getInstance();
+    final storedName = prefs.getString(PreferencesKey.name) ?? '';
+    final storedEmail = prefs.getString(PreferencesKey.email) ?? '';
+    final fallbackEmail =
+        storedEmail.isNotEmpty
+            ? storedEmail
+            : (storedName.contains('@') ? storedName : '');
     final data = {
       'token': prefs.getString(PreferencesKey.token) ?? '',
       'userId': prefs.getString(PreferencesKey.userId) ?? '',
       'type': prefs.getString(PreferencesKey.type) ?? '',
-      'name': prefs.getString(PreferencesKey.name) ?? '',
-      'email': prefs.getString(PreferencesKey.email) ?? '',
+      'name': storedName,
+      'email': fallbackEmail,
       'contact': prefs.getString(PreferencesKey.contactNumber) ?? '',
     };
     
@@ -193,6 +199,7 @@ class _CourseScreenState extends State<CourseScreen> {
   }
 
   void _handlePaymentError(PaymentFailureResponse response) async {
+    debugPrint("❌ Razorpay payment error code=${response.code} message=${response.message}");
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("Payment Failed\n${response.message}"),
@@ -333,8 +340,14 @@ class _CourseScreenState extends State<CourseScreen> {
 
     // Check login status with fresh data
     final isLoggedIn = await _isUserLoggedIn();
+    final currentUserId = AppPreference().getString(PreferencesKey.userId);
+    final currentType = AppPreference().getString(PreferencesKey.type);
+    final isLoggedInEffective =
+        isLoggedIn ||
+        (currentUserId.isNotEmpty &&
+            (currentType == "patient" || currentType == "therapist"));
 
-    if (!isLoggedIn) {
+    if (!isLoggedInEffective) {
       setState(() => _isLoginInProgress = true);
       
       print("🚀 Redirecting to login screen...");
@@ -362,8 +375,14 @@ class _CourseScreenState extends State<CourseScreen> {
       
       // Check login status again
       final isNowLoggedIn = await _isUserLoggedIn();
+      final nowUserId = AppPreference().getString(PreferencesKey.userId);
+      final nowType = AppPreference().getString(PreferencesKey.type);
+      final isNowLoggedInEffective =
+          isNowLoggedIn ||
+          (nowUserId.isNotEmpty &&
+              (nowType == "patient" || nowType == "therapist"));
       
-      if (isNowLoggedIn) {
+      if (isNowLoggedInEffective) {
         print("✅ Login successful! Retrying enrollment...");
         await Future.delayed(const Duration(milliseconds: 500));
         
@@ -601,10 +620,16 @@ class _CourseScreenState extends State<CourseScreen> {
     final amount = (selectedCourse!['total'] * 100).toInt();
 
     var options = {
-      'key': 'rzp_test_1DP5mmOlF5G5ag',
+      'key': razorpayKey,
       'amount': amount.toString(),
       'name': 'Jin Reflexology',
       'description': selectedCourse!['title'],
+      'method': {
+        'upi': true,
+        'card': true,
+        'netbanking': true,
+        'wallet': true,
+      },
       'prefill': {
         'contact':
             _mobileController.text.trim().isNotEmpty
@@ -619,9 +644,6 @@ class _CourseScreenState extends State<CourseScreen> {
                 ? "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}"
                     .trim()
                 : 'Customer',
-      },
-      'external': {
-        'wallets': ['paytm', 'phonepe', 'gpay'],
       },
     };
 
@@ -648,25 +670,38 @@ class _CourseScreenState extends State<CourseScreen> {
     required int amount,
   }) async {
     try {
-      final dio = Dio();
+      final dio = Dio(BaseOptions(validateStatus: (_) => true));
+      final userData = await _refreshUserData();
+      final emailFromUi = _emailController.text.trim();
+      final firstName = _firstNameController.text.trim();
+      final lastName = _lastNameController.text.trim();  
+      final nameFromUi = "$firstName $lastName".trim();
+      final contactFromUi = _mobileController.text.trim();
 
-      await dio.post(
+      final response = await dio.post(
         "https://admin.jinreflexology.in/api/payment_callback",
         data: {
           "user_id": userId,
-          "payment_id": paymentId,
-          "orderid": orderId,
+          "payment_id": paymentId ?? "",
+          "orderid": orderId ?? "",
           "amount": amount.toString(),
+          "userType":AppPreference().getString(PreferencesKey.type) ?? '',
           "status": status,
-          "reason": reason,
-          "email": _emailController.text.trim(),
-          "name":
-              "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}",
-          "contact": _mobileController.text.trim(),
-          "course_id": selectedCourse?['id'],
+          "reason": reason ?? "",
+          "email": emailFromUi.isNotEmpty ? emailFromUi : userData['email'],
+          "name": nameFromUi.isNotEmpty ? nameFromUi : userData['name'],
+          "contact":
+              contactFromUi.isNotEmpty ? contactFromUi : userData['contact'],
+          "course_id": (selectedCourse?['id'] ?? "").toString(),
           "delivery_type": widget.deliveryType,
         },
       );
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        debugPrint(
+          "Payment callback non-2xx: ${response.statusCode} body=${response.data}",
+        );
+      }
     } catch (e) {
       debugPrint("❌ Payment callback error: $e");
     }

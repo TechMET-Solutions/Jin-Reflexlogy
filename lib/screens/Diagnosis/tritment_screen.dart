@@ -139,83 +139,81 @@ class _DiagnosisListScreenState extends State<DiagnosisListScreen>
 
       /// ---------------- FAB ----------------
       floatingActionButton: FloatingActionButton.extended(
-  onPressed: () async {
-    if (_isOpeningDiagnosis) return;
-    setState(() {
-      _isOpeningDiagnosis = true;
-    });
+        onPressed: () async {
+          if (_isOpeningDiagnosis) return;
+          setState(() {
+            _isOpeningDiagnosis = true;
+          });
 
-    try {
-    final hasBalance = await ensureDiagnosisBalanceAvailable(context);
-    if (!hasBalance) return;
+          try {
+            final hasBalance = await ensureDiagnosisBalanceAvailable(context);
+            if (!hasBalance) return;
 
-      await AppPreference().remove(
-      "LF_DATA_${widget.diagnosisId}_${widget.patientId}",
-    );
-    await AppPreference().remove(
-      "LF_IMG_${widget.diagnosisId}_${widget.patientId}",
-    );
-   await AppPreference().remove(
-      "RF_DATA_${widget.diagnosisId}_${widget.patientId}",
-    );
-    await AppPreference().remove(
-      "RF_IMG_${widget.diagnosisId}_${widget.patientId}",
-    );
-    // 🔥 Clear old Right Hand data
-    await AppPreference().remove(
-      "RH_DATA_${widget.diagnosisId}_${widget.patientId}",
-    );
-    await AppPreference().remove(
-      "RH_IMG_${widget.diagnosisId}_${widget.patientId}",
-    );
+            await AppPreference().remove(
+              "LF_DATA_${widget.diagnosisId}_${widget.patientId}",
+            );
+            await AppPreference().remove(
+              "LF_IMG_${widget.diagnosisId}_${widget.patientId}",
+            );
+            await AppPreference().remove(
+              "RF_DATA_${widget.diagnosisId}_${widget.patientId}",
+            );
+            await AppPreference().remove(
+              "RF_IMG_${widget.diagnosisId}_${widget.patientId}",
+            );
+            // 🔥 Clear old Right Hand data
+            await AppPreference().remove(
+              "RH_DATA_${widget.diagnosisId}_${widget.patientId}",
+            );
+            await AppPreference().remove(
+              "RH_IMG_${widget.diagnosisId}_${widget.patientId}",
+            );
 
-    // 🔥 Clear old Left Hand data
-    await AppPreference().remove(
-      "LH_DATA_${widget.diagnosisId}_${widget.patientId}",
-    );
-    await AppPreference().remove(
-      "LH_IMG_${widget.diagnosisId}_${widget.patientId}",
-    );
-    final submitted = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DiagnosisScreen(
-          patient_id: widget.patientId,
-          name: widget.patientName,
-          diagnosis_id: widget.diagnosisId,
-          gender: widget.gender,
+            // 🔥 Clear old Left Hand data
+            await AppPreference().remove(
+              "LH_DATA_${widget.diagnosisId}_${widget.patientId}",
+            );
+            await AppPreference().remove(
+              "LH_IMG_${widget.diagnosisId}_${widget.patientId}",
+            );
+            final submitted = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) => DiagnosisScreen(
+                      patient_id: widget.patientId,
+                      name: widget.patientName,
+                      diagnosis_id: widget.diagnosisId,
+                      gender: widget.gender,
+                    ),
+              ),
+            );
+
+            if (submitted == true && mounted) {
+              fetchDiagnosisList();
+            }
+          } finally {
+            if (mounted) {
+              setState(() {
+                _isOpeningDiagnosis = false;
+              });
+            }
+          }
+        },
+
+        backgroundColor: Colors.orange.shade300,
+
+        label: const Text(
+          "Add +",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
         ),
+
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       ),
-    );
-
-    if (submitted == true && mounted) {
-      fetchDiagnosisList();
-    }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isOpeningDiagnosis = false;
-        });
-      }
-    }
-  },
-
-  backgroundColor: Colors.orange.shade300,
-
-  label: const Text(
-    "Add +",
-    style: TextStyle(
-      fontSize: 18,
-      fontWeight: FontWeight.bold,
-      color: Colors.black,
-    ),
-  ),
-
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(30),
-  ),
-),
-
 
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       backgroundColor: const Color(0xFFFDF3DD),

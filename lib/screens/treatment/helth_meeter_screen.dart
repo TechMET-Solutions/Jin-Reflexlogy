@@ -22,9 +22,9 @@ class _HealthFormScreenState extends State<HealthFormScreen> {
 
   // Checkboxes for daily lifestyle
   bool breakfast = false;
-bool lunch = false;
-bool afternoon = false;
-bool dinner = false;
+  bool lunch = false;
+  bool afternoon = false;
+  bool dinner = false;
   bool wakeUp = false;
   bool meditation = false;
   bool yoga = false;
@@ -61,8 +61,6 @@ bool dinner = false;
     if (ageController.text.isEmpty) return 25;
     return int.tryParse(ageController.text) ?? 25;
   }
-
-  // Get Celibacy Guideline based on Age
   String get celibacyGuideline {
     int userAge = age;
     if (userAge >= 1 && userAge <= 21) {
@@ -79,23 +77,19 @@ bool dinner = false;
     return "Not specified";
   }
 
-  // Calculate Score - PDF मधल्या टक्क्यांनुसार
   double get score {
     double s = 0;
-
-    // Lifestyle factors with their weights from PDF
     if (wakeUp) s += 4.0;
     if (meditation) s += 4.0;
     if (yoga) s += 4.0;
-    if (exercise)
-      s += 3.0; // Note: PDF says "3 Minute normal starching" maybe 3%?
+    if (exercise) s += 3.0;
     if (stretching) s += 1.0;
     if (barefootWalking) s += 1.0;
-    if (sunBath) s += 2.0; // Food Intect time - 2% (Assuming Sun Bath is 2%)
-  if (breakfast) s += 2.0;
-if (lunch) s += 4.0;
-if (afternoon) s += 2.0;
-if (dinner) s += 4.0;
+    if (sunBath) s += 2.0;
+    if (breakfast) s += 2.0;
+    if (lunch) s += 4.0;
+    if (afternoon) s += 2.0;
+    if (dinner) s += 4.0;
     if (avoidWaterWithMeal) s += 1.0;
     if (drinkWater) s += 2.0;
     if (avoidScreenWhileEating) s += 1.0;
@@ -105,10 +99,7 @@ if (dinner) s += 4.0;
     if (avoidNonVeg) s += 4.0;
     if (dinnerSleepGap) s += 4.0;
     if (sleepTiming) s += 2.0;
-    if (avoidDaySleep)
-      s += 4.0; 
-
-    // Celibacy - Age wise weights
+    if (avoidDaySleep) s += 4.0;
     if (followCelibacy) {
       int userAge = age;
       if (userAge >= 1 && userAge <= 21) {
@@ -123,20 +114,15 @@ if (dinner) s += 4.0;
         s += 10.0;
       }
     }
-
-    // Other lifestyle factors
     if (avoidMobilePosture) s += 4.0;
     if (avoidLongPosture) s += 2.0;
     if (avoidPainkillers) s += 5.0;
     if (avoidLustContent) s += 2.0;
     if (familyTime) s += 6.0;
     if (workWithPatience) s += 4.0;
-    if (liveStressFree) s += 4.0; 
+    if (liveStressFree) s += 4.0;
 
-
-    return double.parse(
-      s.toStringAsFixed(1),
-    ); 
+    return double.parse(s.toStringAsFixed(1));
   }
 
   // Health Meter Widget - Fixed at top
@@ -157,7 +143,7 @@ if (dinner) s += 4.0;
       ),
       margin: EdgeInsets.symmetric(horizontal: 16),
       child: Column(
-        mainAxisSize: MainAxisSize.min, // 👈 Important
+        mainAxisSize: MainAxisSize.min, 
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Custom Health Meter with Images
@@ -168,7 +154,6 @@ if (dinner) s += 4.0;
               needleImage: 'assets/images/needle.png',
               width: 250,
               height: 250,
-
               animationDuration: const Duration(milliseconds: 1500),
               animationCurve: Curves.easeInOut,
               showValue: true,
@@ -521,21 +506,31 @@ if (dinner) s += 4.0;
                     ),
                   ),
                   SizedBox(height: 12),
-                _buildHealthItem("8 Breakfast - Between 7 to 9 am", breakfast, (v) {
-  setState(() => breakfast = v!);
-}),
+                  _buildHealthItem(
+                    "8 Breakfast - Between 7 to 9 am",
+                    breakfast,
+                    (v) {
+                      setState(() => breakfast = v!);
+                    },
+                  ),
 
-_buildHealthItem("9 Lunch - Between 11 to 1 pm", lunch, (v) {
-  setState(() => lunch = v!);
-}),
+                  _buildHealthItem("9 Lunch - Between 11 to 1 pm", lunch, (v) {
+                    setState(() => lunch = v!);
+                  }),
 
-_buildHealthItem("10 Afternoon - Between 2 to 4 pm", afternoon, (v) {
-  setState(() => afternoon = v!);
-}),
+                  _buildHealthItem(
+                    "10 Afternoon - Between 2 to 4 pm",
+                    afternoon,
+                    (v) {
+                      setState(() => afternoon = v!);
+                    },
+                  ),
 
-_buildHealthItem("11 Dinner - Between 5 to 8 pm", dinner, (v) {
-  setState(() => dinner = v!);
-}),
+                  _buildHealthItem("11 Dinner - Between 5 to 8 pm", dinner, (
+                    v,
+                  ) {
+                    setState(() => dinner = v!);
+                  }),
 
                   _buildHealthItem(
                     "12. Avoid Drinking Water While Eating",

@@ -1724,7 +1724,10 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(height: 10),
             // AutoSlider(pageController: _pageController),
             BannerSlider(),
-            _campaignSection(header: "JIN Reflexolog", items: campaignItems1()),
+            _campaignSection(
+              header: "JIN Reflexology",
+              items: campaignItems1(),
+            ),
             // const SizedBox(height: 4),
             _campaignSection(
               header: "For JIN Reflexologist                   For Patients",

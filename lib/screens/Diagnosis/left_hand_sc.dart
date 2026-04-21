@@ -233,8 +233,11 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
     });
   }
 
-  Widget _buildDot(PointData p, double scaleX, double scaleY) {
-    final double dotSize = 25 * ((scaleX + scaleY) / 2);
+  double _dotSize(double scaleX, double scaleY) {
+    return 25 * ((scaleX + scaleY) / 2);
+  }
+
+  Widget _buildDot(PointData p, double dotSize) {
 
     final Color color =
         p.state == 1
@@ -280,6 +283,7 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
 
     final double scaleX = containerW / baseWidth;
     final double scaleY = containerH / baseHeight;
+    final double dotSize = _dotSize(scaleX, scaleY);
 
     return Scaffold(
       appBar: CommonAppBar(title: "Left Hand"),
@@ -309,9 +313,9 @@ class _LeftHandScreenState extends State<LeftHandScreen> {
                           ),
                           ...points.map(
                             (p) => Positioned(
-                              left: (p.x * scaleX) - 10,
-                              top: (p.y * scaleY) - 10,
-                              child: _buildDot(p, scaleX, scaleY),
+                              left: (p.x * scaleX) - (dotSize / 2),
+                              top: (p.y * scaleY) - (dotSize / 2),
+                              child: _buildDot(p, dotSize),
                             ),
                           ),
                         ],

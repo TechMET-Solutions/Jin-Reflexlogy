@@ -8,7 +8,7 @@ String getYoutubeThumbnail(String videoUrl) {
   // Return high quality thumbnail URL
   return 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
 }
-
+  
 class FootRelaxingScreen extends StatelessWidget {
   const FootRelaxingScreen({super.key});
 

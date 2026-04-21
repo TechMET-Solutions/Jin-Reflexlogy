@@ -56,7 +56,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   }
 
   // ================= ADD TO CART API =================
-  Future<void> addToCart() async {
+  Future<void> addToCart({bool navigateToCart = true}) async {
     const String url = "https://admin.jinreflexology.in/api/cart/add";
 
     final prefs = AppPreference();
@@ -65,10 +65,31 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
     final String country = widget.deliveryType == "india" ? "in" : "us";
 
-    if (token.isEmpty || userId == 0) {
-      ScaffoldMessenger.of(
+    // Get fresh userId from preferences instead of relying on state
+    final freshUserId = int.tryParse(prefs.getString(PreferencesKey.userId)) ?? 0;
+
+    // If not logged in, show login screen first
+    if (token.isEmpty || freshUserId == 0) {
+      if (!mounted) return;
+      
+      // Navigate to login screen
+      final result = await Navigator.push(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Please login first")));
+        MaterialPageRoute(
+          builder: (_) => JinLoginScreen(
+            onTab: () {},
+            text: "ProductDetailScreen",
+            diliveryType: widget.deliveryType,
+            type: "patient",
+            shop: true,
+          ),
+        ),
+      );
+
+      // After login, retry adding to cart (don't navigate to cart, just add)
+      if (result == true && mounted) {
+        await addToCart(navigateToCart: navigateToCart);
+      }
       return;
     }
 
@@ -82,7 +103,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           "Accept": "application/json",
         },
         body: {
-          "user_id": userId.toString(),
+          "user_id": freshUserId.toString(),
           "product_id": p.id.toString(),
           "quantity": quantity.toString(),
           "country": country,
@@ -99,12 +120,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(decoded["message"] ?? "Added to cart")),
         );
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => CartScreen(deliveryType: widget.deliveryType),
-          ),
-        );
+        
+        // Navigate to cart only if navigateToCart is true
+        if (navigateToCart && mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CartScreen(deliveryType: widget.deliveryType),
+            ),
+          );
+        }
       } else {
         throw decoded["message"] ?? "Add to cart failed";
       }
@@ -259,35 +284,7 @@ print("ddddddddddddddddddddddddddddddddddddddddddddd${token}");
                             onPressed:
                                 isAddingToCart
                                     ? null
-                                    : () {
-                                      if (token.isEmpty) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder:
-                                                (context) => JinLoginScreen(
-                                                  text: "ShopScreen",
-                                                  shop: true,
-                                                  type: "",
-                                                  diliveryType:
-                                                      widget.deliveryType,
-                                                  onTab: () {
-                                                    Navigator.pushReplacement(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder:
-                                                            (context) =>
-                                                                LifestyleScreen(),
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                          ),
-                                        );
-                                      } else {
-                                        addToCart();
-                                      }
-                                    },
+                                    : () => addToCart(navigateToCart: true),
                             child:
                                 isAddingToCart
                                     ? const SizedBox(

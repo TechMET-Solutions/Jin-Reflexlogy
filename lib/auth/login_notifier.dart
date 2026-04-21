@@ -43,7 +43,6 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
     dynamic password, {
     dynamic DeliveryType,
   }) async {
-    // ✅ Prevent multiple clicks
     if (_isLoggingIn) return;
     _isLoggingIn = true;
 
@@ -94,69 +93,49 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
       );
 
       final raw = response.data.toString().trim();
-      var data = FormData.fromMap({
-        "id": id,
-        "password": password,
-        "type": type,
-      });
 
-      debugPrint(data.fields.toString());
       debugPrint("===== LOGIN RAW RESPONSE =====");
       debugPrint(raw);
       debugPrint("=============================");
 
-
-      if (!raw.startsWith("{")) {
-        throw "Invalid server response";
-      }
-      // 🔥 Extract only JSON part
+      // ================= JSON CLEAN =================
       final int jsonStart = raw.indexOf('{');
-
-      if (jsonStart == -1) {
-        throw "Invalid server response";
-      }
+      if (jsonStart == -1) throw "Invalid server response";
 
       final cleanJson = raw.substring(jsonStart);
-
       final Map<String, dynamic> jsonData = jsonDecode(cleanJson);
 
-      final String message = jsonData["message"] ?? "Login failed";
+      // ================= SUCCESS CHECK =================
+      final bool isSuccess = jsonData["success"] == 1;
 
-      // ================= SHOW MESSAGE =================
+      if (!isSuccess) {
+        Get.rawSnackbar(
+          message: jsonData["message"] ?? "Login Failed",
+          backgroundColor: Colors.red,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(12),
+          borderRadius: 8,
+        );
 
-      Get.rawSnackbar(
-        message: message,
-        backgroundColor: Colors.black,
-        snackPosition: SnackPosition.BOTTOM,
-        borderRadius: 8,
-        margin: const EdgeInsets.all(12),
-        duration: const Duration(seconds: 2),
-      );
-
-      // ================= FAIL CASE =================
-
-      if (jsonData["success"] != 1) {
         state = AsyncValue.error("Login failed", StackTrace.current);
         return;
       }
 
-      // ================= SUCCESS =================
-
+      // ================= SUCCESS DATA =================
       final Map<String, dynamic>? userData =
           jsonData['user_data'] is Map ? jsonData['user_data'] : null;
 
       final userId = userData?['id'] ?? jsonData['id'];
       final token = userData?['token'] ?? jsonData['token'] ?? "";
       final name = userData?['t_name'] ?? userData?['name'] ?? "";
-      final email = userData?['t_email'] ?? userData?['email'] ?? "";
-      final mobile = userData?['t_mobile'] ?? userData?['p_number'] ?? "";
+      final email = userData?['t_email'] ?? userData?['p_email'] ?? "";
+      final mobile = userData?['t_mobile'] ?? userData?['p_mobile'] ?? "";
 
       if (userId == null || userId.toString().isEmpty) {
         throw "User ID missing";
       }
 
       // ================= TYPE FIX =================
-
       String finalType =
           type.trim().isNotEmpty ? type : (jsonData['type'] ?? "").toString();
 
@@ -182,12 +161,20 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
 
       await AppPreference().setString(PreferencesKey.type, finalType);
 
+      // ================= SUCCESS SNACKBAR =================
+      Get.rawSnackbar(
+        message: "Login Successful",
+        backgroundColor: Colors.green,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(12),
+        borderRadius: 8,
+      );
+
       state = const AsyncValue.data(null);
 
       debugPrint("===== LOGIN SUCCESS =====");
 
       // ================= NAVIGATION =================
-
       _navigate(context, text, DeliveryType);
     } catch (e, st) {
       debugPrint("LOGIN ERROR => $e");
@@ -201,7 +188,7 @@ class LoginNotifier extends StateNotifier<AsyncValue<void>> {
 
       state = AsyncValue.error(e, st);
     } finally {
-      _isLoggingIn = false; // ✅ unlock
+      _isLoggingIn = false;
     }
   }
 }
@@ -302,11 +289,16 @@ void _navigate(BuildContext context, String text, dynamic DeliveryType) {
       );
       break;
 
+    case "ProductDetailScreen":
+      // Return to previous screen after login
+      Navigator.pop(context, true);
+      break;
+
     case "ShopScreen":
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => ShopScreen(deliveryType: DeliveryType),
+          builder: (_) => ShopScreen(deliveryType: DeliveryType ?? "india"),
         ),
       );
       break;

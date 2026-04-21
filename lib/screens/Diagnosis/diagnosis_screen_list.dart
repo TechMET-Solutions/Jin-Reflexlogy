@@ -110,155 +110,152 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
   }
 
   // ---------------- SEARCH HANDLER ----------------
-  void _onSearchChanged() {
-    // Cancel previous timer
-    _searchDebounceTimer?.cancel();
+void _onSearchChanged() {
+  _searchDebounceTimer?.cancel();
 
-    // Set new timer for debounce
-    _searchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
-      if (!mounted) return;
+  _searchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+    if (!mounted) return;
 
-      final newText = searchController.text.trim();
+    final newText = searchController.text.trim();
 
-      // Only search if text changed
-      if (newText != _currentSearchText) {
-        _currentSearchText = newText;
-        print("🔍 Searching for: '$newText'");
-        fetchPatients(isInitial: true, search: newText);
-      }
-    });
-  }
+    if (newText != _currentSearchText) {
+      _currentSearchText = newText;
 
-  // FIXED: fetchPatients function
-  Future<void> fetchPatients({
-    bool isInitial = false,
-    String search = '',
-  }) async {
-    print("\n" + "=" * 60);
-    print("🚀 FETCHING PATIENTS");
-    print("📌 isInitial: $isInitial");
-    print("📌 Current Page: $page");
-    print("📌 Search Text: '$search'");
-    print("📌 isFetchingMore: $isFetchingMore");
-    print("📌 hasMore: $hasMore");
-    print("📌 Current Patients: ${patients.length}");
-    print("=" * 60);
-
-    // If already fetching, return
-    if (isFetchingMore) {
-      print("⏸️ Already fetching, skipping...");
-      return;
-    }
-
-    // If searching, stop pagination
-    if (search.isNotEmpty && !isInitial) {
-      print("⚠️ Search active, pagination stopped");
-      return;
-    }
-
-    // Calculate which page to fetch
-    int fetchPage = isInitial ? 1 : page;
-
-    setState(() {
-      if (isInitial) {
+      // 🔥 ADD THIS
+      setState(() {
+        patients.clear();
         page = 1;
         hasMore = true;
-        patients.clear();
         isLoading = true;
-      }
-      isFetchingMore = true;
-    });
+      });
 
-    try {
-      var url = Uri.parse(
-        'https://jinreflexology.in/api1/new/list_patients.php',
-      );
+      fetchPatients(isInitial: true, search: newText);
+    }
+  });
+}
+  // FIXED: fetchPatients function
+  Future<void> fetchPatients({
+  bool isInitial = false,
+  String search = '',
+}) async {
+  print("\n" + "=" * 60);
+  print("🚀 FETCHING PATIENTS");
+  print("📌 isInitial: $isInitial");
+  print("📌 Current Page: $page");
+  print("📌 Search Text Param: '$search'");
+  print("📌 Current Search State: '$_currentSearchText'");
+  print("📌 isFetchingMore: $isFetchingMore");
+  print("📌 hasMore: $hasMore");
+  print("📌 Current Patients: ${patients.length}");
+  print("=" * 60);
 
-      Map<String, String> body = {
-        'pid': AppPreference().getString(PreferencesKey.userId),
-        'page': fetchPage.toString(),
-        'limit': limit.toString(),
-      };
+  // ❌ duplicate call block
+  if (isFetchingMore) return;
 
-      if (search.isNotEmpty) {
-        body['search'] = search;
-      }
-      print("🌐 API Request Details:");
-      print("   URL: $url");
-      print("   Body: $body");
-      print("   Fetching Page: $fetchPage");
+  // ❌ pagination block during search
+  if (_currentSearchText.isNotEmpty && !isInitial) {
+    print("⛔ Skip pagination during search");
+    return;
+  }
 
-      var response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: body,
-      );
+  int fetchPage = isInitial ? 1 : page;
 
-      print("📥 API Response:");
-      print("   Status: ${response.statusCode}");
+  setState(() {
+    if (isInitial) {
+      page = 1;
+      hasMore = true;
+      patients.clear();
+      isLoading = true;
+    }
+    isFetchingMore = true;
+  });
 
-      if (response.statusCode == 200) {
-        var jsonBody = jsonDecode(response.body);
-        print("   Success: ${jsonBody['success']}");
+  try {
+    var url = Uri.parse(
+      'https://jinreflexology.in/api1/new/list_patients.php',
+    );
 
-        final List raw = jsonBody["data"] ?? [];
-        print("   Data Items Received: ${raw.length}");
+    // ✅ SINGLE SOURCE SEARCH FIX
+    final effectiveSearch =
+        search.isNotEmpty ? search : _currentSearchText;
 
-        if (jsonBody['success'] == 1) {
-          final newList = raw.map((e) => PatientData.fromJson(e)).toList();
+    Map<String, String> body = {
+      'pid': AppPreference().getString(PreferencesKey.userId),
+      'page': fetchPage.toString(),
+      'limit': limit.toString(),
+    };
 
-          print("✅ Patients Loaded: ${newList.length}");
-          print("📊 Limit: $limit");
-          print("📊 HasMore Check: ${newList.length == limit}");
+    if (effectiveSearch.isNotEmpty) {
+      body['search'] = effectiveSearch;
+    }
 
-          setState(() {
-            if (isInitial) {
-              patients = newList;
-            } else {
-              patients.addAll(newList);
-            }
+    print("🌐 API Request:");
+    print("Body: $body");
 
-            isLoading = false;
-            isFetchingMore = false;
+    var response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: body,
+    );
 
-            // Update hasMore based on response length
-            hasMore = newList.length == limit;
+    print("📥 Response Code: ${response.statusCode}");
 
-            // Increment page only if we got full page
-            if (hasMore && !isInitial) {
-              page++;
-              print("📈 Page incremented to: $page");
-            }
+    if (response.statusCode == 200) {
+      var jsonBody = jsonDecode(response.body);
 
-            print("📊 Total Patients Now: ${patients.length}");
-            print("📊 HasMore Flag: $hasMore");
-          });
-        } else {
-          print("❌ API Error: ${jsonBody['message']}");
-          setState(() {
-            isLoading = false;
-            isFetchingMore = false;
-            hasMore = false;
-          });
-        }
+      final List raw = jsonBody["data"] ?? [];
+
+      if (jsonBody['success'] == 1) {
+        final newList =
+            raw.map((e) => PatientData.fromJson(e)).toList();
+
+        setState(() {
+          if (isInitial) {
+            patients = newList;
+          } else {
+            patients.addAll(newList);
+          }
+
+          isLoading = false;
+          isFetchingMore = false;
+
+          hasMore = newList.length == limit;
+
+          if (hasMore && !isInitial) {
+            page++;
+          }
+        });
+
+        print("✅ Loaded: ${newList.length}");
       } else {
-        print("❌ HTTP Error: ${response.statusCode}");
+        print("❌ API Error: ${jsonBody['message']}");
+
         setState(() {
           isLoading = false;
           isFetchingMore = false;
+          hasMore = false;
         });
       }
-    } catch (e, stackTrace) {
-      print("❌ Exception: $e");
-      print("❌ StackTrace: $stackTrace");
+    } else {
+      print("❌ HTTP Error");
+
       setState(() {
         isLoading = false;
         isFetchingMore = false;
       });
     }
-    print("=" * 60 + "\n");
+  } catch (e, st) {
+    print("❌ Exception: $e");
+    print(st);
+
+    setState(() {
+      isLoading = false;
+      isFetchingMore = false;
+    });
   }
 
+  print("=" * 60 + "\n");
+}
   Future<bool> isIndianUser() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString("delivery_type") == "india";
@@ -509,54 +506,54 @@ class _MemberListScreenState extends State<MemberListScreen> with RouteAware {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    final token = AppPreference().getString(PreferencesKey.userId);
-    final type = AppPreference().getString(PreferencesKey.type);
-    print(token);
+    final userId = AppPreference().getString(PreferencesKey.userId);
+    final userType = AppPreference().getString(PreferencesKey.type);
+    final bool isLoggedIn = userId.isNotEmpty;
+    final bool isTherapist = userType == "therapist";
+    final bool showTherapistControls = isLoggedIn && isTherapist;
+    print(userId);
     return Scaffold(
       appBar: CommonAppBar(
         title: "Patient List",
-        showBalance: true,
-        userId: token,
+        showBalance: showTherapistControls,
+        userId: showTherapistControls ? userId : null,
         balanceRefreshTrigger: _balanceRefreshTrigger,
-        actions: [
-          InkWell(
-            onTap: () {
-              _showPaymentPopup();
-            },
-            child: Container(
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                color: Colors.green,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(5),
-                child: Text(
-                  "Add Amount",
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+        actions:
+            showTherapistControls
+                ? [
+                  InkWell(
+                    onTap: _showPaymentPopup,
+                    child: Container(
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color: Colors.green,
+                      ),
+                      child: const Padding(
+                        padding: EdgeInsets.all(5),
+                        child: Text(
+                          "Add Amount",
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
-          ),
-          SizedBox(width: 5),
-          // IconButton(
-          //   tooltip: "Add Payment",
-          //   onPressed: _showPaymentPopup,
-          //   icon: const Icon(Icons.account_balance_wallet, color: Colors.white),
-          // ),
-        ],
+                  const SizedBox(width: 5),
+                ]
+                : null,
       ),
       backgroundColor: Color(0xFFFDF3DD),
       body:
-          type == "patient" ||
-                  type == "user" ||
-                  type == "prouser" ||
-                  token.isEmpty
+          !showTherapistControls ||
+                  userType == "patient" ||
+                  userType == "user" ||
+                  userType == "prouser" ||
+                  userId.isEmpty
               ? JinLoginScreen(
                 text: "MemberListScreen",
                 type: "therapist",

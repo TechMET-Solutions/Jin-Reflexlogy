@@ -4,10 +4,7 @@ import 'package:jin_reflex_new/screens/utils/comman_app_bar.dart';
 class MudraDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> item;
 
-  const MudraDetailsScreen({
-    super.key,
-    required this.item,
-  });
+  const MudraDetailsScreen({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -17,21 +14,19 @@ class MudraDetailsScreen extends StatelessWidget {
             : null;
 
     return DefaultTabController(
-      length: 6, // 👈 Total Tabs
+      length: 6,
       child: Scaffold(
         appBar: CommonAppBar(title: item["title"] ?? ""),
         body: Column(
           children: [
-
-            /// ================= IMAGE =================
             imageUrl != null
                 ? Image.network(
-                    imageUrl,
-                    height: 240,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _noImage(),
-                  )
+                  imageUrl,
+                  height: 240,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _noImage(),
+                )
                 : _noImage(),
 
             /// ================= TITLE =================
@@ -67,7 +62,6 @@ class MudraDetailsScreen extends StatelessWidget {
             Expanded(
               child: TabBarView(
                 children: [
-
                   /// Description
                   _tabView(item["description"]),
 
@@ -101,13 +95,8 @@ class MudraDetailsScreen extends StatelessWidget {
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Text(
-          text != null && text.trim().isNotEmpty
-              ? text
-              : "No data available",
-          style: const TextStyle(
-            fontSize: 14,
-            height: 1.6,
-          ),
+          text != null && text.trim().isNotEmpty ? text : "No data available",
+          style: const TextStyle(fontSize: 14, height: 1.6),
         ),
       ),
     );
@@ -118,11 +107,7 @@ class MudraDetailsScreen extends StatelessWidget {
     return const SizedBox(
       height: 240,
       child: Center(
-        child: Icon(
-          Icons.image_not_supported,
-          size: 60,
-          color: Colors.grey,
-        ),
+        child: Icon(Icons.image_not_supported, size: 60, color: Colors.grey),
       ),
     );
   }
